@@ -1,0 +1,1040 @@
+// ============================================================================
+// main.js — управление, меню, сессии, HUD, игровой цикл
+// ============================================================================
+
+const viewportEl = document.getElementById('viewportContainer');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimapCanvas');
+const mCtx = minimapCanvas.getContext('2d');
+
+let cameraViewMode = 'CHASE';
+let smoothCamAngle = 0, smoothSlopePitch = 0, camZoom = 1;
+
+let selectedCarClass = 'GT3';
+let selectedCarIndex = 0;
+let selectedTeammateSlot = 0;
+let totalRaceLaps = 3;                 // для F1: выбранное число кругов
+let selectedStrategyIndex = 0;
+
+let raceMode = 'TIMED';                // TIMED (WEC, 20 мин) | LAPS (F1)
+let raceDurationMs = ENDURANCE_MINUTES * 60000;
+
+window.showRacingLine = true;
+window.transmissionMode = 'AUTO';
+window.handlingMode = 'ARCADE';           // ARCADE | REAL
+let topFollow = 'CAR';                    // вид сверху: CAR — на машине, TRACK — вся трасса, камера неподвижна
+let topZoom = 1.0;
+window.shiftUpPressed = false; window.shiftDownPressed = false;
+
+let mobileSteer = 0, mobileThrottle = 0, mobileBrake = 0;
+let useGyroscope = false, gyroGamma = 0;
+
+let playerCar = null, aiCars = [], allCars = [];
+let isPaused = false;
+let currentSession = 'MENU';          // MENU | QUALI | RACE | FINISHED
+let raceState = 'RACING';             // LIGHTS | RACING
+let raceStartTimestamp = 0;
+let simTimeMs = 0;                    // игровое время (на паузе не идёт)
+let sessionBestLap = { time: null, driverName: '---', carName: '' };
+let gridOrder = null;
+let finishRows = [];
+let raceRecorded = false, timeUpAnnounced = false;
+const keys = { w: false, a: false, s: false, d: false, space: false };
+
+const STEP = 1 / 60;
+
+function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : GT3_CATALOG; }
+
+// Число кругов, под которое строятся тактики
+function getPlannedLaps() {
+    if (selectedCarClass === 'GT3') {
+        return Math.max(3, Math.round(ENDURANCE_MINUTES * 60 / EST_LAP_SEC.GT3[selectedTrackIndex]));
+    }
+    return totalRaceLaps;
+}
+
+function formatTime(ms) {
+    if (ms === null || ms === undefined || !isFinite(ms)) return '--:--.---';
+    const t = Math.max(0, Math.round(ms));
+    const m = Math.floor(t / 60000), s = Math.floor((t % 60000) / 1000), r = t % 1000;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(r).padStart(3, '0');
+}
+function formatClock(ms) {
+    const t = Math.max(0, Math.floor(ms / 1000));
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+}
+
+// ============================================================================
+// ПОДСКАЗКИ ГОНОЧНОГО КОНТРОЛЯ
+// ============================================================================
+let raceControlTimer = null;
+function showRaceControl(text, color = '#f39c12') {
+    const el = document.getElementById('race-control');
+    if (!el) return;
+    el.textContent = text;
+    el.style.borderLeftColor = color;
+    el.style.opacity = 1;
+    clearTimeout(raceControlTimer);
+    raceControlTimer = setTimeout(() => { el.style.opacity = 0; }, 2800);
+}
+
+function registerLapForGlobalBest(car, lapMs) {
+    if (sessionBestLap.time === null || lapMs < sessionBestLap.time) {
+        sessionBestLap = { time: lapMs, driverName: car.driverName, carName: car.spec.shortName };
+        if (car.isPlayer) showRaceControl(`🟣 Лучший круг сессии: ${formatTime(lapMs)}`, '#c084fc');
+    } else if (car.isPlayer) {
+        showRaceControl(`Круг ${car.lap}: ${formatTime(lapMs)}`, '#38bdf8');
+    }
+}
+
+// ============================================================================
+// НАСТРОЙКИ: коробка, камера, круги, класс
+// ============================================================================
+window.setTransmissionMode = function (mode) {
+    window.transmissionMode = mode;
+    document.getElementById('btnGearAuto').classList.toggle('active', mode === 'AUTO');
+    document.getElementById('btnGearManual').classList.toggle('active', mode === 'MANUAL');
+};
+
+function refreshOptionButtons() {
+    document.querySelectorAll('[data-tf]').forEach(b => b.classList.toggle('active', b.dataset.tf === topFollow));
+    document.querySelectorAll('[data-hm]').forEach(b => b.classList.toggle('active', b.dataset.hm === window.handlingMode));
+}
+window.setTopFollow = function (mode) { topFollow = mode; refreshOptionButtons(); };
+window.setHandling = function (mode) {
+    window.handlingMode = mode; refreshOptionButtons();
+    if (currentSession === 'QUALI' || currentSession === 'RACE') showRaceControl(mode === 'ARCADE' ? '🎮 Управление: Аркада' : '🏁 Управление: Реализм', '#38bdf8');
+};
+
+function setCameraViewMode(mode) {
+    cameraViewMode = mode;
+    const bt = document.getElementById('viewBtnTOP'), bc = document.getElementById('viewBtnCHASE');
+    if (bt) bt.classList.toggle('active', mode === 'TOP');
+    if (bc) bc.classList.toggle('active', mode === 'CHASE');
+}
+window.setCameraViewMode = setCameraViewMode;
+
+window.setLaps = function (laps) {
+    if (selectedCarClass === 'GT3') return;       // в WEC число кругов не выбирается
+    totalRaceLaps = laps;
+    selectedStrategyIndex = 0;
+    document.querySelectorAll('.lap-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.laps) === laps));
+    renderStrategyCards();
+};
+
+function teamLocked() { return selectedCarClass === 'F1' && season && seasonStarted() && !seasonDone(); }
+
+function applyClassMode() {
+    const f1 = selectedCarClass === 'F1';
+    raceMode = f1 ? 'LAPS' : 'TIMED';
+    document.getElementById('classBtnGT3').classList.toggle('active', !f1);
+    document.getElementById('classBtnF1').classList.toggle('active', f1);
+    document.getElementById('lapSection').style.display = f1 ? 'flex' : 'none';
+    const note = document.getElementById('enduranceNote');
+    note.style.display = f1 ? 'none' : 'block';
+    note.textContent = `⏱ Гонка на выживание: ${ENDURANCE_MINUTES} минут после квалификации. Финиш на первом круге после окончания времени.`;
+    document.getElementById('seasonPanel').style.display = f1 ? 'block' : 'none';
+    if (f1) {
+        ensureSeason();
+        selectedTrackIndex = seasonNextTrack();
+        if (teamLocked()) { selectedCarIndex = season.team; selectedTeammateSlot = season.seat; }
+    }
+}
+
+window.selectCarClass = function (cls) {
+    selectedCarClass = cls;
+    selectedCarIndex = 0; selectedTeammateSlot = 0; selectedStrategyIndex = 0;
+    applyClassMode();
+    buildActiveTrackGeometry();
+    renderGarageUI();
+};
+
+function selectNextTire(compKey) {
+    if (!playerCar || currentSession !== 'RACE') return;
+    playerCar.nextCompound = compKey;
+    showRaceControl(`Шины на следующий пит-стоп: ${TIRE_COMPOUNDS[compKey].name}`, TIRE_COMPOUNDS[compKey].color);
+}
+
+function requestPitStop() {
+    if (!playerCar || currentSession !== 'RACE') return;
+    playerCar.pitRequested = !playerCar.pitRequested;
+    showRaceControl(playerCar.pitRequested
+        ? `🛠️ Заезд в боксы на этом круге: ${TIRE_COMPOUNDS[playerCar.nextCompound].name}`
+        : 'Заезд в боксы отменён', '#38bdf8');
+}
+
+// ============================================================================
+// УПРАВЛЕНИЕ: клавиатура (по физическим клавишам — работает в любой раскладке)
+// ============================================================================
+function clearInputs() {
+    keys.w = keys.a = keys.s = keys.d = keys.space = false;
+    window.shiftUpPressed = window.shiftDownPressed = false;
+}
+function releaseFocus() {
+    // после клика по кнопке меню фокус остаётся на ней: Пробел/Enter тогда повторно «нажимали» бы её
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    window.focus();
+}
+
+function onKeyDown(e) {
+    initAudio();
+    const c = e.code;
+    const playing = (currentSession === 'QUALI' || currentSession === 'RACE');
+    if (playing && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter', 'Tab'].includes(c)) e.preventDefault();
+    if (c === 'Escape') { if (playing) togglePauseMenu(); return; }
+    if (isPaused || !playing) return;
+
+    if (c === 'ArrowUp' || c === 'KeyW') keys.w = true;
+    if (c === 'ArrowLeft' || c === 'KeyA') keys.a = true;
+    if (c === 'ArrowDown' || c === 'KeyS') keys.s = true;
+    if (c === 'ArrowRight' || c === 'KeyD') keys.d = true;
+    if (c === 'Space') keys.space = true;
+
+    if (!e.repeat) {
+        if (c === 'ShiftLeft' || c === 'ShiftRight' || c === 'KeyE') window.shiftUpPressed = true;
+        if (c === 'ControlLeft' || c === 'ControlRight' || c === 'KeyQ') window.shiftDownPressed = true;
+        if (c === 'KeyV') setCameraViewMode(cameraViewMode === 'TOP' ? 'CHASE' : 'TOP');
+        if (c === 'KeyC') { topFollow = topFollow === 'CAR' ? 'TRACK' : 'CAR'; if (cameraViewMode !== 'TOP') setCameraViewMode('TOP'); refreshOptionButtons(); showRaceControl(topFollow === 'CAR' ? '🚗 Камера сверху: на машине' : '🗺️ Камера сверху: зафиксирована на трассе', '#38bdf8'); }
+        if (c === 'Equal' || c === 'NumpadAdd') topZoom = Math.min(2.2, topZoom * 1.15);
+        if (c === 'Minus' || c === 'NumpadSubtract') topZoom = Math.max(0.45, topZoom / 1.15);
+        if (c === 'KeyH') window.showRacingLine = !window.showRacingLine;
+        if (c === 'KeyM') toggleSound();
+        if (c === 'KeyP') requestPitStop();
+        if (c === 'Digit1') selectNextTire('soft');
+        if (c === 'Digit2') selectNextTire('medium');
+        if (c === 'Digit3') selectNextTire('hard');
+    }
+}
+function onKeyUp(e) {
+    const c = e.code;
+    if (c === 'ArrowUp' || c === 'KeyW') keys.w = false;
+    if (c === 'ArrowLeft' || c === 'KeyA') keys.a = false;
+    if (c === 'ArrowDown' || c === 'KeyS') keys.s = false;
+    if (c === 'ArrowRight' || c === 'KeyD') keys.d = false;
+    if (c === 'Space') keys.space = false;
+}
+// слушаем и window, и document: в некоторых встроенных просмотрщиках событие приходит только на одно из них
+window.addEventListener('keydown', onKeyDown);
+window.addEventListener('keyup', onKeyUp);
+window.addEventListener('blur', clearInputs);
+window.addEventListener('wheel', (e) => { if (currentSession === 'MENU' || cameraViewMode !== 'TOP' || topFollow !== 'CAR') return; topZoom = Math.max(0.45, Math.min(2.2, topZoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); }, { passive: true });
+window.addEventListener('pointerdown', () => { initAudio(); });
+canvas.addEventListener('pointerdown', () => canvas.focus());
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !isPaused && (currentSession === 'QUALI' || currentSession === 'RACE')) togglePauseMenu();
+});
+
+// ---------- Мобильное управление ----------
+function initMobileTouchControls() {
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobileDevice) return;
+    document.body.classList.add('is-mobile');
+    setCameraViewMode('TOP');
+    const overlay = document.createElement('div');
+    overlay.id = 'mobileControlsOverlay';
+    overlay.innerHTML = `
+        <div class="mob-btn" id="mobSteerLeft">◀</div>
+        <div class="mob-btn" id="mobSteerRight">▶</div>
+        <div class="mob-btn" id="mobBrake">ТОРМОЗ</div>
+        <div class="mob-btn" id="mobThrottle">ГАЗ</div>
+        <div class="mob-btn" id="mobTireSoft">SOFT</div>
+        <div class="mob-btn" id="mobTireMed">MED</div>
+        <div class="mob-btn" id="mobTireHard">HARD</div>
+        <div class="mob-btn" id="mobGyroToggle">ГИРОСКОП: ВЫКЛ</div>`;
+    viewportEl.appendChild(overlay);
+    overlay.style.display = 'block';
+
+    const bindHold = (id, onDown, onUp) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); onDown(); }, { passive: false });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); onUp(); }, { passive: false });
+        el.addEventListener('touchcancel', () => onUp());
+        el.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(); });
+        el.addEventListener('mouseup', (e) => { e.preventDefault(); onUp(); });
+    };
+    bindHold('mobSteerLeft',  () => { mobileSteer = -1; }, () => { if (mobileSteer < 0) mobileSteer = 0; });
+    bindHold('mobSteerRight', () => { mobileSteer = 1; },  () => { if (mobileSteer > 0) mobileSteer = 0; });
+    bindHold('mobBrake',      () => { mobileBrake = 1; },  () => { mobileBrake = 0; });
+    bindHold('mobThrottle',   () => { mobileThrottle = 1; }, () => { mobileThrottle = 0; });
+    document.getElementById('mobTireSoft').addEventListener('click', () => selectNextTire('soft'));
+    document.getElementById('mobTireMed').addEventListener('click', () => selectNextTire('medium'));
+    document.getElementById('mobTireHard').addEventListener('click', () => selectNextTire('hard'));
+    document.getElementById('mobGyroToggle').addEventListener('click', () => window.toggleGyroscope());
+}
+
+window.toggleGyroscope = function () {
+    useGyroscope = !useGyroscope;
+    const btn = document.getElementById('mobGyroToggle');
+    if (useGyroscope) {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(r => {
+                if (r === 'granted') { window.addEventListener('deviceorientation', handleOrientation); if (btn) btn.textContent = 'ГИРОСКОП: ВКЛ'; }
+                else useGyroscope = false;
+            }).catch(() => { useGyroscope = false; });
+        } else {
+            window.addEventListener('deviceorientation', handleOrientation);
+            if (btn) btn.textContent = 'ГИРОСКОП: ВКЛ';
+        }
+    } else {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        if (btn) btn.textContent = 'ГИРОСКОП: ВЫКЛ';
+        mobileSteer = 0;
+    }
+};
+function handleOrientation(e) {
+    if (!useGyroscope) return;
+    gyroGamma = e.gamma || 0;
+    mobileSteer = Math.max(-1, Math.min(1, gyroGamma / 32));
+}
+
+// Геймпад: учитывается, только если им реально пользуются (иначе «призрачный» геймпад
+// — например, гарнитура или мышь — перебивал бы клавиатуру)
+function pollGamepad() {
+    const out = { throttle: 0, brake: 0, steer: 0 };
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < pads.length; i++) {
+        const gp = pads[i];
+        if (!gp || !gp.connected) continue;
+        let steer = gp.axes[0] || 0;
+        if (Math.abs(steer) < 0.12) steer = 0;
+        const thr = gp.buttons[7]?.value || 0, brk = gp.buttons[6]?.value || 0;
+        if (gp.buttons[5] && gp.buttons[5].pressed && !pollGamepad._rb) window.shiftUpPressed = true;
+        if (gp.buttons[4] && gp.buttons[4].pressed && !pollGamepad._lb) window.shiftDownPressed = true;
+        pollGamepad._rb = gp.buttons[5] && gp.buttons[5].pressed;
+        pollGamepad._lb = gp.buttons[4] && gp.buttons[4].pressed;
+        if (Math.abs(steer) > 0 || thr > 0.04 || brk > 0.04) { out.throttle = thr; out.brake = brk; out.steer = steer; break; }
+    }
+    return out;
+}
+
+// Единый ввод: клавиатура, геймпад и сенсорные кнопки складываются (берётся максимум)
+function collectInput() {
+    const gp = pollGamepad();
+    const kSteer = (keys.a ? -1 : 0) + (keys.d ? 1 : 0);
+    return {
+        throttle: Math.max(keys.w ? 1 : 0, gp.throttle, mobileThrottle),
+        brake: Math.max(keys.s ? 1 : 0, gp.brake, mobileBrake),
+        steer: kSteer !== 0 ? kSteer : (gp.steer !== 0 ? gp.steer : mobileSteer)
+    };
+}
+
+// ============================================================================
+// ГАРАЖ
+// ============================================================================
+function tireChip(key, text) {
+    const t = TIRE_COMPOUNDS[key];
+    return `<span class="tire-chip" style="background:${t.color}">${t.shortTag} ${text}</span>`;
+}
+
+function renderStrategyCards() {
+    const grid = document.getElementById('strategyGrid');
+    const rules = document.getElementById('strategyRules');
+    const laps = getPlannedLaps();
+    const list = getStrategyPresetsForLaps(laps);
+    if (selectedStrategyIndex >= list.length) selectedStrategyIndex = 0;
+    const timed = selectedCarClass === 'GT3';
+    rules.innerHTML = `${timed ? `Тактика рассчитана примерно на <b>${laps}</b> кр. (оценка для ${ENDURANCE_MINUTES} минут). ` : ''}` +
+        `Пит-стоп выполняется автоматически на линии старта-финиша и занимает ≈${PIT_STOP_LOSS_SEC} с. ` +
+        `Износ ниже ${TIRE_CLIFF_PCT}% — сцепление резко падает (⚠). ` +
+        `Во время гонки: <b>1/2/3</b> — шины на следующий стоп, <b>P</b> — заехать в боксы на этом круге.`;
+    grid.innerHTML = '';
+    list.forEach((s, i) => {
+        const stints = analyzeStrategy(laps, s);
+        const plan = stints.map((st, k) => {
+            let h = tireChip(st.tire, `${st.laps} кр.`);
+            if (k < stints.length - 1) h += `<span class="tire-arrow">→ пит (после кр. ${st.toLap}) →</span>`;
+            return h;
+        }).join('');
+        const nStops = s.stops.length;
+        const wear = stints.map(st => `${TIRE_COMPOUNDS[st.tire].shortTag} ${st.endHealth}%${st.cliff ? ' ⚠' : ''}`).join(' · ');
+        const riskCls = s.risk === 'Низкий' ? 'risk-low' : (s.risk === 'Высокий' ? 'risk-high' : 'risk-mid');
+        const card = document.createElement('div');
+        card.className = 'strategy-card' + (i === selectedStrategyIndex ? ' active' : '');
+        card.innerHTML = `
+            <div class="strategy-title"><span>${s.name}</span><span class="risk-badge ${riskCls}">риск: ${s.risk.toLowerCase()}</span></div>
+            <div class="strategy-plan">${plan}</div>
+            <div class="strategy-idea">${s.idea}</div>
+            <div class="strategy-pros">＋ ${s.pros}</div>
+            <div class="strategy-cons">－ ${s.cons}</div>
+            <div class="strategy-stats">Пит-стопов: ${nStops}${nStops ? ` (≈ −${nStops * PIT_STOP_LOSS_SEC} с)` : ''} · Износ к концу стинтов: ${wear}</div>`;
+        card.addEventListener('click', () => { selectedStrategyIndex = i; renderStrategyCards(); });
+        grid.appendChild(card);
+    });
+}
+
+function drawCarThumb(canvasEl, spec) {
+    const c = canvasEl.getContext('2d');
+    c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    const img = spriteImgs[spec.id];
+    c.save();
+    c.translate(canvasEl.width / 2, canvasEl.height / 2);
+    if (img) {
+        const h = canvasEl.height - 4, w = h * img.width / img.height;
+        c.drawImage(img, -w / 2, -h / 2, w, h);
+    } else {
+        c.scale(1.05, 1.05);
+        renderCarBody(c, spec, spec.livery, 'soft', false, false, 1);
+    }
+    c.restore();
+}
+
+function renderSeasonPanel() {
+    ensureSeason();
+    const done = seasonDone();
+    document.getElementById('seasonTitle').textContent = `🏆 СЕЗОН ${season.number}`;
+    document.getElementById('seasonSub').textContent = done ? '— завершён' : `— раунд ${season.results.length + 1} из ${season.order.length}`;
+    const cal = document.getElementById('seasonCalendar'); cal.innerHTML = '';
+    season.order.forEach((ti, i) => {
+        const chip = document.createElement('div');
+        const isDone = i < season.results.length, isNext = i === season.results.length && !done;
+        chip.className = 'cal-chip' + (isDone ? ' done' : (isNext ? ' next' : ''));
+        chip.textContent = `R${i + 1} · ${TRACKS_DB[ti].name}${isDone ? ' ✓' : (isNext ? ' ◀ следующая' : '')}`;
+        cal.appendChild(chip);
+    });
+}
+
+function updateStartButtons() {
+    const blocked = selectedCarClass === 'F1' && season && seasonDone();
+    for (const id of ['btnStartQuali', 'btnDirectRace']) {
+        const b = document.getElementById(id);
+        b.disabled = !!blocked; b.style.opacity = blocked ? 0.4 : 1;
+    }
+    document.getElementById('btnDirectRace').textContent = selectedCarClass === 'GT3' ? 'Сразу в гонку 20 мин ▶' : 'Гонка со старта ▶';
+    document.getElementById('btnStartQuali').textContent = selectedCarClass === 'GT3' ? '⏱️ Квалификация → гонка 20 мин' : '⏱️ Квалификация';
+}
+
+function renderGarageUI() {
+    const f1 = selectedCarClass === 'F1';
+    const locked = teamLocked();
+    if (f1) renderSeasonPanel();
+
+    // трассы
+    const trkGrid = document.getElementById('trackSelectorGrid'); trkGrid.innerHTML = '';
+    trkGrid.classList.toggle('locked', f1);
+    document.getElementById('trackLockHint').textContent = f1 ? '— трассу задаёт календарь сезона' : '';
+    TRACKS_DB.forEach((tObj, tIdx) => {
+        const card = document.createElement('div');
+        card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
+        card.innerHTML = `<div><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
+        card.addEventListener('click', () => { selectedTrackIndex = tIdx; buildActiveTrackGeometry(); renderGarageUI(); });
+        trkGrid.appendChild(card);
+    });
+
+    // машины
+    const catalog = getActiveCatalog();
+    const mx = k => Math.max(...catalog.map(c => c.perf[k]));
+    const mn = k => Math.min(...catalog.map(c => c.perf[k]));
+    const norm = (v, k) => 0.35 + 0.65 * (v - mn(k)) / ((mx(k) - mn(k)) || 1);
+    const grid = document.getElementById('carSelectorGrid'); grid.innerHTML = '';
+    grid.classList.toggle('locked', !!locked);
+    document.getElementById('teamLockHint').textContent = locked ? '— команда зафиксирована до конца сезона' : '';
+    catalog.forEach((car, idx) => {
+        const card = document.createElement('div');
+        card.className = 'car-item' + (idx === selectedCarIndex ? ' selected' : '');
+        const p = car.perf;
+        const bar = (lbl, v) => `<div class="car-stat-bar">${lbl}<div class="stat-track"><div class="stat-fill" style="width:${Math.round(v * 100)}%"></div></div></div>`;
+        card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
+            <div class="car-item-title">${car.shortName}</div>
+            <div class="car-item-sub">${Math.round(p.vmax)} км/ч · ${Math.round(p.power)} Вт/кг</div>
+            <div class="car-note">${p.note}</div>
+            ${bar('Мощность', norm(p.power, 'power'))}${bar('Сцепление', norm(p.grip + p.aero * 0.3, 'grip'))}${bar('Торможение', norm(p.brake, 'brake'))}${bar('Бережность к шинам', norm(p.tire, 'tire'))}`;
+        drawCarThumb(card.querySelector('canvas'), car);
+        card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; renderGarageUI(); });
+        grid.appendChild(card);
+    });
+
+    // пилоты команды
+    const team = catalog[selectedCarIndex];
+    const pills = document.getElementById('driverPills'); pills.innerHTML = '';
+    if (selectedTeammateSlot >= team.drivers.length) selectedTeammateSlot = 0;
+    document.getElementById('driverBar').classList.toggle('driver-bar-locked', !!locked);
+    team.drivers.forEach((d, i) => {
+        const b = document.createElement('button');
+        b.className = 'driver-pill' + (i === selectedTeammateSlot ? ' active' : '');
+        b.textContent = `#${d.number} ${d.name}`;
+        b.addEventListener('click', () => { selectedTeammateSlot = i; renderGarageUI(); });
+        pills.appendChild(b);
+    });
+    document.getElementById('driverHint').textContent = team.drivers.length > 1
+        ? `${team.teamName}: второй пилот — ваш напарник (ИИ).`
+        : `${team.teamName}: в команде один пилот.`;
+
+    renderStrategyCards();
+    updateStartButtons();
+}
+
+// ============================================================================
+// СОСТАВ УЧАСТНИКОВ
+// ============================================================================
+function buildWeekendRoster() {
+    buildActiveTrackGeometry();
+    const catalog = getActiveCatalog();
+    const strategies = getStrategyPresetsForLaps(getPlannedLaps());
+    sessionBestLap = { time: null, driverName: '---', carName: '' };
+
+    const team = catalog[selectedCarIndex];
+    const seat = Math.min(selectedTeammateSlot, team.drivers.length - 1);
+    const pd = team.drivers[seat];
+    playerCar = new Car(pd.name + ' (ВЫ)', pd.number, selectedCarIndex, true, false, pd, 0);
+    playerCar.baseName = pd.name;
+    playerCar.assignStrategy(strategies[selectedStrategyIndex % strategies.length]);
+
+    aiCars = [];
+    let slot = 1;
+    catalog.forEach((tm, ti) => {
+        tm.drivers.forEach((d, di) => {
+            if (ti === selectedCarIndex && di === seat) return;
+            const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
+            bot.baseName = d.name;
+            bot.assignStrategy(strategies[slot % strategies.length]);
+            aiCars.push(bot);
+            slot++;
+        });
+    });
+    allCars = [playerCar, ...aiCars];
+    gridOrder = null;
+
+    document.getElementById('hudCarTitle').textContent = team.teamName.toUpperCase();
+    document.getElementById('hudDriverName').textContent = `#${pd.number} ${pd.name} · ${team.name}`;
+    document.getElementById('hudTrackName').textContent = TRACKS_DB[selectedTrackIndex].shortName;
+}
+
+function resetEffects() { skidMarks.length = 0; sparks.length = 0; }
+
+function hideAllModals() {
+    for (const id of ['garageModal', 'pauseModal', 'finishModal']) document.getElementById(id).style.display = 'none';
+}
+
+function startQualifyingSession() {
+    initAudio();
+    hideAllModals();
+    currentSession = 'QUALI'; raceState = 'RACING'; isPaused = false; simTimeMs = 0;
+    clearInputs(); resetEffects(); releaseFocus();
+    sessionBestLap = { time: null, driverName: '---', carName: '' };
+    allCars.forEach((car, idx) => {
+        car.placeForQualifying(idx, allCars.length);
+        car.compound = 'soft'; car.wearScale = 0.12;     // в квалификации шины почти не изнашиваются
+    });
+    smoothCamAngle = playerCar.angle;
+    rebuildEngineVoices();
+    document.getElementById('sessionLabel').textContent = 'КВАЛИФИКАЦИЯ';
+    document.getElementById('start-lights').style.opacity = 0;
+    showRaceControl('Квалификация: проезжайте быстрые круги. Esc → завершить и начать гонку', '#38bdf8');
+}
+
+// ---- огни старта ----
+let lightsPhase = 0, lightsT = 0, lightsHold = 1;
+function buildStartLights() {
+    const el = document.getElementById('start-lights');
+    el.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+        const pod = document.createElement('div'); pod.className = 'light-pod';
+        pod.innerHTML = '<div class="light-bulb"></div><div class="light-bulb"></div>';
+        el.appendChild(pod);
+    }
+}
+function setLights(count, green) {
+    document.querySelectorAll('#start-lights .light-pod').forEach((pod, i) => {
+        pod.querySelectorAll('.light-bulb').forEach(b => {
+            b.classList.toggle('on', !green && i < count);
+            b.classList.toggle('green', !!green);
+        });
+    });
+}
+function stepStartLights(dt) {
+    if (raceState !== 'LIGHTS') return;
+    lightsT += dt;
+    if (lightsPhase < 5) {
+        if (lightsT >= (lightsPhase + 1) * 0.9) { lightsPhase++; setLights(lightsPhase, false); sfxBeep(520, 0.2); }
+    } else if (lightsT >= 4.5 + lightsHold) {
+        raceState = 'RACING';
+        raceStartTimestamp = simTimeMs;
+        allCars.forEach(c => { c.lapStartTime = simTimeMs; });
+        setLights(5, true); sfxBeep(880, 0.5);
+        showRaceControl('🟢 СТАРТ!', '#00e676');
+        setTimeout(() => { document.getElementById('start-lights').style.opacity = 0; }, 1000);
+    }
+}
+
+function startRaceSessionFromGrid(order) {
+    initAudio();
+    hideAllModals();
+    currentSession = 'RACE'; isPaused = false; simTimeMs = 0; raceStartTimestamp = 0;
+    raceMode = selectedCarClass === 'GT3' ? 'TIMED' : 'LAPS';
+    raceDurationMs = ENDURANCE_MINUTES * 60000;
+    raceRecorded = false; timeUpAnnounced = false;
+    clearInputs(); resetEffects(); releaseFocus();
+    sessionBestLap = { time: null, driverName: '---', carName: '' };
+
+    let grid = order;
+    if (!grid) {
+        // без квалификации: решётка по классу пилота с заметным случайным разбросом (ИИ почти не обгоняет, поэтому порядок на старте важен)
+        const noisy = new Map(aiCars.map(c => [c, c.botSkill + (Math.random() - 0.5) * 0.05]));
+        const bots = [...aiCars].sort((a, b) => noisy.get(b) - noisy.get(a));
+        grid = [...bots];
+        grid.splice(Math.min(5, grid.length), 0, playerCar);
+    }
+    grid.forEach((car, idx) => car.placeOnGrid(idx));
+    smoothCamAngle = playerCar.angle;
+    rebuildEngineVoices();
+
+    raceState = 'LIGHTS'; lightsPhase = 0; lightsT = 0; lightsHold = 0.5 + Math.random() * 1.3;
+    setLights(0, false);
+    document.getElementById('start-lights').style.opacity = 1;
+    document.getElementById('sessionLabel').textContent = raceMode === 'TIMED' ? 'ГОНКА · 20 МИН' : 'ГОНКА';
+    const startPos = grid.indexOf(playerCar) + 1;
+    showRaceControl(`Старт с позиции P${startPos}. ${window.transmissionMode === 'MANUAL' ? 'Ручная КПП: Shift — включить 1-ю передачу из нейтрали.' : 'Держите газ — на старте включится 1-я передача.'}`, '#38bdf8');
+}
+
+function endQualifyingStartRace() {
+    const ranked = [...allCars].sort((a, b) => {
+        if (a.bestLapTime === null && b.bestLapTime === null) return 0;
+        if (a.bestLapTime === null) return 1;
+        if (b.bestLapTime === null) return -1;
+        return a.bestLapTime - b.bestLapTime;
+    });
+    gridOrder = ranked;
+    startRaceSessionFromGrid(gridOrder);
+}
+
+// ============================================================================
+// ФИНИШ, ОЧКИ, ТАБЛИЦЫ
+// ============================================================================
+function finalizeAllCarsForPostRaceReview(now) {
+    finishRows = [...allCars].sort((a, b) => b.getContinuousTrackDistance() - a.getContinuousTrackDistance());
+    currentSession = 'FINISHED';
+    clearInputs();
+}
+
+function lapsDone(c) { return c.finishedRace ? c.lap - 1 : Math.max(0, Math.floor(c.progressAcc || 0)); }
+
+function gapText(c, leader) {
+    if (c === leader) {
+        return raceMode === 'TIMED' ? `${lapsDone(c)} кр. · ${formatTime(c.finishTotalTimeMs)}` : formatTime(c.finishTotalTimeMs);
+    }
+    const diff = lapsDone(leader) - lapsDone(c);
+    if (c.finishedRace && diff <= 0) return '+' + ((c.finishTotalTimeMs - leader.finishTotalTimeMs) / 1000).toFixed(3) + ' с';
+    return '+' + Math.max(1, diff) + ' кр.';
+}
+
+let finishTab = 'RACE';
+let finishHasRace = false;
+
+function finishRaceModal() {
+    finishHasRace = true;
+    finishTab = 'RACE';
+    if (selectedCarClass === 'F1' && !raceRecorded && !seasonDone()) {
+        const rows = finishRows.map((c, i) => ({
+            name: c.baseName || c.driverName, team: c.spec.teamName, pos: i + 1,
+            pts: F1_POINTS[i] || 0, isPlayer: c.isPlayer
+        }));
+        if (!seasonStarted()) { season.team = selectedCarIndex; season.seat = selectedTeammateSlot; }
+        recordSeasonRace(rows);
+        raceRecorded = true;
+    }
+    openFinishModal();
+    document.getElementById('start-lights').style.opacity = 0;
+}
+
+function openStandingsModal() {
+    finishHasRace = false;
+    finishTab = 'DRIVERS';
+    openFinishModal();
+}
+
+function openFinishModal() {
+    const f1 = selectedCarClass === 'F1';
+    const hasSeason = f1 && season && season.results.length > 0;
+    document.getElementById('tabRace').style.display = finishHasRace ? '' : 'none';
+    document.getElementById('finishTabs').style.display = (hasSeason ? 'flex' : 'none');
+    document.getElementById('tabDrivers').style.display = hasSeason ? '' : 'none';
+    document.getElementById('tabTeams').style.display = hasSeason ? '' : 'none';
+
+    const pos = finishRows.indexOf(playerCar) + 1;
+    if (finishHasRace) {
+        document.getElementById('finishTitle').textContent = pos === 1 ? '🏆 ПОБЕДА!' : `🏁 ФИНИШ — P${pos}`;
+        document.getElementById('finishSub').textContent = f1
+            ? `${TRACKS_DB[selectedTrackIndex].shortName} · ${totalRaceLaps} кр. · раунд ${season.results.length} из ${season.order.length}`
+            : `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
+    } else {
+        document.getElementById('finishTitle').textContent = '📊 ТАБЛИЦЫ СЕЗОНА';
+        document.getElementById('finishSub').textContent = `Сезон ${season.number} · гонок: ${season.results.length} из ${season.order.length}`;
+    }
+    const lastRace = hasSeason && finishHasRace;
+    document.getElementById('btnFinishRestart').style.display = (f1 && finishHasRace) ? 'none' : (finishHasRace ? '' : 'none');
+    document.getElementById('btnFinishNext').style.display = (f1 && hasSeason && !seasonDone()) ? '' : 'none';
+    renderFinishTab();
+    document.getElementById('finishModal').style.display = 'flex';
+}
+
+function setFinishTab(tab) { finishTab = tab; renderFinishTab(); }
+
+function renderFinishTab() {
+    const f1 = selectedCarClass === 'F1';
+    const head = document.getElementById('finishTableHead');
+    const body = document.getElementById('finishTableBody');
+    const banner = document.getElementById('finishBanner');
+    for (const [id, t] of [['tabRace', 'RACE'], ['tabDrivers', 'DRIVERS'], ['tabTeams', 'TEAMS']]) document.getElementById(id).classList.toggle('active', finishTab === t);
+    body.innerHTML = ''; banner.style.display = 'none';
+    const rounds = season ? season.results.length : 0;
+    const roundCols = (arr) => Array.from({ length: rounds }, (_, i) => `<td class="num">${arr && arr[i] !== undefined ? arr[i] : '—'}</td>`).join('');
+    const roundHead = Array.from({ length: rounds }, (_, i) => `<th class="num">R${i + 1}</th>`).join('');
+
+    if (finishTab === 'RACE') {
+        head.innerHTML = `<tr><th>#</th><th>Пилот</th><th>Команда</th><th>Лучший круг</th><th>Итог</th>${f1 ? '<th class="num">Очки</th>' : ''}</tr>`;
+        const leader = finishRows[0];
+        finishRows.forEach((c, i) => {
+            const tr = document.createElement('tr');
+            if (c.isPlayer) tr.className = 'player-row'; else if (c.isTeammate) tr.className = 'teammate-row';
+            const pts = f1 ? (F1_POINTS[i] || 0) : 0;
+            tr.innerHTML = `<td>${i + 1}</td><td>#${c.driverNumber} ${c.driverName}</td><td><span class="team-dot" style="background:${c.livery.primary}"></span>${c.spec.teamName}</td><td>${formatTime(c.bestLapTime)}</td><td>${gapText(c, leader)}</td>${f1 ? `<td class="num">${pts ? '+' + pts : '—'}</td>` : ''}`;
+            body.appendChild(tr);
+        });
+        const pos = finishRows.indexOf(playerCar) + 1;
+        if (f1) {
+            const pts = F1_POINTS[pos - 1] || 0;
+            banner.style.display = 'block';
+            banner.textContent = pts ? `Вы набрали ${pts} очк. за P${pos}.` : `P${pos} — без очков (очки получают первые 10).`;
+        }
+    } else if (finishTab === 'DRIVERS') {
+        head.innerHTML = `<tr><th>#</th><th>Пилот</th><th>Команда</th>${roundHead}<th class="num">Очки</th></tr>`;
+        driverStandings().forEach((d, i) => {
+            const tr = document.createElement('tr');
+            if (d.isPlayer) tr.className = 'player-row';
+            tr.innerHTML = `<td>${i + 1}</td><td>${d.name}${d.isPlayer ? ' (ВЫ)' : ''}</td><td><span class="team-dot" style="background:${teamColorByName(d.team)}"></span>${d.team}</td>${roundCols(d.perRound)}<td class="num"><b>${d.pts}</b></td>`;
+            body.appendChild(tr);
+        });
+    } else {
+        head.innerHTML = `<tr><th>#</th><th>Команда</th>${roundHead}<th class="num">Очки</th></tr>`;
+        constructorStandings().forEach((t, i) => {
+            const tr = document.createElement('tr');
+            if (t.hasPlayer) tr.className = 'player-row';
+            tr.innerHTML = `<td>${i + 1}</td><td><span class="team-dot" style="background:${teamColorByName(t.team)}"></span>${t.team}</td>${roundCols(t.perRound)}<td class="num"><b>${t.pts}</b></td>`;
+            body.appendChild(tr);
+        });
+    }
+
+    if (season && seasonDone() && f1 && finishTab !== 'RACE') {
+        const champ = driverStandings()[0], cons = constructorStandings()[0];
+        banner.style.display = 'block';
+        banner.textContent = `🏆 Сезон завершён. Чемпион среди гонщиков: ${champ.name} (${champ.pts} очк.) · Кубок конструкторов: ${cons.team} (${cons.pts} очк.)`;
+    } else if (season && seasonDone() && f1 && finishTab === 'RACE') {
+        const champ = driverStandings()[0], cons = constructorStandings()[0];
+        banner.style.display = 'block';
+        banner.textContent = `🏆 Сезон завершён! Чемпион: ${champ.name} (${champ.pts}) · Конструкторы: ${cons.team} (${cons.pts}). Смотрите вкладки с кубками.`;
+    }
+}
+
+// ============================================================================
+// ПАУЗА И КНОПКИ МЕНЮ
+// ============================================================================
+function togglePauseMenu() {
+    isPaused = !isPaused;
+    clearInputs();
+    document.getElementById('pauseModal').style.display = isPaused ? 'flex' : 'none';
+    document.getElementById('btnEndQuali').style.display = currentSession === 'QUALI' ? '' : 'none';
+    if (!isPaused) releaseFocus();
+}
+
+function backToGarage() {
+    isPaused = true; currentSession = 'MENU'; clearInputs();
+    document.getElementById('pauseModal').style.display = 'none';
+    document.getElementById('finishModal').style.display = 'none';
+    document.getElementById('start-lights').style.opacity = 0;
+    if (selectedCarClass === 'F1') { applyClassMode(); }
+    document.getElementById('garageModal').style.display = 'flex';
+    renderGarageUI();
+}
+
+document.getElementById('btnStartQuali').addEventListener('click', () => { buildWeekendRoster(); startQualifyingSession(); });
+document.getElementById('btnDirectRace').addEventListener('click', () => { buildWeekendRoster(); startRaceSessionFromGrid(null); });
+document.getElementById('btnResumeGame').addEventListener('click', () => { isPaused = false; document.getElementById('pauseModal').style.display = 'none'; releaseFocus(); });
+document.getElementById('btnEndQuali').addEventListener('click', endQualifyingStartRace);
+document.getElementById('btnBackToGarage').addEventListener('click', backToGarage);
+document.getElementById('btnFinishGarage').addEventListener('click', backToGarage);
+document.getElementById('btnFinishRestart').addEventListener('click', () => { buildWeekendRoster(); startRaceSessionFromGrid(null); });
+document.getElementById('btnFinishNext').addEventListener('click', backToGarage);
+document.getElementById('tabRace').addEventListener('click', () => setFinishTab('RACE'));
+document.getElementById('tabDrivers').addEventListener('click', () => setFinishTab('DRIVERS'));
+document.getElementById('tabTeams').addEventListener('click', () => setFinishTab('TEAMS'));
+document.getElementById('btnNewSeason').addEventListener('click', () => {
+    if (seasonStarted() && !seasonDone() && !window.confirm('Начать новый сезон? Очки текущего сезона будут потеряны.')) return;
+    newSeason();
+    selectedTrackIndex = seasonNextTrack();
+    selectedCarIndex = 0; selectedTeammateSlot = 0;
+    buildActiveTrackGeometry();
+    renderGarageUI();
+});
+document.getElementById('btnSeasonTable').addEventListener('click', () => {
+    if (!season.results.length) { window.alert('В этом сезоне ещё не было гонок. Таблицы появятся после первой гонки.'); return; }
+    openStandingsModal();
+});
+
+// ============================================================================
+// HUD и миникарта
+// ============================================================================
+function standingsOrder() {
+    if (currentSession === 'QUALI') {
+        return [...allCars].sort((a, b) => {
+            if (a.bestLapTime === null && b.bestLapTime === null) return b.getContinuousTrackDistance() - a.getContinuousTrackDistance();
+            if (a.bestLapTime === null) return 1;
+            if (b.bestLapTime === null) return -1;
+            return a.bestLapTime - b.bestLapTime;
+        });
+    }
+    return [...allCars].sort((a, b) => b.getContinuousTrackDistance() - a.getContinuousTrackDistance());
+}
+
+const shiftLightEls = [];
+function buildShiftLights() {
+    const el = document.getElementById('shiftLights');
+    for (let i = 0; i < 10; i++) { const d = document.createElement('div'); d.className = 'sl'; el.appendChild(d); shiftLightEls.push(d); }
+}
+function updateShiftLights(rpm) {
+    const lit = Math.max(0, Math.min(10, Math.round((rpm - 0.78) / 0.20 * 10)));
+    const flash = rpm > 0.985 && Math.floor(performance.now() / 70) % 2 === 0;
+    shiftLightEls.forEach((d, i) => {
+        d.className = 'sl';
+        if (i < lit || (rpm > 0.985 && flash)) d.classList.add(i < 4 ? 'on-g' : (i < 8 ? 'on-r' : 'on-b'));
+    });
+}
+
+function updateHUD() {
+    if (!playerCar) return;
+    const p = playerCar;
+    const standings = standingsOrder();
+    const playerPos = standings.indexOf(p) + 1;
+    const isRace = currentSession === 'RACE' || currentSession === 'FINISHED';
+
+    document.getElementById('topPosCounter').textContent = `P${playerPos} / ${allCars.length}`;
+    document.getElementById('topLapCounter').textContent = (isRace && raceMode === 'LAPS') ? `КРУГ ${Math.min(p.lap, totalRaceLaps)} / ${totalRaceLaps}` : `КРУГ ${p.lap}`;
+    let curTime = formatTime(simTimeMs - p.lapStartTime);
+    if (raceState === 'LIGHTS') curTime = '--:--.---';
+    else if (currentSession === 'QUALI' && !p.timingStarted) curTime = 'ВЫЕЗД';
+    document.getElementById('topCurTime').textContent = curTime;
+
+    // часы: остаток времени (WEC) или время гонки
+    const clockLbl = document.getElementById('topClockLabel'), clockVal = document.getElementById('topRaceClock');
+    if (currentSession === 'RACE' || currentSession === 'FINISHED') {
+        const el = raceState === 'LIGHTS' ? 0 : simTimeMs - raceStartTimestamp;
+        if (raceMode === 'TIMED') {
+            const left = raceDurationMs - el;
+            if (left > 0) { clockLbl.textContent = 'ОСТАЛОСЬ'; clockVal.textContent = formatClock(left); clockVal.style.color = left < 60000 ? '#ff4757' : '#fff'; }
+            else { clockLbl.textContent = 'ФИНИШ'; clockVal.textContent = '🏁'; clockVal.style.color = '#fff'; }
+        } else { clockLbl.textContent = 'ВРЕМЯ ГОНКИ'; clockVal.textContent = formatClock(el); clockVal.style.color = '#fff'; }
+    } else { clockLbl.textContent = 'СЕССИЯ'; clockVal.textContent = formatClock(simTimeMs); clockVal.style.color = '#fff'; }
+
+    document.getElementById('cpStatus').textContent = `${p.getCurrentSectorNumber()} / 4`;
+    document.getElementById('lastTime').textContent = formatTime(p.lastLapTime);
+    document.getElementById('bestTime').textContent = formatTime(p.bestLapTime);
+    document.getElementById('sessionBestTime').textContent = formatTime(sessionBestLap.time);
+
+    const kmh = Math.round(Math.hypot(p.dx, p.dy) * KMH_FACTOR);
+    document.getElementById('dashSpeed').innerHTML = `${kmh} <small>км/ч</small>`;
+    document.getElementById('dashGear').textContent = p.velocity < -0.1 ? 'R' : (p.gear === 0 ? 'N' : String(p.gear));
+    document.getElementById('dashRpmFill').style.width = Math.round(Math.min(1, p.rpm) * 100) + '%';
+    document.getElementById('dashRpm').innerHTML = `${Math.round(p.rpmReal / 10) * 10} <small>об/мин</small>`;
+    updateShiftLights(p.rpm);
+
+    const comp = TIRE_COMPOUNDS[p.compound];
+    const compEl = document.getElementById('dashCompound');
+    compEl.textContent = comp.name; compEl.style.color = comp.color;
+    const hEl = document.getElementById('dashTireHealth');
+    hEl.innerHTML = `${Math.round(p.tireHealth)}<small>%</small>`;
+    hEl.classList.toggle('hud-tire-warn', p.tireHealth <= TIRE_CLIFF_PCT);
+    document.getElementById('dashTireTemp').textContent = `${Math.round(p.tireTemp)}°C`;
+    document.getElementById('dashWingDmg').textContent = `${Math.round(p.wingDamage * 100)}%`;
+    const drsEl = document.getElementById('dashDRS');
+    if (p.spec.carClass === 'F1') { drsEl.textContent = p.drsActive ? 'ОТКР.' : 'ЗАКР.'; drsEl.style.color = p.drsActive ? '#00e676' : '#64748b'; }
+    else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
+
+    let plan = '—';
+    if (currentSession === 'RACE') {
+        const sched = p.strategy && p.strategy.stops && p.strategy.stops[p.pitStopsDone];
+        if (p.pitPhase !== 'none') plan = 'В БОКСАХ';
+        else if (p.pitRequested) plan = `на этом круге → ${TIRE_COMPOUNDS[p.nextCompound].shortTag}`;
+        else if (sched) plan = `после кр. ${sched.lap} → ${TIRE_COMPOUNDS[p.nextCompound].shortTag}`;
+        else plan = p.tireHealth < 40 ? 'шины на износе: P' : 'стопов больше нет';
+    }
+    document.getElementById('pitPlanText').textContent = plan;
+
+    let html = '';
+    const rowHtml = (c, idx) => {
+        const val = currentSession === 'QUALI' ? formatTime(c.bestLapTime) : '';
+        return `<div class="standings-mini-row" style="color:${c.isPlayer ? '#ff3b4e' : (c.isTeammate ? '#38bdf8' : '#dcdde1')}"><span>P${idx + 1} ${c.driverName}</span><span>${val}</span></div>`;
+    };
+    standings.slice(0, 5).forEach((c, idx) => { html += rowHtml(c, idx); });
+    if (playerPos > 5) html += rowHtml(p, playerPos - 1);
+    document.getElementById('liveTower').innerHTML = html;
+}
+
+let minimapCache = null, minimapKey = '';
+let minimapScale = 1, minimapOffX = 0, minimapOffY = 0;
+function buildMinimapCache() {
+    const W = minimapCanvas.width, H = minimapCanvas.height, pad = 16;
+    minimapCache = document.createElement('canvas'); minimapCache.width = W; minimapCache.height = H;
+    const c = minimapCache.getContext('2d');
+    c.fillStyle = 'rgba(10,14,21,0.80)'; c.beginPath(); c.roundRect(0, 0, W, H, 10); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.14)'; c.lineWidth = 1; c.stroke();
+    minimapScale = Math.min((W - pad * 2) / (maxX - minX), (H - pad * 2) / (maxY - minY));
+    minimapOffX = (W - (maxX - minX) * minimapScale) / 2 - minX * minimapScale;
+    minimapOffY = (H - (maxY - minY) * minimapScale) / 2 - minY * minimapScale;
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    const path = () => {
+        c.beginPath();
+        trackSamples.forEach((s, i) => { const x = s.x * minimapScale + minimapOffX, y = s.y * minimapScale + minimapOffY; if (i === 0) c.moveTo(x, y); else c.lineTo(x, y); });
+        c.closePath();
+    };
+    path(); c.strokeStyle = '#475569'; c.lineWidth = 6; c.stroke();
+    path(); c.strokeStyle = '#94a3b8'; c.lineWidth = 2.2; c.stroke();
+    const s0 = trackSamples[0];
+    c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 3, s0.y * minimapScale + minimapOffY - 3, 6, 6);
+}
+
+function drawMinimap() {
+    const key = selectedTrackIndex + '_' + Math.round(trackLengthPx);
+    if (!minimapCache || minimapKey !== key) { buildMinimapCache(); minimapKey = key; }
+    mCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+    mCtx.drawImage(minimapCache, 0, 0);
+    for (const c of allCars) {
+        if (c === playerCar) continue;
+        mCtx.fillStyle = c.isTeammate ? '#38bdf8' : c.livery.primary;
+        mCtx.beginPath(); mCtx.arc(c.x * minimapScale + minimapOffX, c.y * minimapScale + minimapOffY, 3, 0, Math.PI * 2); mCtx.fill();
+    }
+    if (playerCar) {
+        const px = playerCar.x * minimapScale + minimapOffX, py = playerCar.y * minimapScale + minimapOffY;
+        mCtx.fillStyle = '#ff3b4e'; mCtx.strokeStyle = '#fff'; mCtx.lineWidth = 1.5;
+        mCtx.beginPath(); mCtx.arc(px, py, 5, 0, Math.PI * 2); mCtx.fill(); mCtx.stroke();
+    }
+}
+
+function resizeViewport() {
+    const s = Math.min(window.innerWidth / 1284, window.innerHeight / 794, 1.6);
+    viewportEl.style.transform = `scale(${s})`;
+}
+window.addEventListener('resize', resizeViewport);
+
+// ============================================================================
+// ИГРОВОЙ ЦИКЛ (фиксированный шаг физики 60 Гц)
+// ============================================================================
+function stepSimulation(input) {
+    simTimeMs += STEP * 1000;
+    stepStartLights(STEP);
+    for (const c of allCars) c.update(STEP, c.isPlayer ? input : null);
+    for (let i = 0; i < allCars.length; i++) {
+        for (let j = i + 1; j < allCars.length; j++) resolveContourCarCollision(allCars[i], allCars[j]);
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x += s.vx; s.y += s.vy; s.vx *= 0.92; s.vy *= 0.92; s.life -= 0.05;
+        if (s.life <= 0) sparks.splice(i, 1);
+    }
+    for (let i = skidMarks.length - 1; i >= 0; i--) {
+        skidMarks[i].life -= 0.0012;
+        if (skidMarks[i].life <= 0) skidMarks.splice(i, 1);
+    }
+    if (currentSession === 'RACE' && raceMode === 'TIMED' && raceState === 'RACING' && !timeUpAnnounced && simTimeMs - raceStartTimestamp >= raceDurationMs) {
+        timeUpAnnounced = true;
+        showRaceControl('🏁 Время вышло! Финиш — на ближайшем круге', '#ffffff');
+    }
+}
+
+function drawEffects2D(ctx) {
+    ctx.save();
+    for (const m of skidMarks) {
+        ctx.save();
+        ctx.translate(m.x, m.y); ctx.rotate(m.a);
+        ctx.fillStyle = `rgba(8,8,10,${Math.min(0.55, m.life * 0.55)})`;
+        ctx.fillRect(-9, 6, 3, 5); ctx.fillRect(6, 6, 3, 5);
+        ctx.restore();
+    }
+    for (const s of sparks) {
+        ctx.fillStyle = `rgba(255,${Math.round(150 + 100 * s.life)},60,${s.life})`;
+        ctx.fillRect(s.x - 1.5, s.y - 1.5, 3, 3);
+    }
+    ctx.restore();
+}
+
+let lastFrameTime = performance.now();
+let accumulator = 0;
+
+function gameLoop(now) {
+    const frameDt = Math.min(0.1, (now - lastFrameTime) / 1000);
+    lastFrameTime = now;
+
+    if (currentSession !== 'MENU' && playerCar) {
+        if (!isPaused && currentSession !== 'FINISHED') {
+            const input = collectInput();
+            accumulator += frameDt;
+            let steps = 0;
+            while (accumulator >= STEP && steps < 5) { stepSimulation(input); accumulator -= STEP; steps++; }
+            if (steps === 5) accumulator = 0;
+
+            // камера смотрит чуть в сторону фактического движения: в заносе видно, куда летит машина
+            let camTarget = playerCar.angle;
+            const spdNow = Math.hypot(playerCar.dx, playerCar.dy);
+            if (spdNow > 1.5) {
+                let dv = Math.atan2(playerCar.dx, -playerCar.dy) - playerCar.angle;
+                while (dv > Math.PI) dv -= Math.PI * 2; while (dv < -Math.PI) dv += Math.PI * 2;
+                // Камера лишь слегка подчёркивает скольжение. Большая доля dv создавала
+                // ощущение, будто машина и камера с запозданием плывут как баржа.
+                camTarget += dv * 0.15;
+            }
+            let dA = camTarget - smoothCamAngle;
+            while (dA > Math.PI) dA -= Math.PI * 2; while (dA < -Math.PI) dA += Math.PI * 2;
+            smoothCamAngle += dA * (1 - Math.exp(-frameDt * 12));
+            smoothSlopePitch += (playerCar.slopeDeg - smoothSlopePitch) * 0.10;
+            const targetZoom = topZoom;
+            camZoom += (targetZoom - camZoom) * (1 - Math.exp(-frameDt * 3));
+        }
+
+        if (cameraViewMode === 'CHASE') {
+            renderChase3D(ctx, canvas.width, canvas.height);
+        } else if (topFollow === 'TRACK') {
+            renderTopTrack(ctx, canvas.width, canvas.height);
+        } else {
+            topZoomNow = camZoom;
+            ctx.fillStyle = '#122419';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(camZoom, camZoom);
+            ctx.translate(-playerCar.x, -playerCar.y);
+            drawTrack(ctx);
+            drawEffects2D(ctx);
+            for (const car of allCars) if (car !== playerCar) car.draw(ctx);
+            playerCar.draw(ctx);
+            ctx.restore();
+        }
+
+        // в режиме «вся трасса» миникарта не нужна — трасса и так на экране целиком
+        const hideMini = (cameraViewMode === 'TOP' && topFollow === 'TRACK');
+        minimapCanvas.style.display = hideMini ? 'none' : '';
+        if (!hideMini) drawMinimap();
+        updateHUD();
+    } else {
+        ctx.fillStyle = '#0b1220';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    updateAudio(frameDt);
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================================
+// ЗАПУСК
+// ============================================================================
+resizeViewport();
+loadSprites();
+ensureSeason();
+applyClassMode();
+buildActiveTrackGeometry();
+buildStartLights();
+buildShiftLights();
+renderGarageUI();
+initMobileTouchControls();
+refreshOptionButtons();
+// спрайты подгружаются асинхронно — перерисуем карточки машин, когда они будут готовы
+setTimeout(() => { if (currentSession === 'MENU') renderGarageUI(); }, 400);
+requestAnimationFrame(gameLoop);
