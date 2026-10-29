@@ -58,6 +58,8 @@ function drawTrackOverview(ctx, fit) {
     trackPath(ctx); ctx.strokeStyle = '#323844'; ctx.lineWidth = Math.max(ASPHALT_HALF_W * 2 * E, minW(7.5)); ctx.stroke();
     trackPath(ctx); ctx.setLineDash([minW(9), minW(11)]); ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = minW(1.2); ctx.stroke(); ctx.setLineDash([]);
 
+    drawPitLane(ctx);
+
     // зоны DRS (только Ф-1)
     if (selectedCarClass === 'F1') {
         const N = trackSamples.length;

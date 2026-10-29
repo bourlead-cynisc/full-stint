@@ -39,12 +39,12 @@ function buildActiveTrackGeometry() {
     }));
 
     trackSamples = [];
-    const samplesPerSegment = 26;
     for (let i = 0; i < controlPoints.length; i++) {
         const p0 = controlPoints[(i - 1 + controlPoints.length) % controlPoints.length];
         const p1 = controlPoints[i];
         const p2 = controlPoints[(i + 1) % controlPoints.length];
         const p3 = controlPoints[(i + 2) % controlPoints.length];
+        const samplesPerSegment = Math.max(4, Math.ceil(Math.hypot(p2.x-p1.x,p2.y-p1.y)/55));
         for (let s = 0; s < samplesPerSegment; s++) {
             const pt = getSplinePoint(p0, p1, p2, p3, s / samplesPerSegment);
             trackSamples.push({ x: pt.x, y: pt.y, z: 0, slopeDeg: 0, nx: 0, ny: 0, curv: 0 });
@@ -137,16 +137,16 @@ function buildActiveTrackGeometry() {
     sfNormX = (-sfDirY) * trk.pitSideSign; sfNormY = ( sfDirX) * trk.pitSideSign;
     START_ANGLE = Math.atan2(sfDirX, -sfDirY);
 
-    const entryEdgePt = { x: controlPoints[0].x - sfDirX * 1120 + sfNormX * (ASPHALT_HALF_W - 14), y: controlPoints[0].y - sfDirY * 1120 + sfNormY * (ASPHALT_HALF_W - 14) };
-    const pitEntryRampPt = { x: controlPoints[0].x - sfDirX * 820 + sfNormX * (PIT_CORRIDOR_OFFSET * 0.62), y: controlPoints[0].y - sfDirY * 820 + sfNormY * (PIT_CORRIDOR_OFFSET * 0.62) };
-    pitLaneStartPt = { x: controlPoints[0].x - sfDirX * 560 + sfNormX * PIT_CORRIDOR_OFFSET, y: controlPoints[0].y - sfDirY * 560 + sfNormY * PIT_CORRIDOR_OFFSET };
-    pitLaneEndPt = { x: controlPoints[0].x + sfDirX * 580 + sfNormX * PIT_CORRIDOR_OFFSET, y: controlPoints[0].y + sfDirY * 580 + sfNormY * PIT_CORRIDOR_OFFSET };
-    const pitExitRampPt = { x: controlPoints[0].x + sfDirX * 840 + sfNormX * (PIT_CORRIDOR_OFFSET * 0.62), y: controlPoints[0].y + sfDirY * 840 + sfNormY * (PIT_CORRIDOR_OFFSET * 0.62) };
-    const exitEdgePt = { x: controlPoints[0].x + sfDirX * 1120 + sfNormX * (ASPHALT_HALF_W - 14), y: controlPoints[0].y + sfDirY * 1120 + sfNormY * (ASPHALT_HALF_W - 14) };
-
-    pitWaypoints = [entryEdgePt, pitEntryRampPt, pitLaneStartPt, pitLaneEndPt, pitExitRampPt, exitEdgePt];
-    pitWallStartPt = { x: controlPoints[0].x - sfDirX * 600 + sfNormX * 138, y: controlPoints[0].y - sfDirY * 600 + sfNormY * 138 };
-    pitWallEndPt = { x: controlPoints[0].x + sfDirX * 620 + sfNormX * 138, y: controlPoints[0].y + sfDirY * 620 + sfNormY * 138 };
+    // Lane follows the actual final/first corners instead of an imaginary straight.
+    pitWaypoints = Array.from({length: 41}, (_, i) => {
+        const norm = (0.94 + i * 0.003) % 1;
+        const pt = getTrackPointAtProgress(norm);
+        const blend = Math.min(1, i / 8, (40 - i) / 8);
+        const offset = PIT_CORRIDOR_OFFSET * Math.sin(blend * Math.PI / 2) * trk.pitSideSign;
+        return {x: pt.x + pt.nx * offset, y: pt.y + pt.ny * offset};
+    });
+    pitLaneStartPt = pitWaypoints[8]; pitLaneEndPt = pitWaypoints[32];
+    pitWallStartPt = pitWaypoints[9]; pitWallEndPt = pitWaypoints[31];
 
     buildTeamPitBoxes();
 
@@ -177,14 +177,10 @@ function buildTeamPitBoxes() {
     teamPitBoxes = [];
     for (let i = 0; i < catalog.length; i++) {
         const spec = catalog[i];
-        const along = -450 + i * 82;
-        teamPitBoxes.push({
-            teamIndex: i, shortName: spec.shortName, color: spec.livery.primary,
-            x: controlPoints[0].x + sfDirX * along + sfNormX * (PIT_CORRIDOR_OFFSET + 24),
-            y: controlPoints[0].y + sfDirY * along + sfNormY * (PIT_CORRIDOR_OFFSET + 24),
-            garageX: controlPoints[0].x + sfDirX * along + sfNormX * (PIT_CORRIDOR_OFFSET + 92),
-            garageY: controlPoints[0].y + sfDirY * along + sfNormY * (PIT_CORRIDOR_OFFSET + 92)
-        });
+        const node = 12 + i;
+        const pt = pitWaypoints[node];
+        teamPitBoxes.push({teamIndex: i, shortName: spec.shortName, color: spec.livery.primary,
+            node, x: pt.x, y: pt.y, garageX: pt.x + sfNormX * 70, garageY: pt.y + sfNormY * 70});
     }
 }
 
@@ -277,7 +273,7 @@ function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
 
 function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftScale = 0, upX = 0, upY = 0) {
     const N = trackSamples.length;
-    const span = cameraViewMode === 'CHASE' ? 88 : 65;
+    const span = 88;
     ctx.beginPath();
     const firstIdx = (centerIdx - span + N) % N;
     const refZ = trackSamples[centerIdx].z;
@@ -296,9 +292,9 @@ function drawTrack(ctx) {
     drawBackgroundWorld(ctx, playerCar ? playerCar.x : 0, playerCar ? playerCar.y : 0);
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    const upX = cameraViewMode === 'CHASE' ? Math.sin(smoothCamAngle) : 0;
-    const upY = cameraViewMode === 'CHASE' ? -Math.cos(smoothCamAngle) : 0;
-    const elevScale = cameraViewMode === 'CHASE' ? 1.55 : 0.25;
+    const upX = 0;
+    const upY = 0;
+    const elevScale = 0;
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.strokeStyle = '#1e293b'; ctx.lineWidth = (WALL_HALF_W + 16) * 2; ctx.stroke();
@@ -317,6 +313,7 @@ function drawTrack(ctx) {
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.strokeStyle = '#262c36'; ctx.lineWidth = ASPHALT_HALF_W * 2; ctx.stroke();
 
+    drawPitLane(ctx);
     drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale);
 
     // Отрисовка динамической траектории по клавише H
@@ -368,4 +365,32 @@ function drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale) {
         for (const m of drsMarkerLines) drawAcross(m.x, m.y, m.nx, m.ny, m.z || 0, 5, m.color);
     }
     ctx.restore();
+}
+
+function drawPitLane(ctx) {
+    ctx.save();
+    ctx.beginPath();
+    pitWaypoints.forEach((pt,i) => i ? ctx.lineTo(pt.x,pt.y) : ctx.moveTo(pt.x,pt.y));
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 65; ctx.stroke();
+    ctx.strokeStyle = '#3b4654'; ctx.lineWidth = 58; ctx.stroke();
+    ctx.setLineDash([12,12]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.setLineDash([]);
+    for (const box of teamPitBoxes) {
+        ctx.fillStyle = box.color; ctx.fillRect(box.x - 10,box.y - 10,20,20);
+        ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.fillText(String(box.teamIndex+1),box.x+14,box.y);
+    }
+    ctx.fillStyle = '#facc15'; ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('PIT 80',pitWaypoints[5].x,pitWaypoints[5].y-35);
+    ctx.restore();
+}
+
+function getTrackPointAtProgress(norm) {
+    const distance = ((norm % 1 + 1) % 1) * trackLengthPx;
+    let lo = 0, hi = totalSamples - 1;
+    while (lo < hi) {const mid = Math.ceil((lo+hi)/2); if (sampleCumDist[mid] <= distance) lo=mid; else hi=mid-1;}
+    const a=trackSamples[lo], b=trackSamples[(lo+1)%totalSamples];
+    const length=Math.hypot(b.x-a.x,b.y-a.y) || 1;
+    const t=(distance-sampleCumDist[lo])/length;
+    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,nx:a.nx,ny:a.ny};
 }

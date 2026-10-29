@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:,">
     <title>FIA Motorsport Sim: WEC GT3 &amp; F1</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -40,7 +41,7 @@
         <div class="ctrl"><b>W / S</b> газ / тормоз (на месте — задний ход) · <b>A / D</b> руль</div>
         <div class="ctrl"><b>Shift / E</b> передача ▲ · <b>Ctrl / Q</b> передача ▼ (ручная КПП)</div>
         <div class="ctrl"><b>1 / 2 / 3</b> шины на пит-стоп · <b>P</b> заехать в боксы на этом круге</div>
-        <div class="ctrl"><b>V</b> вид · <b>H</b> траектория · <b>M</b> звук · <b>Esc</b> пауза</div>
+        <div class="ctrl"><b>C</b> камера · <b>H</b> траектория · <b>M</b> звук · <b>Esc</b> пауза</div>
         <div class="timer-row">СЕКТОР <span id="cpStatus" class="timer-val">1 / 4</span></div>
         <div class="timer-row">ПОСЛЕДНИЙ <span id="lastTime" class="timer-val">--:--.---</span></div>
         <div class="standings-mini" id="liveTower"></div>
@@ -67,27 +68,28 @@
         </div>
         <div class="dash-divider"></div>
         <div class="dash-block"><div class="dash-lbl">ШИНЫ</div><div class="dash-val" id="dashCompound" style="font-size:16px;">—</div></div>
-        <div class="dash-block"><div class="dash-lbl">ИЗНОС</div><div class="dash-val" id="dashTireHealth">100<small>%</small></div></div>
+        <div class="dash-block"><div class="dash-lbl">ОСТАТОК ШИН</div><div class="dash-val" id="dashTireHealth">100<small>%</small></div></div>
         <div class="dash-block"><div class="dash-lbl">ТЕМП. ШИН</div><div class="dash-val" id="dashTireTemp">35°C</div></div>
         <div class="dash-divider"></div>
-        <div class="dash-block"><div class="dash-lbl">КРЫЛО</div><div class="dash-val" id="dashWingDmg">0%</div></div>
+        <div class="dash-block"><div class="dash-lbl">ПОВРЕЖДЕНИЯ</div><div class="dash-val" id="dashWingDmg">0%</div></div>
         <div class="dash-block"><div class="dash-lbl">DRS</div><div class="dash-val" id="dashDRS" style="color:#64748b;">—</div></div>
     </div>
     <div id="shiftLights"></div>
+    <div id="control-hint">WASD / стрелки — управление<br>P — боксы · C — камера · Esc — пауза</div>
 </div>
 
 <!-- ============ ГАРАЖ ============ -->
 <div id="garageModal" class="modal-overlay">
     <div class="modal-card">
         <div class="modal-title">
-            <span>🏁 ПАДДОК FIA: ВЫБОР НАСТРОЕК</span>
-            <span style="font-size:12px; color:#38bdf8;">Звук включается после первого клика</span>
+            <span>FIA / RACING CLUB</span>
+            <span style="font-size:12px; color:#38bdf8;">2D MOTORSPORT · F1 / GT3</span>
         </div>
 
         <div class="section-label">1. ЧЕМПИОНАТ</div>
         <div class="class-switch-row">
             <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small>Гонка на выживание 20 минут после квалификации · 6 передач</small></button>
-            <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Сезон из 4 гонок · очки, кубок гонщиков и конструкторов · DRS</small></button>
+            <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Большой календарь гонок · очки, кубок гонщиков и конструкторов · DRS</small></button>
         </div>
 
         <div id="seasonPanel" class="season-panel" style="display:none;">
@@ -128,15 +130,8 @@
         </div>
         <div class="strategy-grid" id="strategyGrid"></div>
 
-        <div class="config-bar">
+        <details class="advanced-settings"><summary>Управление, камера и звук</summary><div class="config-bar">
             <div style="display:flex; gap:18px; flex-wrap:wrap;">
-                <div>
-                    <div class="cfg-label">ВИД КАМЕРЫ</div>
-                    <div style="display:flex; gap:5px;">
-                        <button class="view-btn" id="viewBtnTOP" onclick="setCameraViewMode('TOP')">🗺️ Сверху</button>
-                        <button class="view-btn active" id="viewBtnCHASE" onclick="setCameraViewMode('CHASE')">🎥 3D из-за машины</button>
-                    </div>
-                </div>
                 <div>
                     <div class="cfg-label">КОРОБКА ПЕРЕДАЧ</div>
                     <div style="display:flex; gap:5px;">
@@ -155,7 +150,7 @@
                     <div class="cfg-label">УПРАВЛЕНИЕ МАШИНОЙ</div>
                     <div style="display:flex; gap:5px;">
                         <button class="view-btn active" data-hm="ARCADE" onclick="setHandling('ARCADE')" title="Больше сцепления, мгновенный отклик руля и педалей">🎮 Аркада</button>
-                        <button class="view-btn" data-hm="REAL" onclick="setHandling('REAL')" title="Честная физика: тяжёлая, с большим сносом в поворотах">🏁 Реализм</button>
+                        <button class="view-btn" data-hm="REAL" onclick="setHandling('REAL')" title="Полный круг сцепления и точная работа педалями">🏁 Реализм</button>
                     </div>
                 </div>
                 <div>
@@ -163,11 +158,10 @@
                     <button class="view-btn active" id="btnSound" onclick="toggleSound()">🔊 Вкл</button>
                 </div>
             </div>
-            <div style="display:flex; gap:8px;">
+            </div></details><div class="start-actions">
                 <button class="secondary-btn" id="btnStartQuali">⏱️ Квалификация</button>
                 <button class="primary-btn" id="btnDirectRace">Гонка со старта ▶</button>
             </div>
-        </div>
     </div>
 </div>
 
@@ -187,7 +181,7 @@
                     <button class="view-btn active" data-hm="ARCADE" onclick="setHandling('ARCADE')">🎮 Аркада</button>
                     <button class="view-btn" data-hm="REAL" onclick="setHandling('REAL')">🏁 Реализм</button>
                 </div>
-                <div style="font-size:10px; color:#8b95a5; margin-top:6px;">Вид камеры переключается и клавишами: <b>V</b> — 3D / сверху, <b>C</b> — сверху: на машине / на трассе</div>
+                <div style="font-size:10px; color:#8b95a5; margin-top:6px;">Вид камеры переключается и клавишами: <b>C</b> — машина / вся трасса · <b>+ / −</b> — масштаб</div>
             </div>
             <button class="primary-btn" id="btnResumeGame">Продолжить</button>
             <button class="secondary-btn" id="btnEndQuali" style="display:none;">🏁 Завершить квалификацию → гонка по её итогам</button>
@@ -221,11 +215,12 @@
 </div>
 
 <script src="data.js"></script>
+<script src="circuits.js"></script>
 <script src="sprites.js"></script>
 <script src="models.js"></script>
 <script src="track.js"></script>
-<script src="render3d.js"></script>
-<script src="carmodel.js"></script>
+<script src="render2d.js"></script>
+
 <script src="topview.js"></script>
 <script src="audio.js"></script>
 <script src="physics.js"></script>

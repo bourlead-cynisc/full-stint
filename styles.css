@@ -8,15 +8,6 @@ body {
     position: relative; width: 1280px; height: 790px; overflow: hidden;
     box-shadow: 0 12px 55px rgba(0,0,0,0.95); border: 2px solid #232a38; border-radius: 10px; background: #14221a;
 }
-#skyHorizon {
-    position: absolute; top: 0; left: 0; right: 0; height: 44%;
-    background: linear-gradient(180deg, #050a14 0%, #0d1b32 45%, #1c3b64 78%, #7597b0 100%);
-    display: none; z-index: 1; border-bottom: 3px solid rgba(125, 211, 252, 0.45); overflow: hidden;
-}
-#skyClouds { position: absolute; top: 14%; left: -100%; width: 300%; height: 70px; background: radial-gradient(ellipse 140px 22px at 12% 50%, rgba(255,255,255,0.12) 0%, transparent 75%); }
-#skyMountains { position: absolute; bottom: 16px; left: -100%; width: 300%; height: 68px; background: conic-gradient(from 135deg at 8% 100%, #101d2e 90deg, transparent 0); background-size: 420px 68px; background-repeat: repeat-x; opacity: 0.92; }
-#skyTreeline { position: absolute; bottom: 0; left: -100%; width: 300%; height: 22px; background: repeating-linear-gradient(90deg, #0c1a14 0px, #12261d 18px); border-top: 2px solid rgba(56, 189, 248, 0.2); }
-
 canvas#gameCanvas { position: absolute; top: 0; left: 0; transform-origin: 50% 58%; z-index: 2; }
 canvas#minimapCanvas { position: absolute; bottom: 14px; right: 14px; z-index: 7; pointer-events: none; }
 
@@ -248,3 +239,40 @@ body.is-mobile #minimapCanvas { display: none; }
 .car-stat-bar { font-size: 8.2px; }
 
 .pause-opts { background: #151d2c; border: 1px solid #2a3854; border-radius: 10px; padding: 10px; }
+/* Racing Club: quiet surfaces and a compact race display. */
+body { background: #0b1017; }
+.modal-overlay { background: rgba(5,10,17,.94); }
+.modal-card { background: #111a25; border: 1px solid #2c3c4c; border-radius: 20px; box-shadow: 0 24px 80px #0008; padding: 28px; }
+.modal-title { font-size: 24px; letter-spacing: 2px; border-bottom: 1px solid #2c3c4c; padding-bottom: 18px; }
+.section-label { color: #9cabbc; letter-spacing: 1.6px; margin-top: 24px; }
+.class-btn, .track-card, .car-card, .strategy-card { border-radius: 10px; background: #182431; border-color: #2b3a49; box-shadow: none; }
+.track-grid { grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); max-height: 210px; overflow-y: auto; padding: 3px; }
+.car-grid { max-height: 290px; overflow-y: auto; padding: 3px; }
+.track-card.active,.car-card.active,.strategy-card.active,.class-btn.active { border-color: #5eead4; background: #183a3a; }
+.primary-btn { background: #5eead4; color: #092b28; border: 0; border-radius: 9px; padding: 14px 24px; }
+.secondary-btn,.view-btn { border-radius: 8px; }
+button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:focus-visible { outline: 3px solid #5eead4; outline-offset: 3px; }
+.advanced-settings { margin-top: 22px; border-top: 1px solid #2c3c4c; padding-top: 16px; }
+.advanced-settings summary { cursor: pointer; color: #b7c8d9; }
+.start-actions { display:flex; justify-content:flex-end; gap:12px; margin-top:22px; position:sticky; bottom:-28px; background:#111a25; padding:16px 0; }
+#hud-left { top:90px; width:205px; padding:10px; }
+#hud-left .ctrl { display:none; }
+#hud-right { top:90px; min-width:205px; }
+#hud-top-center { min-width:540px; justify-content:space-around; border-top-color:#5eead4; box-shadow:none; }
+#steering-wheel-dash { gap:14px; padding:8px 18px; border:1px solid #415366; border-top:2px solid #5eead4; }
+#steering-wheel-dash .dash-block:has(#dashRpm),#steering-wheel-dash .dash-block:has(#dashTireTemp) { display:none; }
+#dashSpeed { font-size:30px; }
+#minimapCanvas { bottom:105px; }
+#race-control { top:160px; }
+* { scrollbar-width:thin; scrollbar-color:#405469 #111a25; }
+.modal-card,.modal-card * { touch-action: auto; }
+@media(max-width:700px) { .modal-card {padding:16px;} .modal-title {font-size:18px;} .strategy-grid {grid-template-columns:1fr;} .start-actions {bottom:-16px;flex-wrap:wrap;} }
+.car-item { border-radius:10px; background:#182431; border-color:#2b3a49; box-shadow:none; }
+.car-item.selected { border-color:#5eead4; background:#183a3a; box-shadow:none; }
+.season-cal { max-height:110px; overflow:auto; }
+
+#control-hint {position:absolute;left:16px;bottom:20px;z-index:6;font-size:11px;line-height:1.7;color:#d9e6f2;background:#0a1019cc;padding:8px 12px;border-radius:8px;pointer-events:none;}
+
+#mobPit {top:194px;right:84px;width:132px;height:36px;font-size:11px;}
+#mobPause {top:194px;right:14px;width:62px;height:36px;font-size:10px;}
+body.is-mobile #control-hint {display:none;}

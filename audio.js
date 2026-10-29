@@ -221,7 +221,6 @@ function updateAudio(frameDt) {
     engineVoices[0].update(playerCar, 1.0, 0, 1.0);
 
     // три ближайших соперника: панорама + допплер
-    const cosA = Math.cos(smoothCamAngle), sinA = Math.sin(smoothCamAngle);
     const near = [];
     for (const c of allCars) {
         if (c === playerCar) continue;
@@ -233,7 +232,7 @@ function updateAudio(frameDt) {
         const n = near[i - 1];
         if (!n) { engineVoices[i].silence(); continue; }
         const vol = Math.pow(Math.max(0, 1 - n.d / 1000), 2) * 0.55;
-        const rx = cameraViewMode === 'CHASE' ? (n.dx * cosA + n.dy * sinA) : n.dx;
+        const rx = n.dx;
         const pan = Math.max(-1, Math.min(1, rx / 420)) * 0.85;
         const ux = n.dx / (n.d || 1), uy = n.dy / (n.d || 1);
         const radial = (n.c.dx - playerCar.dx) * ux + (n.c.dy - playerCar.dy) * uy;

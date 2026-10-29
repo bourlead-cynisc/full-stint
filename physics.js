@@ -24,10 +24,9 @@ function spawnSparks(x, y, count = 10) {
 }
 
 function getTireGripMultiplier(healthPct, tempC) {
-    const h = healthPct / 100;
+    const h = Math.max(0, Math.min(1, healthPct / 100));
     const cliff = TIRE_CLIFF_PCT / 100;
-    let wearGrip = 0.92 + 0.08 * Math.min(1, h);
-    if (h <= cliff) wearGrip = 0.45 + 0.27 * (h / cliff);
+    const wearGrip = h > cliff ? 0.88 + 0.12 * h : 0.65 + 0.252 * h / cliff;
     const tempGrip = (tempC < 65) ? (0.78 + 0.22 * (tempC / 65)) : Math.max(0.65, 1.0 - Math.max(0, tempC - 110) * 0.012);
     return wearGrip * tempGrip;
 }
@@ -146,7 +145,7 @@ class Car {
     resetSessionDynamicState() {
         this.velocity = 0; this.dx = 0; this.dy = 0;
         this.smoothThrottle = 0; this.smoothBrake = 0; this.smoothSteer = 0;
-        this.tireTemp = 35; this.wingDamage = 0;
+        this.tireTemp = 75; this.wingDamage = 0; this.suspensionDamage = 0; this.bodyDamage = 0;
         this.gear = 0;                   // 0 = нейтраль (N)
         this.rpm = this.idle01;          // 0..1 от красной зоны
         this.shiftCut = 0; this.shiftTimer = 0;
@@ -282,14 +281,14 @@ class Car {
         let followV = Infinity;
         for (let k = 0; k < allCars.length; k++) {
             const o = allCars[k];
-            if (o === this || o.pitPhase === 'service') continue;
+            if (o === this || o.pitPhase !== 'none') continue;
             const ox = o.x - this.x, oy = o.y - this.y;
             const fwd = ox * fx + oy * fy;
-            if (fwd <= 0 || fwd > 170) continue;
+            if (fwd <= 0 || fwd > 320) continue;
             const lat = ox * rxv + oy * ryv;
-            if (Math.abs(lat) < 40) {
-                lane += (lat >= 0 ? -1 : 1) * 24 * (1 - fwd / 170);
-                if (fwd < 75 && Math.abs(lat) < 26) followV = Math.min(followV, Math.max(0, o.velocity) * MS * 0.99);
+            if (Math.abs(lat) < 50) {
+                lane += (lat >= 0 ? -1 : 1) * (22 + 12 * this.botProfile.aggression) * (1 - fwd / 320);
+                if (fwd < 90 + Math.max(0, this.velocity - o.velocity) * 35 && Math.abs(lat) < 32) followV = Math.min(followV, Math.max(0, o.velocity) * MS * 0.99);
             }
         }
         lane = Math.max(-ASPHALT_HALF_W * 0.6, Math.min(ASPHALT_HALF_W * 0.6, lane));
@@ -321,7 +320,7 @@ class Car {
         const conf2 = (this.aiConf || 1) * (this.aiConf || 1);
         const hb = HC().hb;
         const gA = G * this.perf.grip * hb * tg * skillUse * conf2 * (1 - 0.15 * this.wingDamage);
-        const gAero = G * this.perf.aero * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
+        const gAero = G * this.perf.aero * 1.45 * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
         const vmax2 = this.vmaxMs * this.vmaxMs;
         const qNow = Math.min(1.2, vms * vms / vmax2);
         const aBrCap = (this.brake0 + this.brakeAero * qNow) * tg * G * Math.sqrt(hb);       // что реально может тормоз
@@ -329,9 +328,10 @@ class Car {
         const vTop = this.vmaxMs * comp.speedMult;
         let vAllow = vTop;
         let reqDecel = 0;
-        for (let j = 0; j < 44; j++) {
+        for (let j = 0; j < Math.min(N, 200); j++) {
             const idx = (base + j) % N;
             let dist = (sampleCumDist[idx] - sampleCumDist[base]); if (dist < 0) dist += trackLengthPx;
+            if (dist * PX_M > 650) break;
             const kap = trackSamples[idx].kappa / PX_M;                // 1/м
             const denom = kap - gAero / vmax2;
             const vc = denom > 1e-7 ? Math.min(vTop, Math.sqrt(gA / denom)) : vTop;
@@ -355,50 +355,77 @@ class Car {
     // ------------------------------------------------------------------
     // Пит-стопы (упрощённо: остановка на линии старта-финиша)
     // ------------------------------------------------------------------
-    startPit(tire) {
-        this.pitPhase = 'braking';
-        this.pendingTire = tire;
-        this.pitRequested = false;
-        if (this.isPlayer) showRaceControl(`🛠️ ПИТ-СТОП: ${TIRE_COMPOUNDS[tire].name}`, TIRE_COMPOUNDS[tire].color);
+    applyImpact(speedMs, frontWeight = 0.5) {
+        const severity = Math.max(0, speedMs - 3) ** 1.35 / 260;
+        this.wingDamage = Math.min(1, this.wingDamage + severity * frontWeight);
+        this.suspensionDamage = Math.min(1, this.suspensionDamage + severity * (1 - frontWeight) * 0.7);
+        this.bodyDamage = Math.min(1, this.bodyDamage + severity * 0.5);
     }
 
-    pitControls(dt) {
-        const vms = Math.abs(this.velocity) * MS;
-        if (this.pitPhase === 'braking') {
-            if (vms < 1.2) {
-                this.velocity = 0; this.dx = 0; this.dy = 0;
-                this.pitPhase = 'service';
-                this.pitTimer = 5.0 + 3.0 * this.wingDamage;
-                this.gear = 0;
-                return { thr: 0, brake: 1, steer: 0, manual: false, hold: true };
-            }
-            const c = this.aiControls(dt, 0.0);        // плавно тормозим по линии
-            return { thr: 0, brake: 0.75, steer: c.steer, manual: false, aiSteer: true };
-        }
+    startPit(tire) {
+        if (this.pitPhase !== 'none') return;
+        this.pitPhase = 'entry';
+        this.pendingTire = tire;
+        this.pitRequested = false;
+        this.pitNode = 0;
+        this.pitSpeed = Math.abs(this.velocity) * MS;
+        this.pitServiced = false;
+        if (this.isPlayer) showRaceControl('Пит-лейн: автоматический проезд, лимит 80 км/ч', '#38bdf8');
+    }
+
+    updatePit(dt) {
+        const box = this.getTeamPitBox();
         if (this.pitPhase === 'service') {
-            this.velocity = 0; this.dx = 0; this.dy = 0; this.braking = true;
             this.pitTimer -= dt;
-            if (this.isPlayer && Math.ceil(this.pitTimer) !== this._lastPitSec) {
-                this._lastPitSec = Math.ceil(this.pitTimer);
-                if (this._lastPitSec > 0) showRaceControl(`🛠️ Смена шин... ${this._lastPitSec} с`, '#38bdf8');
-            }
             if (this.pitTimer <= 0) {
-                this.compound = this.pendingTire || this.compound;
-                this.tireHealth = 100; this.tireTemp = 75; this.wingDamage = 0;
+                this.compound = this.pendingTire;
+                this.tireHealth = 100; this.tireTemp = 80;
+                this.wingDamage = this.suspensionDamage = this.bodyDamage = 0;
                 this.pitStopsDone++;
-                const nxt = this.strategy && this.strategy.stops && this.strategy.stops[this.pitStopsDone];
-                this.nextCompound = nxt ? nxt.tire : this.compound;
-                this.pitPhase = 'exit'; this.pitTimer = 2.2;
-                this.gear = 1;
-                if (this.isPlayer) showRaceControl(`✅ Новые шины: ${TIRE_COMPOUNDS[this.compound].name}. Поехали!`, '#00e676');
+                const next = this.strategy?.stops[this.pitStopsDone];
+                this.nextCompound = next ? next.tire : this.compound;
+                this.pitServiced = true;
+                this.pitPhase = 'exit';
             }
-            return { thr: 0, brake: 1, steer: 0, manual: false, hold: true };
+            this.velocity = this.dx = this.dy = 0;
+            this.updateLapAndSectors();
+            return;
         }
-        // 'exit': разгон до ограничителя пит-лейна 80 км/ч
-        this.pitTimer -= dt;
-        if (this.pitTimer <= 0) this.pitPhase = 'none';
-        const c = this.aiControls(dt, 0.35);
-        return { thr: vms < 22 ? 1 : 0, brake: 0, steer: c.steer, manual: false, aiSteer: true };
+        const target = pitWaypoints[Math.min(this.pitNode + 1, pitWaypoints.length - 1)];
+        const dx = target.x - this.x, dy = target.y - this.y;
+        const distance = Math.hypot(dx, dy);
+        const occupied = allCars.some(c => c !== this && c.specIndex === this.specIndex && c.pitPhase === 'service');
+        const toBox = Math.hypot(box.x - this.x, box.y - this.y);
+        let limit = 80 / 3.6;
+        if (!this.pitServiced && this.pitNode >= box.node - 2) limit = Math.min(limit, Math.sqrt(2 * 7 * Math.max(0, (toBox - 3) * PX_M)));
+        if (occupied && !this.pitServiced && this.pitNode >= box.node - 2) limit = 0;
+        const merging = this.pitNode >= pitWaypoints.length - 3;
+        if (merging && allCars.some(c => c !== this && c.pitPhase === 'none' && Math.hypot(c.x - target.x, c.y - target.y) < 130)) limit = 0;
+        this.pitSpeed = Math.max(0, Math.min(limit, this.pitSpeed + 5 * dt));
+        const move = Math.min(distance, this.pitSpeed * dt / PX_M);
+        if (distance > 0) {
+            this.dx = dx / distance * move; this.dy = dy / distance * move;
+            this.x += this.dx; this.y += this.dy;
+            this.angle = Math.atan2(dx, -dy);
+        }
+        this.velocity = this.pitSpeed / MS;
+        this.gear = this.pitSpeed > 1 ? 2 : 0;
+        this.braking = this.pitSpeed < 1;
+        if (!occupied && !this.pitServiced && this.pitNode >= box.node - 1 && toBox < 8) {
+            this.x = box.x; this.y = box.y;
+            this.pitPhase = 'service';
+            this.pitTimer = (this.spec.carClass === 'F1' ? 2.6 : 12) + 9 * this.wingDamage + 18 * this.suspensionDamage;
+            this.velocity = this.dx = this.dy = 0;
+            if (this.isPlayer) showRaceControl(`Обслуживание: ${this.pitTimer.toFixed(1)} с · шины и ремонт`, '#38bdf8');
+        } else if (distance <= move + 2) {
+            this.pitNode++;
+            if (this.pitNode >= pitWaypoints.length - 1) {
+                this.pitPhase = 'none';
+                this.lastSampleIdx = -1;
+                if (this.isPlayer) showRaceControl('Пит-лейн пройден. Управление возвращено', '#00e676');
+            }
+        }
+        this.updateLapAndSectors();
     }
 
     // ------------------------------------------------------------------
@@ -442,10 +469,19 @@ class Car {
             return;
         }
 
+        if (currentSession === 'RACE' && this.pitPhase === 'none' && !this.finishedRace) {
+            const scheduled = this.strategy?.stops[this.pitStopsDone];
+            const due = scheduled && this.lap >= scheduled.lap;
+            const needsTires = !this.isPlayer && this.tireHealth < 22;
+            if ((this.pitRequested || due || needsTires) && frontInfo.normProgress >= 0.935 && frontInfo.normProgress < 0.955 && this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity)) {
+                this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
+            }
+        }
+        if (this.pitPhase !== 'none') { this.updatePit(dt); return; }
+
         // ---------- выбор источника управления ----------
         let ctl;
-        if (this.pitPhase !== 'none') ctl = this.pitControls(dt);
-        else if (this.isHumanControlled()) ctl = this.humanControls(dt, input);
+        if (this.isHumanControlled()) ctl = this.humanControls(dt, input);
         else ctl = this.aiControls(dt, this.finishedRace ? 0.55 : 1.0);
 
         this.dbgDist = frontInfo.dist;
@@ -456,9 +492,9 @@ class Car {
         // ---------- сцепление: механика + прижимная сила ----------
         const q = Math.min(1.4, (vms * vms) / (this.vmaxMs * this.vmaxMs));
         const wingLoss = 1 - 0.5 * this.wingDamage;
-        const surf = offTrack ? 0.55 : 1.0;
+        const surf = (offTrack ? 0.55 : 1.0) * (1 - 0.18 * this.suspensionDamage);
         const hc = HC();
-        const gripG = (this.perf.grip * comp.gripMult * tireGrip + this.perf.aero * q * wingLoss) * surf * hc.hb;
+        const gripG = (this.perf.grip * comp.gripMult * tireGrip + this.perf.aero * q * wingLoss * 1.45) * surf * hc.hb;
         const gripMax = Math.max(0.3, gripG) * G;                    // м/с²
 
         // ---------- продольная динамика ----------
@@ -477,7 +513,7 @@ class Car {
             aBrk = ctl.brake * Math.min(bMax, gripMax * 1.15) * circle;
         }
         const dragMul = this.drsActive ? 0.80 : 1.0;
-        let aDrag = this.dragK * dragMul * vms * vms + 0.12;
+        let aDrag = this.dragK * dragMul * (1 + 0.12 * this.bodyDamage) * vms * vms + 0.12;
         if (vms < 0.05) aDrag = 0;
 
         let newV;
@@ -514,7 +550,7 @@ class Car {
         this.bodyPitch += (-(this.aLong / (G * 3)) - this.bodyPitch) * Math.min(1, dt * 10);
 
         // ---------- скольжение: вектор скорости догоняет направление кузова ----------
-        const slipK = Math.max(0.07, Math.min(0.36, (0.10 + 0.07 * tireGrip * comp.gripMult * surf) * hc.slipMul));
+        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * surf * (this.spec.carClass === 'F1' ? 1.35 : 1));
         const targetDx = Math.sin(this.angle) * this.velocity;
         const targetDy = -Math.cos(this.angle) * this.velocity;
         this.slip = Math.hypot(targetDx - this.dx, targetDy - this.dy);
@@ -525,9 +561,9 @@ class Car {
         // ---------- износ и нагрев шин ----------
         const speed = Math.hypot(this.dx, this.dy);
         if (speed > 0.5 && !this.finishedRace) {
-            const style = 0.62 + 0.95 * Math.min(1, this.latUse) + 0.45 * Math.min(1, aBrk / (gripMax || 1)) +
+            const style = 0.75 + 0.25 * Math.min(1, this.latUse) + 0.12 * Math.min(1, aBrk / (gripMax || 1)) +
                           0.10 * Math.min(1, this.slip / 3) + (this.tireTemp > 112 ? 0.30 : 0);
-            const wearPct = (speed / trackLengthPx) * comp.wearPerLap * style / this.tireSave * (this.wearScale || 1) * hc.hb;
+            const wearPct = (speed / trackLengthPx) * comp.wearPerLap * style / this.tireSave * (this.wearScale || 1);
             this.tireHealth = Math.max(0, this.tireHealth - wearPct);
             const target = 38 + 22 * Math.min(1, vms / this.vmaxMs) + 48 * Math.min(1, this.latUse) + 22 * Math.min(1, aBrk / (gripMax || 1)) + 12 * Math.min(1, this.slip / 2.5);
             this.tireTemp += (Math.min(150, target) - this.tireTemp) * Math.min(1, dt * 0.35);
@@ -549,11 +585,9 @@ class Car {
             this.y -= ny * (ptInfo.dist - WALL_HALF_W);
             const impact = Math.max(0, this.dx * nx + this.dy * ny);
             this.dx -= nx * impact * 1.1; this.dy -= ny * impact * 1.1;
-            this.velocity *= 0.95;
             if (impact > 2.0 && this.hitCooldown === 0) {
                 this.hitCooldown = 45;
-                this.velocity *= 0.7;
-                this.wingDamage = Math.min(1.0, this.wingDamage + Math.min(0.25, impact * 0.025));
+                this.applyImpact(impact * MS, 0.7);
                 spawnSparks(this.x, this.y, 8);
                 if (this.isPlayer) {
                     showRaceControl(`💥 УДАР! Повреждение крыла: ${Math.round(this.wingDamage * 100)}%`, '#ff4757');
@@ -608,14 +642,7 @@ class Car {
                 if (this.isPlayer) { finalizeAllCarsForPostRaceReview(now); finishRaceModal(); }
                 return;
             }
-            const sched = this.strategy && this.strategy.stops && this.strategy.stops[this.pitStopsDone];
-            if (sched && sched.lap === finishedLap) {
-                this.startPit(this.isPlayer ? this.nextCompound : sched.tire);
-            } else if (this.pitRequested) {
-                this.startPit(this.nextCompound);
-            } else if (raceMode === 'TIMED' && !this.isPlayer && this.tireHealth < 26 && (now - raceStartTimestamp) < raceDurationMs - 100000) {
-                this.startPit('medium');            // в гонке на время ИИ меняет изношенные шины сверх плана
-            }
+
         }
     }
 
@@ -645,23 +672,31 @@ class Car {
     }
 }
 
-function resolveContourCarCollision(c1, c2) {
-    if (c1.pitPhase === 'service' || c2.pitPhase === 'service' || c1.pitPhase === 'braking' || c2.pitPhase === 'braking') return;
-    const ddx = c2.x - c1.x, ddy = c2.y - c1.y;
-    const dist = Math.hypot(ddx, ddy);
-    if (dist < 46 && dist > 0.001) {
-        const nx = ddx / dist, ny = ddy / dist;
-        const push = (46 - dist) * 0.5;
-        c1.x -= nx * push; c1.y -= ny * push;
-        c2.x += nx * push; c2.y += ny * push;
-        c1.velocity *= 0.99; c2.velocity *= 0.99;
-        const rel = Math.hypot(c1.dx - c2.dx, c1.dy - c2.dy);
-        if (rel > 3.0 && c1.hitCooldown === 0 && c2.hitCooldown === 0) {
-            c1.hitCooldown = c2.hitCooldown = 40;
-            c1.wingDamage = Math.min(1.0, c1.wingDamage + 0.04);
-            c2.wingDamage = Math.min(1.0, c2.wingDamage + 0.04);
-            spawnSparks((c1.x + c2.x) * 0.5, (c1.y + c2.y) * 0.5, 6);
-            if ((c1.isPlayer || c2.isPlayer) && typeof sfxImpact === 'function') sfxImpact(Math.min(1, rel / 8));
+// Oriented rectangles: side-by-side cars do not collide as oversized circles.
+function resolveContourCarCollision(a, b) {
+    if (a.pitPhase !== 'none' || b.pitPhase !== 'none') return;
+    if (Math.hypot(a.x - b.x, a.y - b.y) > a.height + b.height) return;
+    const pa = a.getContourPoints(), pb = b.getContourPoints();
+    let depth = Infinity, normal;
+    for (const car of [a, b]) for (const axis of [{x: Math.cos(car.angle), y: Math.sin(car.angle)}, {x: Math.sin(car.angle), y: -Math.cos(car.angle)}]) {
+        const ap = pa.map(p => p.x * axis.x + p.y * axis.y);
+        const bp = pb.map(p => p.x * axis.x + p.y * axis.y);
+        const overlap = Math.min(Math.max(...ap), Math.max(...bp)) - Math.max(Math.min(...ap), Math.min(...bp));
+        if (overlap <= 0) return;
+        if (overlap < depth) { depth = overlap; normal = axis; }
+    }
+    if ((b.x - a.x) * normal.x + (b.y - a.y) * normal.y < 0) { normal.x *= -1; normal.y *= -1; }
+    a.x -= normal.x * depth / 2; a.y -= normal.y * depth / 2;
+    b.x += normal.x * depth / 2; b.y += normal.y * depth / 2;
+    const closing = (a.dx - b.dx) * normal.x + (a.dy - b.dy) * normal.y;
+    // Only closing normal velocity contributes to damage; tangential rubbing carries no speed tax.
+    if (closing > 0 && a.hitCooldown === 0 && b.hitCooldown === 0) {
+        for (const c of [a, b]) {
+            const front = Math.abs(Math.sin(c.angle) * normal.x - Math.cos(c.angle) * normal.y);
+            c.applyImpact(closing * MS, front);
+            c.hitCooldown = 12;
         }
+        if (closing * MS > 3) spawnSparks((a.x + b.x) / 2, (a.y + b.y) / 2, 6);
+        if ((a.isPlayer || b.isPlayer) && typeof sfxImpact === 'function') sfxImpact(Math.min(1, closing / 8));
     }
 }

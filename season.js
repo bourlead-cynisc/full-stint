@@ -1,5 +1,5 @@
 // ============================================================================
-// season.js — чемпионат Формулы 1: сезон из 4 гонок, каждая трасса ровно один раз,
+// season.js — чемпионат Формулы 1: сезон на всех трассах, каждая трасса ровно один раз,
 // порядок трасс каждый новый сезон другой. Очки: 25-18-15-12-10-8-6-4-2-1.
 // Таблицы: кубок гонщиков и кубок конструкторов. Сохраняется в localStorage.
 // ============================================================================
@@ -21,7 +21,15 @@ function loadSeason() {
         const raw = localStorage.getItem(SEASON_KEY);
         if (!raw) return null;
         const s = JSON.parse(raw);
-        if (s && Array.isArray(s.order) && s.order.length === TRACKS_DB.length && Array.isArray(s.results)) return s;
+        if (s && Array.isArray(s.order) && Array.isArray(s.results) &&
+            s.order.length > 0 && s.order.length <= TRACKS_DB.length &&
+            new Set(s.order).size === s.order.length &&
+            s.order.every(i => Number.isInteger(i) && i >= 0 && i < TRACKS_DB.length) &&
+            s.results.length <= s.order.length) {
+            // Keep completed races when a release adds circuits to the calendar.
+            s.order.push(...shuffleArr(TRACKS_DB.map((_,i) => i).filter(i => !s.order.includes(i))));
+            return s;
+        }
     } catch (e) { /* хранилище недоступно */ }
     return null;
 }

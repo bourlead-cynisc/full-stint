@@ -297,18 +297,6 @@ const CLASS_CFG = {
     GT3: { redline: 7800,  idle: 1100, gearFrac: [0.30, 0.43, 0.57, 0.71, 0.85, 1.00],                     upRpm: 0.965, shiftTime: 0.09, brakeAero: 0.80, rampers: 'V8' },
     F1:  { redline: 15000, idle: 4500, gearFrac: [0.26, 0.35, 0.45, 0.55, 0.66, 0.77, 0.88, 1.00],         upRpm: 0.970, shiftTime: 0.04, brakeAero: 3.00, rampers: 'V6' }
 };
-// Сжатие разброса к среднему по классу: GT3 живёт по BoP (разница в 2–3 %), в Ф-1 разница шире, но тоже умеренная.
-// Это сохраняет «характер» каждой машины, но не даёт одной команде выигрывать с отрывом.
-(function balanceCompress() {
-    const keys = ['power', 'vmax', 'grip', 'aero', 'brake', 'tire'];
-    for (const [cat, K] of [[GT3_CATALOG, 0.42], [F1_CATALOG, 0.50]]) {
-        const ids = cat.map(s => s.id).filter(id => CAR_PERF[id]);
-        for (const k of keys) {
-            const mean = ids.reduce((a, id) => a + CAR_PERF[id][k], 0) / ids.length;
-            for (const id of ids) CAR_PERF[id][k] = +(mean + (CAR_PERF[id][k] - mean) * K).toFixed(3);
-        }
-    }
-})();
 for (const cat of [GT3_CATALOG, F1_CATALOG]) {
     for (const spec of cat) {
         const p = CAR_PERF[spec.id];
@@ -317,18 +305,18 @@ for (const cat of [GT3_CATALOG, F1_CATALOG]) {
 }
 
 const TIRE_COMPOUNDS = {
-    soft:   { name: '🔴 SOFT',   label: 'Soft (мягкие)',   shortTag: '🔴 S', gripMult: 1.08, speedMult: 1.010, wearPerLap: 72, color: '#ff4757',
-              info: 'Максимум сцепления, но «сгорают» примерно за 1 круг.' },
-    medium: { name: '🟡 MEDIUM', label: 'Medium (средние)', shortTag: '🟡 M', gripMult: 1.00, speedMult: 1.000, wearPerLap: 42, color: '#f1c40f',
-              info: 'Золотая середина: хватает примерно на 1,5–2 круга.' },
-    hard:   { name: '⚪ HARD',   label: 'Hard (жёсткие)',  shortTag: '⚪ H', gripMult: 0.93, speedMult: 0.992, wearPerLap: 24, color: '#dfe4ea',
-              info: 'Самые медленные, зато живут около 3 кругов.' }
+    soft:   { name: '🔴 SOFT',   label: 'Soft (мягкие)',   shortTag: '🔴 S', gripMult: 1.08, speedMult: 1.010, wearPerLap: 14, color: '#ff4757',
+              info: 'Максимум сцепления. Стинт около 5 кругов.' },
+    medium: { name: '🟡 MEDIUM', label: 'Medium (средние)', shortTag: '🟡 M', gripMult: 1.00, speedMult: 1.000, wearPerLap: 9, color: '#f1c40f',
+              info: 'Ровный темп. Стинт около 8 кругов.' },
+    hard:   { name: '⚪ HARD',   label: 'Hard (жёсткие)',  shortTag: '⚪ H', gripMult: 0.93, speedMult: 0.992, wearPerLap: 6, color: '#dfe4ea',
+              info: 'Меньше сцепления. Стинт около 12 кругов.' }
 };
 
 // Условная потеря времени на пит-стопе (торможение + замена + разгон), в секундах.
-const PIT_STOP_LOSS_SEC = 11;
+const PIT_STOP_LOSS_SEC = 24;
 // Шины с износом ниже этого порога резко теряют сцепление («клиф»).
-const TIRE_CLIFF_PCT = 30;
+const TIRE_CLIFF_PCT = 18;
 
 // Очки Ф-1 за места 1–10
 const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
@@ -342,8 +330,8 @@ const EST_LAP_SEC = { GT3: [142, 140, 120, 152], F1: [112, 110, 92, 120] };
 function planStints(laps, arch) {
     const stints = [];
     let left = laps, k = 0;
-    const first = { aggr: ['soft', 1], bal: ['medium', 2], eco: ['hard', 3] }[arch];
-    const mid   = { aggr: ['medium', 2], bal: ['medium', 2], eco: ['hard', 3] }[arch];
+    const first = { aggr: ['soft', 5], bal: ['medium', 8], eco: ['hard', 12] }[arch];
+    const mid   = { aggr: ['medium', 8], bal: ['medium', 8], eco: ['hard', 12] }[arch];
     while (left > 0) {
         const [c, len] = (k === 0) ? first : mid;
         if (len >= left) {
@@ -376,17 +364,17 @@ function analyzeStrategy(laps, strat) {
 function getStrategyPresetsForLaps(laps) {
     const archs = [
         { key: 'aggr', name: 'Агрессивная: мягкие шины',
-          idea: 'Едем на самых быстрых шинах: Soft в начале, а в середине и в конце короткие стинты, на последнем круге при возможности снова Soft.',
+          idea: 'Soft на старте, короткие стинты ради максимального сцепления.',
           pros: 'Максимум сцепления и скорости на каждом круге. Хороша, когда трасса свободна и можно оторваться.',
-          cons: 'Больше всего пит-стопов, каждый стоит ≈{loss} с. Мягкие шины живут около круга: опоздаете с заездом — сцепление резко упадёт.' },
+          cons: 'Больше всего пит-стопов, каждый стоит ≈{loss} с. Мягкие шины требуют замены раньше остальных.' },
         { key: 'bal', name: 'Сбалансированная: Medium',
-          idea: 'Основа гонки на средних шинах по 2 круга, на финише берём то, что подходит по остатку дистанции.',
+          idea: 'Medium: ровный темп, ориентир — 8 кругов на комплекте.',
           pros: 'Ровный темп, умеренное число пит-стопов, предсказуемое поведение машины.',
           cons: 'Нигде нет ни максимального сцепления, ни максимальной экономии. Medium к концу стинта уже на пределе.' },
         { key: 'eco', name: 'Экономная: жёсткие шины',
-          idea: 'Длинные стинты на Hard по 3 круга. Минимум заездов в боксы, на коротком остатке — Medium или Soft.',
+          idea: 'Hard: длинные стинты до 12 кругов, меньше остановок.',
           pros: 'Меньше всего пит-стопов (экономия времени), шины дольше держат стабильное сцепление.',
-          cons: 'Hard самые медленные: в каждом повороте приходится ехать осторожнее. К концу 3-го круга износ почти на пределе.' }
+          cons: 'Hard самые медленные: в каждом повороте приходится ехать осторожнее. К концу 12-го круга износ почти на пределе.' }
     ];
     return archs.map(a => {
         const stintsRaw = planStints(laps, a.key);
@@ -482,3 +470,32 @@ const TRACKS_DB = [
         ]
     }
 ];
+// Авторские упрощённые схемы по мотивам автодромов; не геодезические копии.
+TRACKS_DB.push({"id": "silverstone", "name": "🇬🇧 Сильверстоун", "shortName": "Сильверстоун", "desc": "Скоростные связки · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 120, "y": 180}, {"x": 65, "y": 180}, {"x": 35, "y": 150}, {"x": 42, "y": 110}, {"x": 75, "y": 90}, {"x": 92, "y": 120}, {"x": 120, "y": 132}, {"x": 155, "y": 112}, {"x": 170, "y": 75}, {"x": 198, "y": 45}, {"x": 238, "y": 48}, {"x": 250, "y": 80}, {"x": 220, "y": 108}, {"x": 200, "y": 128}, {"x": 215, "y": 160}, {"x": 184, "y": 185}, {"x": 155, "y": 165}]});
+EST_LAP_SEC.GT3.push(135); EST_LAP_SEC.F1.push(105);
+TRACKS_DB.push({"id": "suzuka", "name": "🇯🇵 Судзука", "shortName": "Судзука", "desc": "Эски и шпилька · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 90, "y": 180}, {"x": 45, "y": 180}, {"x": 25, "y": 160}, {"x": 30, "y": 130}, {"x": 55, "y": 115}, {"x": 42, "y": 95}, {"x": 68, "y": 78}, {"x": 85, "y": 98}, {"x": 108, "y": 70}, {"x": 140, "y": 45}, {"x": 180, "y": 30}, {"x": 220, "y": 45}, {"x": 225, "y": 70}, {"x": 190, "y": 88}, {"x": 148, "y": 115}, {"x": 120, "y": 138}, {"x": 130, "y": 160}, {"x": 110, "y": 165}]});
+EST_LAP_SEC.GT3.push(140); EST_LAP_SEC.F1.push(109);
+TRACKS_DB.push({"id": "bahrain", "name": "🇧🇭 Бахрейн", "shortName": "Бахрейн", "desc": "Торможения и разгон · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 90, "y": 190}, {"x": 90, "y": 80}, {"x": 100, "y": 45}, {"x": 125, "y": 50}, {"x": 132, "y": 76}, {"x": 160, "y": 85}, {"x": 170, "y": 50}, {"x": 205, "y": 25}, {"x": 230, "y": 40}, {"x": 220, "y": 90}, {"x": 192, "y": 125}, {"x": 165, "y": 125}, {"x": 145, "y": 112}, {"x": 130, "y": 135}, {"x": 150, "y": 165}, {"x": 128, "y": 190}]});
+EST_LAP_SEC.GT3.push(130); EST_LAP_SEC.F1.push(101);
+TRACKS_DB.push({"id": "interlagos", "name": "🇧🇷 Интерлагос", "shortName": "Интерлагос", "desc": "Перепады ритма · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 150, "y": 180}, {"x": 95, "y": 175}, {"x": 70, "y": 160}, {"x": 55, "y": 170}, {"x": 35, "y": 140}, {"x": 45, "y": 70}, {"x": 80, "y": 35}, {"x": 145, "y": 25}, {"x": 205, "y": 45}, {"x": 220, "y": 80}, {"x": 180, "y": 100}, {"x": 150, "y": 75}, {"x": 120, "y": 80}, {"x": 140, "y": 115}, {"x": 170, "y": 130}, {"x": 155, "y": 150}, {"x": 190, "y": 145}, {"x": 210, "y": 165}, {"x": 185, "y": 185}]});
+EST_LAP_SEC.GT3.push(118); EST_LAP_SEC.F1.push(92);
+TRACKS_DB.push({"id": "imola", "name": "🇮🇹 Имола", "shortName": "Имола", "desc": "Узкие связки · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 90, "y": 180}, {"x": 50, "y": 150}, {"x": 35, "y": 115}, {"x": 50, "y": 100}, {"x": 42, "y": 80}, {"x": 80, "y": 40}, {"x": 120, "y": 25}, {"x": 150, "y": 45}, {"x": 160, "y": 75}, {"x": 180, "y": 65}, {"x": 205, "y": 85}, {"x": 195, "y": 115}, {"x": 165, "y": 125}, {"x": 150, "y": 145}, {"x": 165, "y": 170}, {"x": 140, "y": 195}, {"x": 110, "y": 200}]});
+EST_LAP_SEC.GT3.push(130); EST_LAP_SEC.F1.push(101);
+TRACKS_DB.push({"id": "barcelona", "name": "🇪🇸 Барселона", "shortName": "Барселона", "desc": "Баланс шасси · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 100, "y": 85}, {"x": 120, "y": 50}, {"x": 145, "y": 65}, {"x": 160, "y": 100}, {"x": 195, "y": 110}, {"x": 220, "y": 90}, {"x": 225, "y": 50}, {"x": 245, "y": 40}, {"x": 265, "y": 65}, {"x": 250, "y": 130}, {"x": 220, "y": 155}, {"x": 190, "y": 150}, {"x": 170, "y": 175}, {"x": 190, "y": 195}, {"x": 145, "y": 210}]});
+EST_LAP_SEC.GT3.push(135); EST_LAP_SEC.F1.push(105);
+TRACKS_DB.push({"id": "portimao", "name": "🇵🇹 Портиман", "shortName": "Портиман", "desc": "Слепые вершины · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 60, "y": 160}, {"x": 50, "y": 120}, {"x": 70, "y": 100}, {"x": 55, "y": 70}, {"x": 80, "y": 40}, {"x": 115, "y": 55}, {"x": 130, "y": 90}, {"x": 155, "y": 70}, {"x": 165, "y": 35}, {"x": 205, "y": 25}, {"x": 230, "y": 55}, {"x": 210, "y": 85}, {"x": 235, "y": 110}, {"x": 220, "y": 150}, {"x": 180, "y": 145}, {"x": 150, "y": 170}, {"x": 170, "y": 195}, {"x": 135, "y": 210}]});
+EST_LAP_SEC.GT3.push(132); EST_LAP_SEC.F1.push(103);
+TRACKS_DB.push({"id": "lemans", "name": "🇫🇷 Ле-Ман", "shortName": "Ле-Ман", "desc": "Длинные прямые и шиканы · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 95, "y": 220}, {"x": 65, "y": 190}, {"x": 60, "y": 160}, {"x": 80, "y": 140}, {"x": 85, "y": 95}, {"x": 92, "y": 55}, {"x": 110, "y": 35}, {"x": 120, "y": 45}, {"x": 125, "y": 100}, {"x": 132, "y": 110}, {"x": 125, "y": 125}, {"x": 130, "y": 190}, {"x": 145, "y": 205}, {"x": 170, "y": 225}, {"x": 190, "y": 210}, {"x": 205, "y": 175}, {"x": 215, "y": 140}, {"x": 195, "y": 120}, {"x": 172, "y": 145}, {"x": 160, "y": 178}, {"x": 145, "y": 190}, {"x": 125, "y": 200}]});
+EST_LAP_SEC.GT3.push(235); EST_LAP_SEC.F1.push(183);
+TRACKS_DB.push({"id": "fuji", "name": "🇯🇵 Фудзи", "shortName": "Фудзи", "desc": "Прямая и технический сектор · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 180}, {"x": 220, "y": 180}, {"x": 260, "y": 165}, {"x": 250, "y": 140}, {"x": 215, "y": 125}, {"x": 190, "y": 90}, {"x": 165, "y": 70}, {"x": 130, "y": 65}, {"x": 105, "y": 85}, {"x": 125, "y": 105}, {"x": 150, "y": 100}, {"x": 145, "y": 130}, {"x": 115, "y": 145}, {"x": 90, "y": 132}, {"x": 65, "y": 145}, {"x": 60, "y": 172}]});
+EST_LAP_SEC.GT3.push(138); EST_LAP_SEC.F1.push(108);
+TRACKS_DB.push({"id": "sebring", "name": "🇺🇸 Себринг", "shortName": "Себринг", "desc": "Выносливость и быстрые дуги · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 185}, {"x": 50, "y": 175}, {"x": 25, "y": 145}, {"x": 35, "y": 90}, {"x": 60, "y": 70}, {"x": 100, "y": 85}, {"x": 125, "y": 65}, {"x": 160, "y": 25}, {"x": 195, "y": 40}, {"x": 180, "y": 80}, {"x": 155, "y": 100}, {"x": 180, "y": 125}, {"x": 220, "y": 130}, {"x": 250, "y": 155}, {"x": 235, "y": 180}, {"x": 190, "y": 195}, {"x": 140, "y": 190}]});
+EST_LAP_SEC.GT3.push(155); EST_LAP_SEC.F1.push(121);
+TRACKS_DB.push({"id": "qatar", "name": "🇶🇦 Лусаил", "shortName": "Лусаил", "desc": "Скоростные дуги · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 60, "y": 160}, {"x": 50, "y": 115}, {"x": 75, "y": 90}, {"x": 65, "y": 60}, {"x": 100, "y": 30}, {"x": 140, "y": 40}, {"x": 150, "y": 70}, {"x": 180, "y": 90}, {"x": 210, "y": 70}, {"x": 235, "y": 90}, {"x": 220, "y": 120}, {"x": 235, "y": 150}, {"x": 205, "y": 175}, {"x": 165, "y": 160}, {"x": 145, "y": 190}]});
+EST_LAP_SEC.GT3.push(133); EST_LAP_SEC.F1.push(104);
+TRACKS_DB.push({"id": "hungaroring", "name": "🇭🇺 Хунгароринг", "shortName": "Хунгароринг", "desc": "Тесные повороты · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 170, "y": 190}, {"x": 210, "y": 170}, {"x": 200, "y": 145}, {"x": 170, "y": 135}, {"x": 180, "y": 105}, {"x": 155, "y": 80}, {"x": 165, "y": 50}, {"x": 130, "y": 30}, {"x": 100, "y": 55}, {"x": 105, "y": 85}, {"x": 75, "y": 100}, {"x": 60, "y": 80}, {"x": 35, "y": 100}, {"x": 40, "y": 140}, {"x": 75, "y": 155}, {"x": 70, "y": 175}]});
+EST_LAP_SEC.GT3.push(130); EST_LAP_SEC.F1.push(101);
+TRACKS_DB.push({"id": "redbullring", "name": "🇦🇹 Ред Булл Ринг", "shortName": "Ред Булл Ринг", "desc": "Разгоны и шпильки · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 180, "y": 160}, {"x": 195, "y": 125}, {"x": 210, "y": 60}, {"x": 190, "y": 30}, {"x": 135, "y": 40}, {"x": 90, "y": 65}, {"x": 55, "y": 95}, {"x": 40, "y": 135}, {"x": 65, "y": 150}, {"x": 95, "y": 145}, {"x": 120, "y": 160}]});
+EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
+TRACKS_DB.push({"id": "monaco", "name": "🇲🇨 Монако", "shortName": "Монако", "desc": "Точность между стенами · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 80, "y": 160}, {"x": 75, "y": 110}, {"x": 100, "y": 65}, {"x": 140, "y": 45}, {"x": 155, "y": 60}, {"x": 145, "y": 90}, {"x": 170, "y": 100}, {"x": 175, "y": 120}, {"x": 155, "y": 125}, {"x": 150, "y": 145}, {"x": 200, "y": 160}, {"x": 210, "y": 175}, {"x": 185, "y": 180}, {"x": 150, "y": 175}, {"x": 130, "y": 195}]});
+EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
