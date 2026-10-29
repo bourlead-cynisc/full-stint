@@ -276,3 +276,39 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
 #mobPit {top:194px;right:84px;width:132px;height:36px;font-size:11px;}
 #mobPause {top:194px;right:14px;width:62px;height:36px;font-size:10px;}
 body.is-mobile #control-hint {display:none;}
+/* Visible pit decisions and a separate keyboard settings screen. */
+#btnHudControls {position:absolute;top:18px;left:16px;z-index:9;border:1px solid #567083;background:#142330;color:#e5f3ff;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;}
+#pit-assistant {position:absolute;right:16px;top:198px;width:238px;z-index:8;background:#101d28f2;border:1px solid #3d5568;border-radius:14px;padding:14px;color:#e4edf5;font-size:12px;}
+#pit-assistant[hidden] {display:none;}
+#pit-assistant h2 {font-size:15px;margin:0 0 14px;color:#fff;letter-spacing:0;}
+#pit-assistant p {margin:12px 0 8px;color:#b9cada;font-size:12px;}
+.next-tires {display:flex;gap:6px;}
+.next-tires button {flex:1;min-width:0;border:1px solid #456075;border-radius:9px;background:#1c2b39;color:#dce8f2;padding:8px 2px;cursor:pointer;display:flex;align-items:center;flex-direction:column;gap:6px;font:inherit;}
+.next-tires button.selected {border:2px solid #5eead4;padding:7px 1px;background:#18433f;color:#fff;}
+.next-tires small {font-size:10px;color:#a7bccb;}
+.tire-dot {display:grid;place-items:center;border:3px solid;border-radius:50%;width:27px;height:27px;font-size:12px;}
+.tire-dot.soft {border-color:#ff6b76;}.tire-dot.medium{border-color:#f9d968;}.tire-dot.hard{border-color:#e4edf5;}
+#nextTireSummary {margin-top:9px;color:#8cf3dc;font-size:12px;}
+#btnPitRequest {width:100%;border:0;border-radius:9px;background:#5eead4;color:#07332d;font-size:12px;font-weight:700;padding:11px 6px;cursor:pointer;}
+#pitPlanText {margin-top:10px;font-size:12px;color:#fff;line-height:1.5;}
+.pit-help {display:block;margin-top:8px;color:#9bb2c5;line-height:1.5;font-size:11px;}
+#pit-assistant button:disabled {opacity:.5;cursor:default;}
+#hud-left {width:205px;background:#101d28e8;border-color:#314b5f;}
+#hud-right {min-width:238px;background:#101d28e8;border-color:#314b5f;}
+#hudCarTitle {color:#e6f1fa;font-size:12px;}
+#hudDriverName {line-height:1.5;color:#aec3d3;}
+#controlsModal {z-index:100;}
+.controls-card {width:min(850px,95vw);}
+.controls-heading {display:flex;justify-content:space-between;align-items:center;gap:18px;}
+.controls-heading h2 {font-size:25px;margin:0 0 5px;}.controls-heading p{color:#a8bfce;margin:0;}
+#bindingMessage {min-height:40px;color:#8cf3dc;font-size:13px;line-height:1.5;margin:20px 0 10px;}
+#bindingGrid {display:grid;grid-template-columns:minmax(150px,1fr) minmax(150px,1fr);align-items:center;gap:0 18px;margin-bottom:18px;}
+#bindingGrid>span {font-size:13px;color:#d7e4ee;padding:12px 0;border-bottom:1px solid #2d4151;}
+.binding-button {font:600 12px system-ui;color:#dcecf8;background:#1a2e3f;border:1px solid #456277;border-radius:8px;margin:4px 0;padding:9px 12px;cursor:pointer;min-height:36px;}
+.binding-button:hover {background:#244657;border-color:#5eead4;}
+.controls-card h3 {font-size:15px;color:#dcebf7;margin-top:25px;}
+.controls-card .config-bar {margin:0;}
+#control-hint {max-width:290px;font-size:10px;line-height:1.6;}
+@media(max-width:600px) {#bindingGrid{gap:0 8px;}#bindingGrid>span{font-size:11px;}.controls-card{padding:18px;}.controls-heading h2{font-size:21px;}}
+
+.controls-heading {position:sticky;top:-28px;background:#111a25;z-index:2;padding:10px 0;border-bottom:1px solid #2d4151;}

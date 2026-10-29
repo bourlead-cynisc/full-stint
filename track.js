@@ -22,12 +22,15 @@ const WALL_HALF_W      = 122;
 const PIT_WALL_INNER_W = 345;
 const PIT_CORRIDOR_OFFSET = 202;
 
-function getSplinePoint(p0, p1, p2, p3, t) {
-    const t2 = t * t, t3 = t2 * t;
-    return {
-        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
-    };
+function getSplinePoint(p0, p1, p2, p3, fraction) {
+    // Centripetal knots prevent loops where sparse survey points meet dense corners.
+    const t0=0, t1=Math.sqrt(Math.hypot(p1.x-p0.x,p1.y-p0.y))+1e-6;
+    const t2=t1+Math.sqrt(Math.hypot(p2.x-p1.x,p2.y-p1.y))+1e-6;
+    const t3=t2+Math.sqrt(Math.hypot(p3.x-p2.x,p3.y-p2.y))+1e-6;
+    const t=t1+(t2-t1)*fraction;
+    const mix=(a,b,lo,hi)=>({x:((hi-t)*a.x+(t-lo)*b.x)/(hi-lo),y:((hi-t)*a.y+(t-lo)*b.y)/(hi-lo)});
+    const a1=mix(p0,p1,t0,t1), a2=mix(p1,p2,t1,t2), a3=mix(p2,p3,t2,t3);
+    return mix(mix(a1,a2,t0,t2),mix(a2,a3,t1,t3),t1,t2);
 }
 
 function buildActiveTrackGeometry() {
@@ -44,12 +47,13 @@ function buildActiveTrackGeometry() {
         const p1 = controlPoints[i];
         const p2 = controlPoints[(i + 1) % controlPoints.length];
         const p3 = controlPoints[(i + 2) % controlPoints.length];
-        const samplesPerSegment = Math.max(4, Math.ceil(Math.hypot(p2.x-p1.x,p2.y-p1.y)/55));
+        const samplesPerSegment = Math.max(4, Math.ceil(Math.hypot(p2.x-p1.x,p2.y-p1.y)/20));
         for (let s = 0; s < samplesPerSegment; s++) {
             const pt = getSplinePoint(p0, p1, p2, p3, s / samplesPerSegment);
             trackSamples.push({ x: pt.x, y: pt.y, z: 0, slopeDeg: 0, nx: 0, ny: 0, curv: 0 });
         }
     }
+    trackSamples = resampleCenterline(trackSamples, 24);
     totalSamples = trackSamples.length;
 
     for (let i = 0; i < totalSamples; i++) {
@@ -92,7 +96,7 @@ function buildActiveTrackGeometry() {
         if (maxFutCurv > 0.14) color = '#ef4444';
         else if (maxFutCurv > 0.07) color = '#facc15';
 
-        const apexOffset = (Math.abs(cur.curv) > 0.08) ? (cur.curv >= 0 ? 15 : -15) : 0;
+        const apexOffset = 15 * Math.tanh(cur.curv * 8);
         dynamicRacingLinePoints.push({
             x: cur.x + cur.nx * apexOffset,
             y: cur.y + cur.ny * apexOffset,
@@ -256,7 +260,7 @@ function getTrackInfo(px, py, hintIdx = -1) {
         }
     }
     if (!searchAll && minDistSq > 520 * 520) return getTrackInfo(px, py, -1);
-    return { dist: Math.sqrt(minDistSq), center: closestPt, index: closestIdx, normProgress: (closestIdx + bestT) / N };
+    return { dist: Math.sqrt(minDistSq), center: closestPt, index: closestIdx, normProgress: (sampleCumDist[closestIdx] + bestT * Math.hypot(trackSamples[(closestIdx+1)%N].x-trackSamples[closestIdx].x, trackSamples[(closestIdx+1)%N].y-trackSamples[closestIdx].y)) / trackLengthPx };
 }
 
 function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
@@ -273,16 +277,14 @@ function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
 
 function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftScale = 0, upX = 0, upY = 0) {
     const N = trackSamples.length;
-    const span = 88;
+    const span = Math.min(Math.floor((N-1)/2), 180);
     ctx.beginPath();
     const firstIdx = (centerIdx - span + N) % N;
-    const refZ = trackSamples[centerIdx].z;
-    const firstLift = (trackSamples[firstIdx].z - refZ) * elevLiftScale;
-    ctx.moveTo(trackSamples[firstIdx].x + offsetX + upX * firstLift, trackSamples[firstIdx].y + offsetY + upY * firstLift);
-    for (let s = -span + 1; s <= span; s++) {
-        const idx = (centerIdx + s + N) % N;
-        const lift = (trackSamples[idx].z - refZ) * elevLiftScale;
-        ctx.lineTo(trackSamples[idx].x + offsetX + upX * lift, trackSamples[idx].y + offsetY + upY * lift);
+    const first = trackSamples[firstIdx], prev = trackSamples[(firstIdx-1+N)%N];
+    ctx.moveTo((prev.x+first.x)/2 + offsetX, (prev.y+first.y)/2 + offsetY);
+    for (let i=0; i<=span*2; i++) {
+        const pt=trackSamples[(firstIdx+i)%N], next=trackSamples[(firstIdx+i+1)%N];
+        ctx.quadraticCurveTo(pt.x+offsetX,pt.y+offsetY,(pt.x+next.x)/2+offsetX,(pt.y+next.y)/2+offsetY);
     }
     return firstIdx;
 }
@@ -306,6 +308,7 @@ function drawTrack(ctx) {
     const curbFirst = traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.strokeStyle = '#dc2626'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
+    ctx.lineCap = 'butt';
     ctx.setLineDash([34, 34]); ctx.lineDashOffset = sampleCumDist[curbFirst] % 68;
     ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
     ctx.setLineDash([]); ctx.lineDashOffset = 0;
@@ -320,15 +323,13 @@ function drawTrack(ctx) {
     if (window.showRacingLine && dynamicRacingLinePoints.length > 0) {
         ctx.save();
         const N = dynamicRacingLinePoints.length;
-        const refZ = trackSamples[centerIdx].z;
-        for (let s = -88; s < 88; s++) {
-            const p1 = dynamicRacingLinePoints[(centerIdx + s + N) % N];
-            const p2 = dynamicRacingLinePoints[(centerIdx + s + 1 + N) % N];
-            ctx.strokeStyle = p1.color; ctx.lineWidth = 4.5;
-            ctx.beginPath();
-            ctx.moveTo(p1.x + upX * ((p1.z - refZ) * elevScale), p1.y + upY * ((p1.z - refZ) * elevScale));
-            ctx.lineTo(p2.x + upX * ((p2.z - refZ) * elevScale), p2.y + upY * ((p2.z - refZ) * elevScale));
-            ctx.stroke();
+        ctx.lineWidth=3; ctx.lineCap='round';
+        for (let j=-180; j<180; j++) {
+            const i=(centerIdx+j+N)%N;
+            const prev=dynamicRacingLinePoints[(i-1+N)%N], pt=dynamicRacingLinePoints[i], next=dynamicRacingLinePoints[(i+1)%N];
+            ctx.strokeStyle=pt.color;
+            ctx.beginPath();ctx.moveTo((prev.x+pt.x)/2,(prev.y+pt.y)/2);
+            ctx.quadraticCurveTo(pt.x,pt.y,(pt.x+next.x)/2,(pt.y+next.y)/2);ctx.stroke();
         }
         ctx.restore();
     }
@@ -393,4 +394,18 @@ function getTrackPointAtProgress(norm) {
     const length=Math.hypot(b.x-a.x,b.y-a.y) || 1;
     const t=(distance-sampleCumDist[lo])/length;
     return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,nx:a.nx,ny:a.ny};
+}
+
+function resampleCenterline(points, spacing) {
+    const distances=[0];
+    for(let i=0;i<points.length;i++) distances.push(distances[i]+Math.hypot(points[(i+1)%points.length].x-points[i].x,points[(i+1)%points.length].y-points[i].y));
+    const length=distances[points.length], count=Math.max(32,Math.ceil(length/spacing));
+    let segment=0;
+    return Array.from({length:count},(_,i)=>{
+        const distance=i*length/count;
+        while(segment<points.length-1 && distances[segment+1]<=distance) segment++;
+        const a=points[segment], b=points[(segment+1)%points.length];
+        const t=(distance-distances[segment])/Math.max(1e-9,distances[segment+1]-distances[segment]);
+        return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:0,slopeDeg:0,nx:0,ny:0,curv:0};
+    });
 }

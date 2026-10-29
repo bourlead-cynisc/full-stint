@@ -159,6 +159,7 @@ class Car {
         this.nextCompound = (this.strategy && this.strategy.stops && this.strategy.stops.length) ? this.strategy.stops[0].tire : this.compound;
         this.tireHealth = 100; this.pitStopsDone = 0;
         this.pitPhase = 'none'; this.pitTimer = 0; this.pitRequested = false; this.pendingTire = null;
+        this.aiBlockedTime = 0; this.aiRecoveryTime = 0;
         this.hitCooldown = 0; this.slip = 0; this.braking = false; this.drsActive = false;
         this.timingStarted = true; this.progressAcc = 0; this.prevNorm = undefined;
         this.lastSampleIdx = -1; this.wearScale = 1; this.aiConf = 1; this.yawRate = 0;
@@ -264,6 +265,9 @@ class Car {
 
     // ИИ: ведёт по гоночной линии, считает тормозные точки и скорость в поворотах
     aiControls(dt, speedFactor = 1.0, override = null) {
+        const stoppedAtWall = Math.abs(this.velocity) * MS < 1 && this.dbgDist > ASPHALT_HALF_W && this.smoothThrottle > 0.4;
+        this.aiBlockedTime = stoppedAtWall ? this.aiBlockedTime + dt : 0;
+        if (this.aiBlockedTime > 1) {this.aiRecoveryTime = 1.6; this.aiBlockedTime = 0;}
         const N = totalSamples;
         const vms = Math.abs(this.velocity) * MS;
         const base = Math.max(0, this.lastSampleIdx);
@@ -309,6 +313,12 @@ class Car {
         }
         steer = Math.max(-1, Math.min(1, steer));
         this.smoothSteer += (steer - this.smoothSteer) * 0.35;
+        if (this.aiRecoveryTime > 0) {
+            this.aiRecoveryTime -= dt;
+            this.smoothThrottle = 0; this.smoothBrake = 1;
+            return {thr:0,brake:1,steer:-steer,manual:false,reverse:true};
+        }
+
 
         // скорость: минимум по всем впереди лежащим поворотам с учётом торможения
         const comp = TIRE_COMPOUNDS[this.compound];
@@ -517,7 +527,7 @@ class Car {
         if (vms < 0.05) aDrag = 0;
 
         let newV;
-        const wantReverse = this.isPlayer && !ctl.hold && this.pitPhase === 'none' && ctl.brake > 0.05 && ctl.thr < 0.05 && vms < 1.2;
+        const wantReverse = (this.isPlayer || ctl.reverse) && !ctl.hold && this.pitPhase === 'none' && ctl.brake > 0.05 && ctl.thr < 0.05 && vms < 1.2;
         if (wantReverse || (vmsSigned < -0.05 && ctl.thr < 0.05 && ctl.brake > 0.05)) {
             newV = Math.max(-3.2, vmsSigned - 3.0 * ctl.brake * dt);        // задний ход
         } else if (vmsSigned < -0.05) {
@@ -576,27 +586,44 @@ class Car {
             if (skidMarks.length > 500) skidMarks.shift();
         }
 
-        // ---------- стена ----------
-        const ptInfo = getTrackInfo(this.x, this.y, this.lastSampleIdx);
-        if (ptInfo.dist > WALL_HALF_W) {
-            const nx = (this.x - ptInfo.center.x) / ptInfo.dist;
-            const ny = (this.y - ptInfo.center.y) / ptInfo.dist;
-            this.x -= nx * (ptInfo.dist - WALL_HALF_W);
-            this.y -= ny * (ptInfo.dist - WALL_HALF_W);
-            const impact = Math.max(0, this.dx * nx + this.dy * ny);
-            this.dx -= nx * impact * 1.1; this.dy -= ny * impact * 1.1;
-            if (impact > 2.0 && this.hitCooldown === 0) {
-                this.hitCooldown = 45;
-                this.applyImpact(impact * MS, 0.7);
-                spawnSparks(this.x, this.y, 8);
-                if (this.isPlayer) {
-                    showRaceControl(`💥 УДАР! Повреждение крыла: ${Math.round(this.wingDamage * 100)}%`, '#ff4757');
-                    if (typeof sfxImpact === 'function') sfxImpact(Math.min(1, impact / 8));
-                }
-            }
-        }
+        this.resolveWallContact(dt);
 
         this.updateLapAndSectors();
+    }
+
+    resolveWallContact(dt) {
+        const info = getTrackInfo(this.x, this.y, this.lastSampleIdx);
+        if (info.dist < 0.001) return;
+        const nx = (this.x - info.center.x) / info.dist;
+        const ny = (this.y - info.center.y) / info.dist;
+        const fx = Math.sin(this.angle), fy = -Math.cos(this.angle);
+        const front = fx * nx + fy * ny;
+        const side = Math.cos(this.angle) * nx + Math.sin(this.angle) * ny;
+        const extent = Math.abs(front) * this.height * 0.49 + Math.abs(side) * this.width * 0.48;
+        const limit = WALL_HALF_W - extent;
+        if (info.dist <= limit) return;
+        this.x -= nx * (info.dist - limit);
+        this.y -= ny * (info.dist - limit);
+        const impact = Math.max(0, this.dx * nx + this.dy * ny);
+        if (impact > 0) {
+            // Keep longitudinal speed consistent with the surviving velocity vector.
+            // Otherwise the engine restores the pre-impact speed on the next frame.
+            const friction = Math.max(0, 1 - 5 * dt - 0.55 * Math.abs(front));
+            this.dx = (this.dx - nx * impact) * friction;
+            this.dy = (this.dy - ny * impact) * friction;
+            this.velocity = this.dx * fx + this.dy * fy;
+            this.yawRate *= friction;
+            if (Math.abs(this.velocity) < 0.02) this.velocity = this.dx = this.dy = 0;
+        }
+        if (impact * MS > 3 && this.hitCooldown === 0) {
+            this.hitCooldown = 30;
+            this.applyImpact(impact * MS, Math.abs(front));
+            spawnSparks(this.x, this.y, 8);
+            if (this.isPlayer) {
+                showRaceControl('Удар об ограждение. '+bindingLabel('brake')+' — отъехать назад', '#ff8b7a');
+                if (typeof sfxImpact === 'function') sfxImpact(Math.min(1, impact / 8));
+            }
+        }
     }
 
     updateLapAndSectors() {

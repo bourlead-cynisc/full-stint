@@ -143,12 +143,14 @@ window.selectCarClass = function (cls) {
 
 function selectNextTire(compKey) {
     if (!playerCar || currentSession !== 'RACE') return;
+    if (playerCar.pitPhase === 'service') return;
     playerCar.nextCompound = compKey;
+    if (playerCar.pitPhase === 'entry') playerCar.pendingTire = compKey;
     showRaceControl(`Шины на следующий пит-стоп: ${TIRE_COMPOUNDS[compKey].name}`, TIRE_COMPOUNDS[compKey].color);
 }
 
 function requestPitStop() {
-    if (!playerCar || currentSession !== 'RACE') return;
+    if (!playerCar || currentSession !== 'RACE' || playerCar.pitPhase !== 'none') return;
     playerCar.pitRequested = !playerCar.pitRequested;
     showRaceControl(playerCar.pitRequested
         ? `🛠️ Заезд в боксы на этом круге: ${TIRE_COMPOUNDS[playerCar.nextCompound].name}`
@@ -161,6 +163,7 @@ function requestPitStop() {
 function clearInputs() {
     keys.w = keys.a = keys.s = keys.d = keys.space = false;
     mobileSteer = mobileThrottle = mobileBrake = 0;
+    pressedCodes.clear();
     window.shiftUpPressed = window.shiftDownPressed = false;
 }
 function releaseFocus() {
@@ -170,41 +173,29 @@ function releaseFocus() {
 }
 
 function onKeyDown(e) {
+    if(handleBindingCapture(e)) return;
     initAudio();
-    const c = e.code;
-    const playing = (currentSession === 'QUALI' || currentSession === 'RACE');
-    if (playing && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Enter', 'Tab'].includes(c)) e.preventDefault();
-    if (c === 'Escape') { if (playing) togglePauseMenu(); return; }
-    if (isPaused || !playing) return;
-
-    if (c === 'ArrowUp' || c === 'KeyW') keys.w = true;
-    if (c === 'ArrowLeft' || c === 'KeyA') keys.a = true;
-    if (c === 'ArrowDown' || c === 'KeyS') keys.s = true;
-    if (c === 'ArrowRight' || c === 'KeyD') keys.d = true;
-    if (c === 'Space') keys.space = true;
-
-    if (!e.repeat) {
-        if (c === 'ShiftLeft' || c === 'ShiftRight' || c === 'KeyE') window.shiftUpPressed = true;
-        if (c === 'ControlLeft' || c === 'ControlRight' || c === 'KeyQ') window.shiftDownPressed = true;
-        if (c === 'KeyC') { topFollow = topFollow === 'CAR' ? 'TRACK' : 'CAR'; refreshOptionButtons(); showRaceControl(topFollow === 'CAR' ? '🚗 Камера сверху: на машине' : '🗺️ Камера сверху: зафиксирована на трассе', '#38bdf8'); }
-        if (c === 'Equal' || c === 'NumpadAdd') topZoom = Math.min(2.2, topZoom * 1.15);
-        if (c === 'Minus' || c === 'NumpadSubtract') topZoom = Math.max(0.45, topZoom / 1.15);
-        if (c === 'KeyH') window.showRacingLine = !window.showRacingLine;
-        if (c === 'KeyM') toggleSound();
-        if (c === 'KeyP') requestPitStop();
-        if (c === 'Digit1') selectNextTire('soft');
-        if (c === 'Digit2') selectNextTire('medium');
-        if (c === 'Digit3') selectNextTire('hard');
+    const c=e.code;
+    const playing=currentSession==='QUALI'||currentSession==='RACE';
+    if(bindingMatches('settings',c)) {e.preventDefault();if(!e.repeat)openControls();return;}
+    if(bindingMatches('pause',c)) {if(playing){e.preventDefault();if(!e.repeat)togglePauseMenu();}return;}
+    if(isPaused||!playing) return;
+    if(e.target instanceof Element && e.target.closest('button') && (c==='Space'||c==='Enter'))return;
+    if(Object.keys(keyBindings).some(action=>bindingMatches(action,c))) e.preventDefault();
+    pressedCodes.add(c);syncKeyboardInputs();
+    if(!e.repeat) {
+        if(bindingMatches('shiftUp',c))window.shiftUpPressed=true;
+        if(bindingMatches('shiftDown',c))window.shiftDownPressed=true;
+        if(bindingMatches('camera',c)){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();}
+        if(bindingMatches('zoomIn',c))topZoom=Math.min(2.2,topZoom*1.15);
+        if(bindingMatches('zoomOut',c))topZoom=Math.max(0.45,topZoom/1.15);
+        if(bindingMatches('line',c))window.showRacingLine=!window.showRacingLine;
+        if(bindingMatches('sound',c))toggleSound();
+        if(bindingMatches('pit',c))requestPitStop();
+        for(const tire of ['soft','medium','hard'])if(bindingMatches(tire,c))selectNextTire(tire);
     }
 }
-function onKeyUp(e) {
-    const c = e.code;
-    if (c === 'ArrowUp' || c === 'KeyW') keys.w = false;
-    if (c === 'ArrowLeft' || c === 'KeyA') keys.a = false;
-    if (c === 'ArrowDown' || c === 'KeyS') keys.s = false;
-    if (c === 'ArrowRight' || c === 'KeyD') keys.d = false;
-    if (c === 'Space') keys.space = false;
-}
+function onKeyUp(e) {pressedCodes.delete(e.code);syncKeyboardInputs();}
 // слушаем и window, и document: в некоторых встроенных просмотрщиках событие приходит только на одно из них
 window.addEventListener('keydown', onKeyDown);
 window.addEventListener('keyup', onKeyUp);
@@ -330,7 +321,7 @@ function renderStrategyCards() {
     rules.innerHTML = `${timed ? `Тактика рассчитана примерно на <b>${laps}</b> кр. (оценка для ${ENDURANCE_MINUTES} минут). ` : ''}` +
         `Заезд в отдельный пит-лейн автоматический, лимит 80 км/ч. Оценка потери — ${PIT_STOP_LOSS_SEC} с. ` +
         `Остаток ниже ${TIRE_CLIFF_PCT}% — снижение сцепления (⚠). ` +
-        `Во время гонки: <b>1/2/3</b> — шины на следующий стоп, <b>P</b> — заехать в боксы на этом круге.`;
+        `Во время гонки выберите шины в панели справа и нажмите «Запросить заезд».`;
     grid.innerHTML = '';
     list.forEach((s, i) => {
         const stints = analyzeStrategy(laps, s);
@@ -515,7 +506,7 @@ function startQualifyingSession() {
     rebuildEngineVoices();
     document.getElementById('sessionLabel').textContent = 'КВАЛИФИКАЦИЯ';
     document.getElementById('start-lights').style.opacity = 0;
-    showRaceControl('Квалификация: проезжайте быстрые круги. Esc → завершить и начать гонку', '#38bdf8');
+    showRaceControl('Квалификация: быстрые круги. '+bindingLabel('pause')+' → завершение квалификации', '#38bdf8');
 }
 
 // ---- огни старта ----
@@ -833,7 +824,7 @@ function updateHUD() {
 
     const comp = TIRE_COMPOUNDS[p.compound];
     const compEl = document.getElementById('dashCompound');
-    compEl.textContent = comp.name; compEl.style.color = comp.color;
+    compEl.textContent = ({soft:'Мягкие · S',medium:'Средние · M',hard:'Жёсткие · H'})[p.compound]; compEl.style.color = comp.color;
     const hEl = document.getElementById('dashTireHealth');
     hEl.innerHTML = `${Math.round(p.tireHealth)}<small>%</small>`;
     hEl.classList.toggle('hud-tire-warn', p.tireHealth <= TIRE_CLIFF_PCT);
@@ -847,11 +838,23 @@ function updateHUD() {
     if (currentSession === 'RACE') {
         const sched = p.strategy && p.strategy.stops && p.strategy.stops[p.pitStopsDone];
         if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Ремонт / шины: ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? 'Въезд · 80 км/ч' : 'Выезд · уступаем трафику');
-        else if (p.pitRequested) plan = `на этом круге → ${TIRE_COMPOUNDS[p.nextCompound].shortTag}`;
-        else if (sched) plan = `конец кр. ${sched.lap} → ${TIRE_COMPOUNDS[p.nextCompound].shortTag}`;
-        else plan = p.tireHealth < 40 ? 'шины на износе: P' : 'стопов больше нет';
+        else if (p.pitRequested) plan = 'Заедем на ближайшем въезде';
+        else if (sched) plan = `План: конец круга ${sched.lap}`;
+        else plan = p.tireHealth < 40 ? 'Шины изношены — пора в боксы' : 'Заезд пока не запланирован';
     }
     document.getElementById('pitPlanText').textContent = plan;
+    document.getElementById('pit-assistant').hidden=currentSession!=='RACE';
+    const nextLabel={soft:'Мягкие',medium:'Средние',hard:'Жёсткие'}[p.nextCompound];
+    document.getElementById('nextTireSummary').textContent='Поставят: '+nextLabel;
+    for(const button of document.querySelectorAll('[data-next-tire]')) {
+        const selected=button.dataset.nextTire===p.nextCompound;
+        button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));
+        button.disabled=p.pitPhase==='service';
+    }
+    const pitButton=document.getElementById('btnPitRequest');
+    pitButton.disabled=p.pitPhase!=='none';
+    pitButton.textContent=(p.pitRequested?'Отменить заезд':'Запросить заезд')+' · '+bindingLabel('pit');
+
 
     let html = '';
     const rowHtml = (c, idx) => {
@@ -1017,3 +1020,10 @@ setTimeout(() => { if (currentSession === 'MENU') renderGarageUI(); }, 400);
 requestAnimationFrame(gameLoop);
 
 document.addEventListener('keydown',e=>{if((e.code==='Enter'||e.code==='Space') && e.target.matches('.track-card,.car-item,.strategy-card')){e.preventDefault();e.target.click();}});
+
+for(const button of document.querySelectorAll('[data-next-tire]')) button.addEventListener('click',()=>{selectNextTire(button.dataset.nextTire);updateHUD();releaseFocus();});
+document.getElementById('btnPitRequest').addEventListener('click',()=>{requestPitStop();updateHUD();releaseFocus();});
+for(const button of document.querySelectorAll('[data-open-controls]'))button.addEventListener('click',openControls);
+document.getElementById('btnCloseControls').addEventListener('click',closeControls);
+document.getElementById('btnResetBindings').addEventListener('click',()=>{keyBindings=JSON.parse(JSON.stringify(DEFAULT_BINDINGS));capturingBinding=null;clearInputs();saveBindings();renderBindings();document.getElementById('bindingMessage').textContent='Стандартные клавиши восстановлены.';});
+updateControlHints();
