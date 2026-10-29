@@ -4,12 +4,11 @@ let trackSamples = [];
 let totalSamples = 0;
 let sfDirX = 0, sfDirY = -1, sfNormX = 1, sfNormY = 0, START_ANGLE = 0;
 
-let pitWaypoints = [];
+let pitWaypoints = [], pitCumDist = [], pitRouteLength = 1;
 let pitLaneStartPt = {x: 0, y: 0}, pitLaneEndPt = {x: 0, y: 0};
 let pitWallStartPt = {x: 0, y: 0}, pitWallEndPt = {x: 0, y: 0};
 let teamPitBoxes = [];
 let drsMarkerLines = [];
-let envDecorations = [];
 let dynamicRacingLinePoints = [];
 
 let minX = 0, maxX = 1, minY = 0, maxY = 1;
@@ -141,16 +140,17 @@ function buildActiveTrackGeometry() {
     sfNormX = (-sfDirY) * trk.pitSideSign; sfNormY = ( sfDirX) * trk.pitSideSign;
     START_ANGLE = Math.atan2(sfDirX, -sfDirY);
 
-    // Lane follows the actual final/first corners instead of an imaginary straight.
-    pitWaypoints = Array.from({length: 41}, (_, i) => {
-        const norm = (0.94 + i * 0.003) % 1;
-        const pt = getTrackPointAtProgress(norm);
-        const blend = Math.min(1, i / 8, (40 - i) / 8);
-        const offset = PIT_CORRIDOR_OFFSET * Math.sin(blend * Math.PI / 2) * trk.pitSideSign;
-        return {x: pt.x + pt.nx * offset, y: pt.y + pt.ny * offset};
-    });
-    pitLaneStartPt = pitWaypoints[8]; pitLaneEndPt = pitWaypoints[32];
-    pitWallStartPt = pitWaypoints[9]; pitWallEndPt = pitWaypoints[31];
+    const mapped=trk.realPitPoints.map(p=>({...p}));
+    let entry=getTrackInfo(mapped[0].x,mapped[0].y,-1),exit=getTrackInfo(mapped.at(-1).x,mapped.at(-1).y,-1);
+    if((exit.normProgress-entry.normProgress+1)%1>.45) {mapped.reverse();[entry,exit]=[exit,entry];}
+    trk.pitEntryNorm=entry.normProgress;trk.pitExitNorm=exit.normProgress;
+    trk.pitProgressSpan=(exit.normProgress-entry.normProgress+1)%1;
+    pitWaypoints=sampleOpenPitPath([{x:entry.center.x,y:entry.center.y},...mapped,{x:exit.center.x,y:exit.center.y}],81);
+    pitCumDist=[0];
+    for(let i=1;i<pitWaypoints.length;i++)pitCumDist.push(pitCumDist[i-1]+Math.hypot(pitWaypoints[i].x-pitWaypoints[i-1].x,pitWaypoints[i].y-pitWaypoints[i-1].y));
+    pitRouteLength=pitCumDist.at(-1);
+    pitLaneStartPt=pitWaypoints[8];pitLaneEndPt=pitWaypoints.at(-9);
+    pitWallStartPt=pitWaypoints[12];pitWallEndPt=pitWaypoints.at(-12);
 
     buildTeamPitBoxes();
 
@@ -173,7 +173,6 @@ function buildActiveTrackGeometry() {
         if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
     }
 
-    generateTrackEnvironment();
 }
 
 function buildTeamPitBoxes() {
@@ -181,35 +180,10 @@ function buildTeamPitBoxes() {
     teamPitBoxes = [];
     for (let i = 0; i < catalog.length; i++) {
         const spec = catalog[i];
-        const node = 12 + i;
+        const node = Math.round(81*(.25+.38*i/Math.max(1,catalog.length-1)));
         const pt = pitWaypoints[node];
         teamPitBoxes.push({teamIndex: i, shortName: spec.shortName, color: spec.livery.primary,
             node, x: pt.x, y: pt.y, garageX: pt.x + sfNormX * 70, garageY: pt.y + sfNormY * 70});
-    }
-}
-
-function generateTrackEnvironment() {
-    envDecorations = [];
-    let seed = 1234567 + selectedTrackIndex * 7919;
-    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    const N = totalSamples;
-    const SPONSORS = [['#dc2626', '#fff'], ['#2563eb', '#fde047'], ['#16a34a', '#fff'], ['#f59e0b', '#111827'], ['#7c3aed', '#fff'], ['#e11d48', '#fde68a'], ['#0ea5e9', '#0b1220']];
-    const place = (type, idx, side, off, extra) => {
-        const s = trackSamples[idx];
-        const x = s.x + s.nx * off * side, y = s.y + s.ny * off * side;
-        // не ставим объект, если рядом другая часть трассы
-        const info = getTrackInfo(x, y, -1);
-        if (info.dist < Math.abs(off) * 0.85) return;
-        envDecorations.push(Object.assign({ type, idx, side, off, x, y, z: s.z, tx: s.ny, ty: -s.nx }, extra));
-    };
-    for (let i = 0; i < N; i++) {
-        for (const side of [-1, 1]) {
-            if (rnd() < 0.55) place('tree', i, side, 175 + rnd() * 330, { h: 34 + rnd() * 34, shade: Math.floor(rnd() * 3) });
-            if (rnd() < 0.30) place('tree', i, side, 150 + rnd() * 160, { h: 26 + rnd() * 24, shade: Math.floor(rnd() * 3) });
-        }
-        if (i % 7 === 0) { const sp = SPONSORS[Math.floor(rnd() * SPONSORS.length)]; place('board', i, (i / 7) % 2 ? 1 : -1, 134, { c1: sp[0], c2: sp[1] }); }
-        if (i % 5 === 2) place('lamp', i, (i / 5 | 0) % 2 ? 1 : -1, 136, {});
-        if (i % 46 === 11) place('stand', i, rnd() < 0.5 ? 1 : -1, 170 + rnd() * 30, { hue: Math.floor(rnd() * 360) });
     }
 }
 
@@ -382,7 +356,7 @@ function drawPitLane(ctx) {
         ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.fillText(String(box.teamIndex+1),box.x+14,box.y);
     }
     ctx.fillStyle = '#facc15'; ctx.font = 'bold 15px sans-serif';
-    ctx.fillText('PIT 80',pitWaypoints[5].x,pitWaypoints[5].y-35);
+    ctx.fillText('PIT '+TRACKS_DB[selectedTrackIndex].pitSpeedLimit,pitWaypoints[5].x,pitWaypoints[5].y-35);
     ctx.restore();
 }
 
@@ -408,4 +382,22 @@ function resampleCenterline(points, spacing) {
         const t=(distance-distances[segment])/Math.max(1e-9,distances[segment+1]-distances[segment]);
         return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:0,slopeDeg:0,nx:0,ny:0,curv:0};
     });
+}
+
+function sampleOpenPitPath(points,count) {
+    const dense=[];
+    for(let i=0;i<points.length-1;i++) for(let j=0;j<8;j++) dense.push(getSplinePoint(points[Math.max(0,i-1)],points[i],points[i+1],points[Math.min(points.length-1,i+2)],j/8));
+    dense.push(points.at(-1));
+    const distances=[0];
+    for(let i=1;i<dense.length;i++) distances.push(distances[i-1]+Math.hypot(dense[i].x-dense[i-1].x,dense[i].y-dense[i-1].y));
+    let segment=0;return Array.from({length:count},(_,i)=>{
+        const d=distances.at(-1)*i/(count-1);
+        while(segment<dense.length-2&&distances[segment+1]<d)segment++;
+        const t=(d-distances[segment])/Math.max(1e-9,distances[segment+1]-distances[segment]);
+        return {x:dense[segment].x+(dense[segment+1].x-dense[segment].x)*t,y:dense[segment].y+(dense[segment+1].y-dense[segment].y)*t};
+    });
+}
+function isPitEntryProgress(norm) {
+    const delta=(norm-TRACKS_DB[selectedTrackIndex].pitEntryNorm+1.5)%1-.5;
+    return Math.abs(delta)<=150/trackLengthPx;
 }

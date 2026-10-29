@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>FIA Motorsport Sim: WEC GT3 &amp; F1</title>
-    <link rel="stylesheet" href="styles.css?v=20261029-controls">
+    <link rel="stylesheet" href="styles.css?v=20261030-race">
 </head>
 <body tabindex="-1">
 
@@ -86,6 +86,16 @@
         <div id="pitPlanText" role="status">Заезд пока не запланирован</div>
         <small class="pit-help">Машина сама заедет на пит-лейн и остановится у команды.</small>
     </section>
+    <section id="damage-panel" aria-label="Повреждения машины">
+        <h2>Состояние машины</h2>
+        <div data-damage="front"><span>Переднее крыло</span><b>0%</b></div>
+        <div data-damage="rear"><span>Заднее крыло</span><b>0%</b></div>
+        <div data-damage="suspension"><span>Подвеска</span><b>0%</b></div>
+        <div data-damage="engine"><span>Двигатель</span><b>0%</b></div>
+        <div data-damage="body"><span>Кузов</span><b>0%</b></div>
+        <p id="damageEffect">Все узлы исправны</p><small id="damageRepairHint">Ремонт выполняется на пит-стопе</small>
+    </section>
+    <section id="trial-panel" hidden aria-label="Гонка с призраком"><h2>Личный рекорд</h2><b id="trialRecord">—</b><p id="trialStatus">Выезд</p><small id="trialGhostStatus"></small><p>Срезка или удар — круг не засчитывается.<br><span id="trialPauseHint">Пауза и выход в гараж: Esc</span>.</p></section>
     <div id="control-hint">WASD / стрелки — управление<br>P — боксы · C — камера · Esc — пауза</div>
 </div>
 
@@ -125,6 +135,7 @@
             <span id="driverHint" style="color:#95a5a6; font-size:10.5px;"></span>
         </div>
 
+        <div class="section-label">СОПЕРНИКИ</div><div class="ai-settings"><label>Темп соперников <output>100%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="100" aria-label="Темп соперников"></label><label>Агрессивность <output>55%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="55" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
         <div class="section-label">4. ДИСТАНЦИЯ И ТАКТИКА НА ШИНЫ</div>
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
             <div id="lapSection" style="display:flex; gap:10px; align-items:center;">
@@ -141,7 +152,10 @@
         </div>
         <div class="strategy-grid" id="strategyGrid"></div>
 
+        <p id="ghostRecordHint"></p>
+        <small class="map-credit">Геометрия © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · ODbL</small>
         <div class="start-actions"><button class="secondary-btn" data-open-controls>Управление и клавиши</button>
+                <button class="ghost-btn" id="btnGhostRace">Гонка с призраком</button>
                 <button class="secondary-btn" id="btnStartQuali">⏱️ Квалификация</button>
                 <button class="primary-btn" id="btnDirectRace">Гонка со старта ▶</button>
             </div>
@@ -155,6 +169,7 @@
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
             <button class="secondary-btn" data-open-controls>Управление и клавиши</button>
             <button class="primary-btn" id="btnResumeGame">Продолжить</button>
+            <button class="secondary-btn" id="btnRestartTrial" style="display:none;">Новая попытка с призраком</button>
             <button class="secondary-btn" id="btnEndQuali" style="display:none;">🏁 Завершить квалификацию → гонка по её итогам</button>
             <button class="secondary-btn" id="btnBackToGarage">В гараж</button>
         </div>
@@ -192,7 +207,7 @@
         <p id="bindingMessage" role="status"></p>
         <div id="bindingGrid"></div>
         <button id="btnResetBindings" class="secondary-btn">Сбросить клавиши</button>
-        <h3>Коробка, камера и поведение машины</h3>
+<h3>Соперники</h3><div class="ai-settings"><label>Темп соперников <output>100%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="100" aria-label="Темп соперников"></label><label>Агрессивность <output>55%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="55" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div><h3>Коробка, камера и поведение машины</h3><p class="settings-note">В режиме с призраком физика и коробка фиксируются на старте. Клавиши и камеру можно менять.</p>
 <div class="config-bar">
             <div style="display:flex; gap:18px; flex-wrap:wrap;">
                 <div>
@@ -227,16 +242,20 @@
 
 <script src="data.js"></script>
 <script src="circuits.js"></script>
+<script src="track-geometry.js"></script>
+<script src="vehicle-character.js"></script>
 <script src="sprites.js"></script>
 <script src="models.js"></script>
-<script src="track.js?v=20261029-controls"></script>
+<script src="track.js?v=20261030-race"></script>
 <script src="render2d.js"></script>
 
-<script src="topview.js"></script>
+<script src="topview.js?v=20261030-race"></script>
 <script src="audio.js"></script>
-<script src="physics.js?v=20261029-controls"></script>
+<script src="race-ai.js"></script>
+<script src="physics.js?v=20261030-race"></script>
 <script src="season.js"></script>
-<script src="controls.js?v=20261029-controls"></script>
-<script src="main.js?v=20261029-controls"></script>
+<script src="controls.js?v=20261030-race"></script>
+<script src="ghost.js"></script>
+<script src="main.js?v=20261030-race"></script>
 </body>
 </html>

@@ -16,10 +16,11 @@ for (const cls of ['GT3','F1']) {
         check(Number.isFinite(c.x+c.y+c.velocity), 'NaN '+cls+track);
         check(c.progressAcc > .3, 'AI stuck '+cls+track+' '+c.progressAcc);
         const progress = c.progressAcc;
+        c.engineDamage=.6;
         const pt=pitWaypoints[0]; c.x=pt.x;c.y=pt.y;c.lastSampleIdx=-1;
         c.nextCompound='hard'; c.pitRequested=true;
         for (let n=0;n<18000 && (c.pitStopsDone===0 || c.pitPhase!=='none');n++) {simTimeMs+=1000/60;c.update(1/60,null);}
-        check(c.pitPhase==='none' && c.pitStopsDone===1 && c.compound==='hard', 'Pit stuck '+cls+track+' '+c.pitNode+' '+c.pitPhase);
+        check(c.pitPhase==='none' && c.pitStopsDone===1 && c.compound==='hard' && c.engineDamage===0 && c.suspensionDamage===0 && c.wingDamage===0, 'Pit stuck '+cls+track+' '+c.pitNode+' '+c.pitPhase);
         results.push({cls,track:TRACKS_DB[track].id,progress:+progress.toFixed(2)});
     }
 }

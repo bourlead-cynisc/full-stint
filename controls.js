@@ -30,6 +30,7 @@ function syncKeyboardInputs() {
     for(const [action,key] of [['throttle','w'],['brake','s'],['left','a'],['right','d']]) keys[key]=keyBindings[action].some(code=>pressedCodes.has(code));
 }
 function renderBindings() {
+    for(const button of document.querySelectorAll('[data-hm],#btnGearAuto,#btnGearManual'))button.disabled=currentSession==='TIME_TRIAL';
     const grid=document.getElementById('bindingGrid');grid.replaceChildren();
     for(const action of Object.keys(DEFAULT_BINDINGS)) {
         const label=document.createElement('span');label.textContent=ACTION_LABELS[action];

@@ -21,3 +21,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## OpenStreetMap geometry
+
+The separate track-geometry.js database contains OpenStreetMap-derived centerlines and pit-lane coordinates under ODbL 1.0. See DATA_LICENSE.md for full database availability, attribution and source commit. The MIT license above does not relicense these OSM data.

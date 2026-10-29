@@ -91,6 +91,7 @@ function registerLapForGlobalBest(car, lapMs) {
 // НАСТРОЙКИ: коробка, камера, круги, класс
 // ============================================================================
 window.setTransmissionMode = function (mode) {
+    if(currentSession==='TIME_TRIAL')return;
     window.transmissionMode = mode;
     document.getElementById('btnGearAuto').classList.toggle('active', mode === 'AUTO');
     document.getElementById('btnGearManual').classList.toggle('active', mode === 'MANUAL');
@@ -102,8 +103,9 @@ function refreshOptionButtons() {
 }
 window.setTopFollow = function (mode) { topFollow = mode; refreshOptionButtons(); };
 window.setHandling = function (mode) {
+    if(currentSession==='TIME_TRIAL')return;
     window.handlingMode = mode; refreshOptionButtons();
-    if (currentSession === 'QUALI' || currentSession === 'RACE') showRaceControl(mode === 'ARCADE' ? '🎮 Управление: Аркада' : '🏁 Управление: Реализм', '#38bdf8');
+    if (currentSession === 'QUALI' || currentSession === 'RACE' || currentSession === 'TIME_TRIAL') showRaceControl(mode === 'ARCADE' ? '🎮 Управление: Аркада' : '🏁 Управление: Реализм', '#38bdf8');
 };
 
 window.setLaps = function (laps) {
@@ -176,7 +178,7 @@ function onKeyDown(e) {
     if(handleBindingCapture(e)) return;
     initAudio();
     const c=e.code;
-    const playing=currentSession==='QUALI'||currentSession==='RACE';
+    const playing=currentSession==='QUALI'||currentSession==='RACE'||currentSession==='TIME_TRIAL';
     if(bindingMatches('settings',c)) {e.preventDefault();if(!e.repeat)openControls();return;}
     if(bindingMatches('pause',c)) {if(playing){e.preventDefault();if(!e.repeat)togglePauseMenu();}return;}
     if(isPaused||!playing) return;
@@ -204,7 +206,7 @@ window.addEventListener('wheel', (e) => { if (currentSession === 'MENU' || topFo
 window.addEventListener('pointerdown', () => { initAudio(); });
 canvas.addEventListener('pointerdown', () => canvas.focus());
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !isPaused && (currentSession === 'QUALI' || currentSession === 'RACE')) togglePauseMenu();
+    if (document.hidden && !isPaused && (currentSession === 'QUALI' || currentSession === 'RACE' || currentSession === 'TIME_TRIAL')) togglePauseMenu();
 });
 
 // ---------- Мобильное управление ----------
@@ -319,7 +321,7 @@ function renderStrategyCards() {
     if (selectedStrategyIndex >= list.length) selectedStrategyIndex = 0;
     const timed = selectedCarClass === 'GT3';
     rules.innerHTML = `${timed ? `Тактика рассчитана примерно на <b>${laps}</b> кр. (оценка для ${ENDURANCE_MINUTES} минут). ` : ''}` +
-        `Заезд в отдельный пит-лейн автоматический, лимит 80 км/ч. Оценка потери — ${PIT_STOP_LOSS_SEC} с. ` +
+        `Заезд в отдельный пит-лейн автоматический, лимит ${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} км/ч. Оценка потери — ${getPitStopLossEstimate()} с. ` +
         `Остаток ниже ${TIRE_CLIFF_PCT}% — снижение сцепления (⚠). ` +
         `Во время гонки выберите шины в панели справа и нажмите «Запросить заезд».`;
     grid.innerHTML = '';
@@ -342,7 +344,7 @@ function renderStrategyCards() {
             <div class="strategy-idea">${s.idea}</div>
 
 
-            <div class="strategy-stats">Пит-стопов: ${nStops}${nStops ? ` (≈ −${nStops * PIT_STOP_LOSS_SEC} с)` : ''} · Остаток шин: ${wear}</div>`;
+            <div class="strategy-stats">Пит-стопов: ${nStops}${nStops ? ` (≈ −${nStops * getPitStopLossEstimate()} с)` : ''} · Остаток шин: ${wear}</div>`;
         card.addEventListener('click', () => { selectedStrategyIndex = i; renderStrategyCards(); });
         grid.appendChild(card);
     });
@@ -396,8 +398,8 @@ function renderGarageUI() {
 
     // трассы
     const trkGrid = document.getElementById('trackSelectorGrid'); trkGrid.innerHTML = '';
-    trkGrid.classList.toggle('locked', f1);
-    document.getElementById('trackLockHint').textContent = f1 ? '— трассу задаёт календарь сезона' : '';
+    trkGrid.classList.remove('locked');
+    document.getElementById('trackLockHint').textContent = f1 ? '— для призрака любая трасса; гонка сезона: '+TRACKS_DB[seasonNextTrack()].shortName : '';
     TRACKS_DB.forEach((tObj, tIdx) => {
         const card = document.createElement('div');
         card.tabIndex = 0; card.setAttribute('role','button');
@@ -413,8 +415,8 @@ function renderGarageUI() {
     const mn = k => Math.min(...catalog.map(c => c.perf[k]));
     const norm = (v, k) => 0.35 + 0.65 * (v - mn(k)) / ((mx(k) - mn(k)) || 1);
     const grid = document.getElementById('carSelectorGrid'); grid.innerHTML = '';
-    grid.classList.toggle('locked', !!locked);
-    document.getElementById('teamLockHint').textContent = locked ? '— команда зафиксирована до конца сезона' : '';
+    grid.classList.remove('locked');
+    document.getElementById('teamLockHint').textContent = locked ? '— в сезоне команда фиксирована, для призрака выбор свободный' : '';
     catalog.forEach((car, idx) => {
         const card = document.createElement('div');
         card.tabIndex = 0; card.setAttribute('role','button');
@@ -425,7 +427,7 @@ function renderGarageUI() {
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">${Math.round(p.vmax)} км/ч · ${Math.round(p.power)} Вт/кг</div>
             <div class="car-note">${p.note}</div>
-            ${bar('Мощность', norm(p.power, 'power'))}${bar('Сцепление', norm(p.grip, 'grip'))}${bar('Прижим', norm(p.aero, 'aero'))}${bar('Торможение', norm(p.brake, 'brake'))}${bar('Бережность к шинам', norm(p.tire, 'tire'))}`;
+            <div class="car-character">${characterSummary(car)}</div>${bar('Мощность', norm(p.power, 'power'))}${bar('Сцепление', norm(p.grip, 'grip'))}${bar('Прижим', norm(p.aero, 'aero'))}${bar('Торможение', norm(p.brake, 'brake'))}${bar('Бережность к шинам', norm(p.tire, 'tire'))}`;
         drawCarThumb(card.querySelector('canvas'), car);
         card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; renderGarageUI(); });
         grid.appendChild(card);
@@ -435,7 +437,7 @@ function renderGarageUI() {
     const team = catalog[selectedCarIndex];
     const pills = document.getElementById('driverPills'); pills.innerHTML = '';
     if (selectedTeammateSlot >= team.drivers.length) selectedTeammateSlot = 0;
-    document.getElementById('driverBar').classList.toggle('driver-bar-locked', !!locked);
+    document.getElementById('driverBar').classList.remove('driver-bar-locked');
     team.drivers.forEach((d, i) => {
         const b = document.createElement('button');
         b.className = 'driver-pill' + (i === selectedTeammateSlot ? ' active' : '');
@@ -449,6 +451,8 @@ function renderGarageUI() {
 
     renderStrategyCards();
     updateStartButtons();
+    const best=loadGhost(trialKey());
+    document.getElementById("ghostRecordHint").textContent=best?"Личный рекорд: "+formatTime(best.time):"Гонка с призраком: первый чистый круг запишет рекорд";
 }
 
 // ============================================================================
@@ -719,22 +723,26 @@ function togglePauseMenu() {
     clearInputs();
     document.getElementById('pauseModal').style.display = isPaused ? 'flex' : 'none';
     document.getElementById('btnEndQuali').style.display = currentSession === 'QUALI' ? '' : 'none';
+    document.getElementById('btnRestartTrial').style.display=currentSession==='TIME_TRIAL'?'':'none';
     if (!isPaused) releaseFocus();
 }
 
 function backToGarage() {
+    const leavingTrial=currentSession==='TIME_TRIAL';
     isPaused = true; currentSession = 'MENU'; clearInputs();
     document.getElementById('pauseModal').style.display = 'none';
     document.getElementById('finishModal').style.display = 'none';
     document.getElementById('start-lights').style.opacity = 0;
-    if (selectedCarClass === 'F1') { applyClassMode(); }
+    if (selectedCarClass === 'F1' && !leavingTrial) { applyClassMode(); }
     document.getElementById('garageModal').style.display = 'flex';
     renderGarageUI();
 }
 
-document.getElementById('btnStartQuali').addEventListener('click', () => { buildWeekendRoster(); startQualifyingSession(); });
-document.getElementById('btnDirectRace').addEventListener('click', () => { buildWeekendRoster(); startRaceSessionFromGrid(null); });
+document.getElementById('btnStartQuali').addEventListener('click', () => { prepareSeasonSelection();buildWeekendRoster(); startQualifyingSession(); });
+document.getElementById('btnDirectRace').addEventListener('click', () => { prepareSeasonSelection();buildWeekendRoster(); startRaceSessionFromGrid(null); });
+document.getElementById('btnGhostRace').addEventListener('click',()=>{buildWeekendRoster();startTimeTrialSession();});
 document.getElementById('btnResumeGame').addEventListener('click', () => { isPaused = false; document.getElementById('pauseModal').style.display = 'none'; releaseFocus(); });
+document.getElementById('btnRestartTrial').addEventListener('click',()=>{buildWeekendRoster();startTimeTrialSession();});
 document.getElementById('btnEndQuali').addEventListener('click', endQualifyingStartRace);
 document.getElementById('btnBackToGarage').addEventListener('click', backToGarage);
 document.getElementById('btnFinishGarage').addEventListener('click', backToGarage);
@@ -760,7 +768,7 @@ document.getElementById('btnSeasonTable').addEventListener('click', () => {
 // HUD и миникарта
 // ============================================================================
 function standingsOrder() {
-    if (currentSession === 'QUALI') {
+    if (currentSession === 'QUALI' || currentSession === 'TIME_TRIAL') {
         return [...allCars].sort((a, b) => {
             if (a.bestLapTime === null && b.bestLapTime === null) return b.getContinuousTrackDistance() - a.getContinuousTrackDistance();
             if (a.bestLapTime === null) return 1;
@@ -829,7 +837,8 @@ function updateHUD() {
     hEl.innerHTML = `${Math.round(p.tireHealth)}<small>%</small>`;
     hEl.classList.toggle('hud-tire-warn', p.tireHealth <= TIRE_CLIFF_PCT);
     document.getElementById('dashTireTemp').textContent = `${Math.round(p.tireTemp)}°C`;
-    document.getElementById('dashWingDmg').textContent = `${Math.round(Math.max(p.wingDamage, p.suspensionDamage, p.bodyDamage) * 100)}%`;
+    document.getElementById('dashWingDmg').textContent = `${Math.round(p.damageLevel * 100)}%`;
+    updateDamageHUD(p);
     const drsEl = document.getElementById('dashDRS');
     if (p.spec.carClass === 'F1') { drsEl.textContent = p.drsActive ? 'ОТКР.' : 'ЗАКР.'; drsEl.style.color = p.drsActive ? '#00e676' : '#64748b'; }
     else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
@@ -837,7 +846,7 @@ function updateHUD() {
     let plan = '—';
     if (currentSession === 'RACE') {
         const sched = p.strategy && p.strategy.stops && p.strategy.stops[p.pitStopsDone];
-        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Ремонт / шины: ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? 'Въезд · 80 км/ч' : 'Выезд · уступаем трафику');
+        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Ремонт / шины: ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? 'Въезд · '+TRACKS_DB[selectedTrackIndex].pitSpeedLimit+' км/ч' : 'Выезд · уступаем трафику');
         else if (p.pitRequested) plan = 'Заедем на ближайшем въезде';
         else if (sched) plan = `План: конец круга ${sched.lap}`;
         else plan = p.tireHealth < 40 ? 'Шины изношены — пора в боксы' : 'Заезд пока не запланирован';
@@ -864,6 +873,7 @@ function updateHUD() {
     standings.slice(0, 5).forEach((c, idx) => { html += rowHtml(c, idx); });
     if (playerPos > 5) html += rowHtml(p, playerPos - 1);
     document.getElementById('liveTower').innerHTML = html;
+    updateTrialHUD();
 }
 
 let minimapCache = null, minimapKey = '';
@@ -922,6 +932,7 @@ function stepSimulation(input) {
     for (let i = 0; i < allCars.length; i++) {
         for (let j = i + 1; j < allCars.length; j++) resolveContourCarCollision(allCars[i], allCars[j]);
     }
+    recordTrialFrame();
     for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];
         s.x += s.vx; s.y += s.vy; s.vx *= 0.92; s.vy *= 0.92; s.life -= 0.05;
@@ -984,6 +995,7 @@ function gameLoop(now) {
             ctx.translate(-playerCar.x, -playerCar.y);
             drawTrack(ctx);
             drawEffects2D(ctx);
+            drawTrialGhost(ctx);
             for (const car of allCars) if (car !== playerCar) car.draw(ctx);
             playerCar.draw(ctx);
             ctx.restore();
@@ -1027,3 +1039,25 @@ for(const button of document.querySelectorAll('[data-open-controls]'))button.add
 document.getElementById('btnCloseControls').addEventListener('click',closeControls);
 document.getElementById('btnResetBindings').addEventListener('click',()=>{keyBindings=JSON.parse(JSON.stringify(DEFAULT_BINDINGS));capturingBinding=null;clearInputs();saveBindings();renderBindings();document.getElementById('bindingMessage').textContent='Стандартные клавиши восстановлены.';});
 updateControlHints();
+
+function prepareSeasonSelection() {
+ if(selectedCarClass!=='F1')return;
+ selectedTrackIndex=seasonNextTrack();
+ if(teamLocked()){selectedCarIndex=season.team;selectedTeammateSlot=season.seat;}
+}
+function updateDamageHUD(car) {
+ document.getElementById('damageRepairHint').textContent=currentSession==='TIME_TRIAL'?'Сброс повреждений — на новом круге':'Ремонт выполняется на пит-стопе';
+ const parts=[['front',car.frontWingDamage,'Теряется передний прижим'],['rear',car.rearWingDamage,'Меньше заднего прижима и устойчивости'],['suspension',car.suspensionDamage,'Падает сцепление, машину тянет в сторону'],['engine',car.engineDamage,'Мощность −'+Math.round((1-car.engineCondition)*100)+'%'],['body',car.bodyDamage,'Выше сопротивление воздуха']];
+ for(const [name,damage,effect] of parts){const el=document.querySelector('[data-damage="'+name+'"]');el.querySelector('b').textContent=Math.round(damage*100)+'%';el.classList.toggle('damaged',damage>.05);el.title=effect;}
+ const worst=parts.reduce((a,b)=>a[1]>b[1]?a:b);
+ document.getElementById('damageEffect').textContent=worst[1]>.05?(worst[1]>.45?'Нужен ремонт: ':'')+worst[2]:'Все узлы исправны';
+}
+for(const input of document.querySelectorAll('[data-ai-setting]')) input.addEventListener('input',()=>setAiSetting(input.dataset.aiSetting,input.value));
+setAiSetting('pace',aiSettings.pace);setAiSetting('aggression',aiSettings.aggression);
+
+function getPitStopLossEstimate() {
+ const track=TRACKS_DB[selectedTrackIndex];
+ const lapEstimate=EST_LAP_SEC[selectedCarClass][selectedTrackIndex]||140;
+ const laneSeconds=pitRouteLength*PX_M/(track.pitSpeedLimit/3.6);
+ return Math.max(8,Math.round(laneSeconds+(selectedCarClass==='F1'?2.6:12)-track.pitProgressSpan*lapEstimate));
+}

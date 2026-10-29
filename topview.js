@@ -117,6 +117,7 @@ function renderTopTrack(ctx, W, H) {
 
     // машины — значки покрупнее: ~30 px длиной на экране
     topZoomNow = fit.sc;
+    drawTrialGhost(ctx,fit.sc);
     const sorted = [...allCars].sort((a, b) => (a === playerCar) - (b === playerCar));
     for (const c of sorted) {
         const hh = c.height * 1.16;

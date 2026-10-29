@@ -312,3 +312,15 @@ body.is-mobile #control-hint {display:none;}
 @media(max-width:600px) {#bindingGrid{gap:0 8px;}#bindingGrid>span{font-size:11px;}.controls-card{padding:18px;}.controls-heading h2{font-size:21px;}}
 
 .controls-heading {position:sticky;top:-28px;background:#111a25;z-index:2;padding:10px 0;border-bottom:1px solid #2d4151;}
+
+.ai-settings {display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;padding:15px;background:#172634;border:1px solid #344d60;border-radius:12px;}
+.ai-settings label {font-size:13px;color:#d9e7f1;display:block;}.ai-settings output {float:right;color:#8cf3dc;font-weight:700;}.ai-settings input{display:block;width:100%;margin:12px 0 0;accent-color:#5eead4;touch-action:pan-x;}.ai-settings>small{grid-column:1/-1;color:#a2b9ca;font-size:11px;}
+.ghost-btn {background:#153c4c;color:#a5f3fc;border:1px solid #67e8f9;border-radius:9px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;}
+#ghostRecordHint {color:#a5f3fc;font-size:12px;margin:18px 0 8px;}.map-credit{color:#9ab2c4;font-size:10px;}.map-credit a{color:#a5f3fc;}
+.car-character {font-size:9px;line-height:1.5;color:#a2d5cf;text-align:center;min-height:42px;margin:6px 0;}
+#damage-panel {position:absolute;left:16px;top:336px;width:205px;background:#101d28ec;border:1px solid #3d5568;border-radius:12px;padding:12px;z-index:7;font-size:11px;pointer-events:none;}
+#damage-panel h2,#trial-panel h2 {font-size:14px;margin:0 0 12px;color:#e8f4fc;}
+#damage-panel>div {display:flex;justify-content:space-between;gap:6px;padding:6px 0;border-bottom:1px solid #2c4150;color:#bcd0de;}#damage-panel b{color:#8cf3dc;}#damage-panel .damaged b{color:#fca5a5;}
+#damageEffect {color:#dbeaf6;font-size:11px;line-height:1.5;}#damage-panel small{color:#91adbf;font-size:10px;}
+#trial-panel {position:absolute;right:16px;top:198px;width:238px;background:#102633f2;border:1px solid #67e8f9;border-radius:14px;padding:15px;z-index:8;font-size:12px;color:#bdd9e8;}#trial-panel[hidden]{display:none;}#trialRecord{font-size:22px;color:#a5f3fc;font-variant-numeric:tabular-nums;}#trialStatus{line-height:1.6;color:#8cf3dc;}#trialStatus.invalid{color:#fca5a5;}#trial-panel p{line-height:1.6;}#trialGhostStatus{color:#a5f3fc;}.settings-note{font-size:11px;color:#a8c0d0;line-height:1.6;}
+@media(max-width:600px){.ai-settings{grid-template-columns:1fr;}.start-actions{gap:6px;}.ghost-btn{padding:10px;font-size:12px;}}
