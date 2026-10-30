@@ -276,10 +276,13 @@ class Car {
         const N = totalSamples;
         const vms = Math.abs(this.velocity) * MS;
         const base = Math.max(0, this.lastSampleIdx);
+        const offTrack = (this.dbgDist || 0) > CURB_OUTER_W;
         const ds = trackLengthPx / N;
 
         // точка, на которую целимся
-        const lookPx = 100 + Math.abs(this.velocity) * 24;
+        // Aim about one second ahead at speed so the bot starts setting up
+        // before the corner rather than reacting at its entry.
+        const lookPx = 90 + Math.abs(this.velocity) * 48;
         const look = Math.max(2, Math.round(lookPx / ds));
         const tIdx = (base + look) % N;
         const rl = dynamicRacingLinePoints[tIdx];
@@ -312,8 +315,9 @@ class Car {
         else this.aiConf = Math.min(1, (this.aiConf || 1) + 0.0007);
         const conf2 = (this.aiConf || 1) * (this.aiConf || 1);
         const hb = HC().hb;
-        const gA = G * this.perf.grip * (1-.25*this.suspensionDamage) * hb * tg * skillUse * conf2 * (1 - 0.15 * this.wingDamage);
-        const gAero = G * this.perf.aero * 1.45 * this.character.aeroResponse * this.aeroCondition * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
+        const surfaceGrip = (offTrack ? 0.55 : 1) * (1 - 0.25 * this.suspensionDamage);
+        const gA = G * this.perf.grip * surfaceGrip * hb * tg * skillUse * conf2 * (1 - 0.15 * this.wingDamage);
+        const gAero = G * this.perf.aero * 1.45 * this.character.aeroResponse * this.aeroCondition * surfaceGrip * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
         const vmax2 = this.vmaxMs * this.vmaxMs;
         const qNow = Math.min(1.2, vms * vms / vmax2);
         const lateralAuthority=(gA+gAero*qNow)/Math.max(vms,2.5);
@@ -339,18 +343,21 @@ class Car {
             const recoverySteer=Math.abs(lateral)>14?-Math.sign(lateral)*.7:-steer*.65;
             return {thr:0,brake:1,steer:recoverySteer,manual:false,reverse:true};
         }
-        const aBrCap = (this.brake0 + this.brakeAero * qNow) * tg * G * Math.sqrt(hb);       // что реально может тормоз
-        const aBr = (this.spec.carClass === 'F1' ? 0.52 : 0.62) * aBrCap;       // планируем с запасом
+        const aBrCap = (this.brake0 + this.brakeAero * qNow) * tg * G * Math.sqrt(hb) * surfaceGrip;
+        // Plan for only part of the available braking force. This leaves room
+        // for steering, traffic, worn tires and the model's frame-by-frame delay.
+        const aBr = (this.spec.carClass === 'F1' ? 0.42 : 0.48) * aBrCap;
         const vTop = this.vmaxMs * comp.speedMult;
         let vAllow = vTop;
         let reqDecel = 0;
-        for (let j = 0; j < Math.min(N, 200); j++) {
+        for (let j = 0; j < Math.min(N, 360); j++) {
             const idx = (base + j) % N;
             let dist = (sampleCumDist[idx] - sampleCumDist[base]); if (dist < 0) dist += trackLengthPx;
-            if (dist * PX_M > 650) break;
+            if (dist * PX_M > 900) break;
             const kap = trackSamples[idx].kappa / PX_M;                // 1/м
             const denom = kap - gAero / vmax2;
-            const vc = denom > 1e-7 ? Math.min(vTop, Math.sqrt(gA / denom)) : vTop;
+            const rawCornerSpeed = denom > 1e-7 ? Math.sqrt(gA / denom) : vTop;
+            const vc = rawCornerSpeed < vTop ? rawCornerSpeed * 0.92 : vTop;
             const dm = Math.max(dist * PX_M, 6);
             const vlim = Math.sqrt(vc * vc + 2 * aBr * dm);
             if (vlim < vAllow) vAllow = vlim;

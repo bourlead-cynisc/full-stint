@@ -425,9 +425,8 @@ function renderGarageUI() {
 
     // машины
     const catalog = getActiveCatalog();
-    const mx = k => Math.max(...catalog.map(c => c.perf[k]));
-    const mn = k => Math.min(...catalog.map(c => c.perf[k]));
-    const norm = (v, k) => 0.35 + 0.65 * (v - mn(k)) / ((mx(k) - mn(k)) || 1);
+    const best = k => Math.max(...catalog.map(c => c.perf[k]));
+    const score = (v, k) => Math.max(1, Math.min(100, Math.round(v / (best(k) || 1) * 100)));
     const grid = document.getElementById('carSelectorGrid'); grid.innerHTML = '';
     grid.classList.remove('locked');
     document.getElementById('teamLockHint').textContent = locked ? '— в сезоне команда фиксирована, для призрака выбор свободный' : '';
@@ -436,12 +435,16 @@ function renderGarageUI() {
         card.tabIndex = 0; card.setAttribute('role','button');
         card.className = 'car-item' + (idx === selectedCarIndex ? ' selected' : '');
         const p = car.perf;
-        const bar = (lbl, v) => `<div class="car-stat-bar">${lbl}<div class="stat-track"><div class="stat-fill" style="width:${Math.round(v * 100)}%"></div></div></div>`;
+        const bar = (lbl, key) => {
+            const value = score(p[key], key);
+            return `<div class="car-stat-bar" title="${lbl}: ${value}% от лучшего показателя класса"><span>${lbl}</span><b>${value}%</b><span class="stat-track"><span class="stat-fill" style="width:${value}%"></span></span></div>`;
+        };
         card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
             <div class="car-item-title">${car.shortName}</div>
-            <div class="car-item-sub">${Math.round(p.vmax)} км/ч · ${Math.round(p.power)} Вт/кг</div>
+            <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
             <div class="car-note">${p.note}</div>
-            <div class="car-character">${characterSummary(car)}</div>${bar('Мощность', norm(p.power, 'power'))}${bar('Сцепление', norm(p.grip, 'grip'))}${bar('Прижим', norm(p.aero, 'aero'))}${bar('Торможение', norm(p.brake, 'brake'))}${bar('Бережность к шинам', norm(p.tire, 'tire'))}`;
+            <div class="car-character">${characterSummary(car)}</div>
+            <div class="car-stats-grid" aria-label="Характеристики в процентах от лучшего значения в классе">${bar('Сцепление', 'grip')}${bar('Прижим', 'aero')}${bar('Тормоза', 'brake')}${bar('Ресурс шин', 'tire')}</div>`;
         drawCarThumb(card.querySelector('canvas'), car);
         card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; renderGarageUI(); });
         grid.appendChild(card);
