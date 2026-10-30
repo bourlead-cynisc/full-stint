@@ -8,14 +8,25 @@ for(const track of TRACKS_DB) {
     const projected=coords.map(baseProject);
     const mappedLength=projected.slice(1).reduce((n,p,i)=>n+Math.hypot(p.x-projected[i].x,p.y-projected[i].y),0)*0.0926;
     const scale=source.outline?source.lengthM/mappedLength:1;
-    const project=p=>{const q=baseProject(p);return {x:q.x*scale,y:q.y*scale};};
+    // Real surveyed outlines dwarf the hand-drawn layouts in the game world.
+    // Keep their shape and aspect ratio while bringing them into the same visual scale.
+    const layoutScale=source.outline?0.78:1;
+    const project=p=>{const q=baseProject(p);return {x:q.x*scale*layoutScale,y:q.y*scale*layoutScale};};
+    const smoothClosedPolyline=(points,passes=2)=>{
+        let current=points;
+        for(let pass=0;pass<passes;pass++) current=current.map((p,i)=>{
+            const a=current[(i-1+current.length)%current.length],b=current[(i+1)%current.length];
+            return {x:(a.x+2*p.x+b.x)/4,y:(a.y+2*p.y+b.y)/4};
+        });
+        return current;
+    };
     if(source.outline) {
-        track.rawPoints=coords.slice(0,-1).map(project);track.scale=1;
-        track.reportedLengthM=source.lengthM;
-        const index=TRACKS_DB.indexOf(track);EST_LAP_SEC.GT3[index]=({lemans:300,fuji:110,sebring:145})[track.id];EST_LAP_SEC.F1[index]=Math.round(EST_LAP_SEC.GT3[index]*.8);
+        track.rawPoints=smoothClosedPolyline(coords.slice(0,-1).map(project));track.scale=1;
+        track.reportedLengthM=source.lengthM*layoutScale;
+        const index=TRACKS_DB.indexOf(track);EST_LAP_SEC.GT3[index]=Math.round(({lemans:300,fuji:110,sebring:145})[track.id]*layoutScale);EST_LAP_SEC.F1[index]=Math.round(EST_LAP_SEC.GT3[index]*.8);
         track.desc=track.desc.replace(' · упрощённая схема','')+' · реальный контур';
     }
     track.realPitPoints=source.pit.map(project);
     track.pitSpeedLimit=source.pitLimit;
-    track.layoutVersion='osm-20261030';
+    track.layoutVersion='osm-20261030-compact-smooth';
 }
