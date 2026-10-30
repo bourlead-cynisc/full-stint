@@ -315,7 +315,7 @@ class Car {
         // скорость: минимум по всем впереди лежащим поворотам с учётом торможения
         const comp = TIRE_COMPOUNDS[this.compound];
         const tg = getTireGripMultiplier(this.tireHealth, this.tireTemp) * comp.gripMult;
-        const skillUse = Math.min(0.98, (aiSettings.pace/100)**2 * 0.87 * (1 + ((this.botProfile.cornerMult || 1) - 1) * 0.5) + 0.03 * ((this.botProfile.aggression || 0.8) - 0.8)) * (this.spec.carClass === 'F1' ? 0.93 : 1) * (this.form || 1);
+        const skillUse = Math.min(0.99, (aiSettings.pace/100)**2 * 0.94 * (1 + ((this.botProfile.cornerMult || 1) - 1) * 0.5) + 0.03 * ((this.botProfile.aggression || 0.8) - 0.8)) * (this.spec.carClass === 'F1' ? 0.93 : 1) * (this.form || 1);
         // самонастройка: если машину выносит (шины на пределе / далеко от центра) — берём запас, на чистых участках возвращаем
         if (this.latUse > 0.92 || (this.dbgDist || 0) > CURB_OUTER_W - 6) this.aiConf = Math.max(0.70, (this.aiConf || 1) - 0.006);
         else this.aiConf = Math.min(1, (this.aiConf || 1) + 0.0007);
@@ -492,7 +492,7 @@ class Car {
             const scheduled = this.strategy?.stops[this.pitStopsDone];
             const due = scheduled && this.lap >= scheduled.lap;
             const needsTires = !this.isPlayer && this.tireHealth < 28;
-            const needsRepair=!this.isPlayer&&this.damageLevel>.48&&(raceMode!=='TIMED'||raceDurationMs-(simTimeMs-raceStartTimestamp)>90000);
+            const needsRepair = !this.isPlayer && this.damageLevel > 0.50;
             if ((this.pitRequested || due || needsTires || needsRepair) && isPitEntryProgress(frontInfo.normProgress) && this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity)) {
                 this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
             }
