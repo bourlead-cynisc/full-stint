@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>FIA Motorsport Sim: WEC GT3 &amp; F1</title>
-    <link rel="stylesheet" href="styles.css?v=20261030-race">
+    <link rel="stylesheet" href="styles.css?v=20261030-pit-hud-v1">
 </head>
 <body tabindex="-1">
 
@@ -73,18 +73,21 @@
     <div id="shiftLights"></div>
     <button id="btnHudControls" data-open-controls>Управление · F2</button>
     <section id="pit-assistant" aria-label="Следующий пит-стоп">
-        <h2>Следующий пит-стоп</h2>
-        <p>1. Выберите комплект шин</p>
+        <div class="pit-panel-heading"><div><span class="pit-kicker">КОМАНДНЫЙ МОСТИК</span><h2>Пит-стоп</h2></div><span class="pit-speed-badge">80 км/ч</span></div>
+        <p class="pit-section-title">Шины на следующую остановку</p>
         <div class="next-tires">
-            <button data-next-tire="soft" title="Больше сцепления, стинт около 5 кругов"><b class="tire-dot soft">S</b><span>Мягкие</span><small>1</small></button>
-            <button data-next-tire="medium" title="Баланс сцепления и ресурса, около 8 кругов"><b class="tire-dot medium">M</b><span>Средние</span><small>2</small></button>
-            <button data-next-tire="hard" title="Дольше служат, стинт около 12 кругов"><b class="tire-dot hard">H</b><span>Жёсткие</span><small>3</small></button>
+            <button data-next-tire="soft" title="Больше сцепления, стинт около 5 кругов"><b class="tire-dot soft">S</b><span>Мягкие</span><small>≈5 кр. · 1</small></button>
+            <button data-next-tire="medium" title="Баланс сцепления и ресурса, около 8 кругов"><b class="tire-dot medium">M</b><span>Средние</span><small>≈8 кр. · 2</small></button>
+            <button data-next-tire="hard" title="Дольше служат, стинт около 12 кругов"><b class="tire-dot hard">H</b><span>Жёсткие</span><small>≈12 кр. · 3</small></button>
         </div>
         <div id="nextTireSummary" aria-live="polite">Поставят: —</div>
-        <p>2. Запросите заезд</p>
-        <button id="btnPitRequest">Запросить заезд · P</button>
-        <div id="pitPlanText" role="status">Заезд пока не запланирован</div>
-        <small class="pit-help">Машина сама заедет на пит-лейн и остановится у команды.</small>
+        <button id="btnPitRequest">Запросить пит-стоп · P</button>
+        <div id="pitPlanText" class="pit-status" role="status">Заезд пока не запланирован</div>
+        <div class="race-strategy-card" aria-label="План гонки">
+            <div class="race-strategy-heading"><span>ПЛАН ГОНКИ</span><span class="auto-tag">СТАНДАРТ</span></div>
+            <div id="raceStrategyPlan" aria-live="polite">Сбалансированная тактика</div>
+        </div>
+        <small class="pit-help">Заезд и выезд автоматические · торможение перед линией плавное.</small>
     </section>
     <section id="damage-panel" aria-label="Повреждения машины">
         <h2>Состояние машины</h2>
@@ -136,7 +139,7 @@
         </div>
 
         <div class="section-label">СОПЕРНИКИ</div><div class="ai-settings"><label>Темп соперников <output>106%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="106" aria-label="Темп соперников"></label><label>Агрессивность <output>65%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="65" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
-        <div class="section-label">4. ДИСТАНЦИЯ И ТАКТИКА НА ШИНЫ</div>
+        <div class="section-label">4. ПРИМЕРЫ ТАКТИКИ НА ГОНКУ</div>
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
             <div id="lapSection" style="display:flex; gap:10px; align-items:center;">
                 <div style="font-size:10.5px; color:#95a5a6; font-weight:700;">КРУГОВ В ГОНКЕ:</div>
@@ -148,7 +151,7 @@
                 </div>
             </div>
             <div id="enduranceNote" class="endurance-note" style="display:none;"></div>
-            <div id="strategyRules" style="font-size:10.5px; color:#8b95a5; flex:1; min-width:300px;"></div>
+            <div id="strategyRules" class="strategy-intro"></div>
         </div>
         <div class="strategy-grid" id="strategyGrid"></div>
 
@@ -256,6 +259,6 @@
 <script src="season.js"></script>
 <script src="controls.js?v=20261030-race"></script>
 <script src="ghost.js"></script>
-<script src="main.js?v=20261030-track-selection-retry1"></script>
+<script src="main.js?v=20261030-pit-hud-v1"></script>
 </body>
 </html>
