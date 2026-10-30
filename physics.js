@@ -423,7 +423,12 @@ class Car {
         if (!occupied && !this.pitServiced && this.pitNode >= box.node - 1 && toBox < 8) {
             this.x = box.x; this.y = box.y;
             this.pitPhase = 'service';
-            this.pitTimer = (this.spec.carClass === 'F1' ? 2.6 : 12) + 9 * this.frontWingDamage + 12 * this.rearWingDamage + 20 * this.suspensionDamage + 35 * this.engineDamage;
+            const tireChangeSeconds = this.spec.carClass === 'F1' ? 2.6 : 4.5;
+            const repairSeconds = Math.min(20,
+                4 * this.frontWingDamage + 4 * this.rearWingDamage +
+                8 * this.suspensionDamage + 4 * this.bodyDamage +
+                20 * this.engineDamage);
+            this.pitTimer = tireChangeSeconds + repairSeconds;
             this.velocity = this.dx = this.dy = 0;
             if (this.isPlayer) showRaceControl(`Обслуживание: ${this.pitTimer.toFixed(1)} с · шины и ремонт`, '#38bdf8');
         } else if (distance <= move + 2) {
@@ -486,7 +491,7 @@ class Car {
         if (currentSession === 'RACE' && this.pitPhase === 'none' && !this.finishedRace) {
             const scheduled = this.strategy?.stops[this.pitStopsDone];
             const due = scheduled && this.lap >= scheduled.lap;
-            const needsTires = !this.isPlayer && this.tireHealth < 22;
+            const needsTires = !this.isPlayer && this.tireHealth < 28;
             const needsRepair=!this.isPlayer&&this.damageLevel>.48&&(raceMode!=='TIMED'||raceDurationMs-(simTimeMs-raceStartTimestamp)>90000);
             if ((this.pitRequested || due || needsTires || needsRepair) && isPitEntryProgress(frontInfo.normProgress) && this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity)) {
                 this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
