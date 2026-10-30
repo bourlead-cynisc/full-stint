@@ -508,7 +508,7 @@ canvas#minimapCanvas {
 .garage-layout {grid-template-columns:minmax(0,1fr);gap:8px;}
 .garage-track-section .track-grid {grid-template-columns:repeat(6,minmax(0,1fr));}
 .garage-car-section .car-grid {grid-template-columns:repeat(6,minmax(0,1fr));}
-.garage-car-section .car-item {height:68px;}
+.garage-car-section .car-item {height:66px;}
 @media(max-width:1100px) {
     .garage-track-section .track-grid {grid-template-columns:repeat(4,minmax(0,1fr));}
     .garage-car-section .car-grid {grid-template-columns:repeat(4,minmax(0,1fr));}
