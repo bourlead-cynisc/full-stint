@@ -673,6 +673,14 @@ class Car {
         this.lapStartTime = now;
         this.sectorsPassed = [false, false, false];
 
+        if (currentSession === 'QUALI') {
+            this.frontWingDamage = this.rearWingDamage = 0;
+            this.suspensionDamage = this.bodyDamage = this.engineDamage = 0;
+            this.suspensionPull = this.impactSpin = 0;
+            this.hitCooldown = 0;
+            if (qualifyingTimeExpired) qualifyingFinishers.add(this);
+        }
+
         if (currentSession === 'RACE') {
             const timeUp = (raceMode === 'TIMED') && (now - raceStartTimestamp >= raceDurationMs);
             if ((raceMode === 'LAPS' && this.lap > totalRaceLaps) || timeUp) {
