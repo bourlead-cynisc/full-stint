@@ -736,10 +736,13 @@ function resolveContourCarCollision(a, b) {
     };
     const ca=support(pa,1),cb=support(pb,-1),contact={x:(ca.x+cb.x)/2,y:(ca.y+cb.y)/2};
     const invA=1/a.mass,invB=1/b.mass;
-    const impulse=1.08*closing/(invA+invB);
+    // Race cars should lose speed through contact, not bounce apart like balls.
+    // A small restitution preserves a little rebound while dissipating most of the
+    // closing speed through the chassis and tires.
+    const impulse=0.12*closing/(invA+invB);
     const tangent={x:-normal.y,y:normal.x};
     const slide=(a.dx-b.dx)*tangent.x+(a.dy-b.dy)*tangent.y;
-    const friction=Math.max(-impulse*.08,Math.min(impulse*.08,slide/(invA+invB)));
+    const friction=Math.max(-impulse*.16,Math.min(impulse*.16,slide/(invA+invB)));
     for(const [c,sign,inv] of [[a,-1,invA],[b,1,invB]]) {
         const ix=sign*(normal.x*impulse+tangent.x*friction),iy=sign*(normal.y*impulse+tangent.y*friction);
         c.dx+=ix*inv;c.dy+=iy*inv;
@@ -750,7 +753,7 @@ function resolveContourCarCollision(a, b) {
         const front=(sign*-normal.x)*Math.sin(c.angle)-(sign*-normal.y)*Math.cos(c.angle);
         const wheelHit=c.spec.carClass==='F1' && Math.abs(front)<.6 && Math.abs(localLong)>c.height*.15 && closing*MS>3;
         const spin=(rx*iy-ry*ix)*60/inertia;
-        c.impactSpin=Math.max(-4.8,Math.min(4.8,c.impactSpin+spin*(wheelHit?1.4:1)));
+        c.impactSpin=Math.max(-4.8,Math.min(4.8,c.impactSpin+spin*(wheelHit?0.55:0.35)));
         if(c.hitCooldown===0) {
             c.applyImpact(closing*MS,Math.abs(front),front,wheelHit);
             c.suspensionPull=Math.sign(rx*Math.cos(c.angle)+ry*Math.sin(c.angle))*.07;
