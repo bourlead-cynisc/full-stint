@@ -210,7 +210,6 @@ h1 { margin: 0 0 2px 0; font-size: 13.5px; letter-spacing: 0.5px; color: #ff3b4e
 .hud-tire-warn { color: #ff4757 !important; }
 #race-control { max-width: 520px; }
 
-body.is-mobile #minimapCanvas { display: none; }
 
 #steering-wheel-dash { left: calc(50% - 34px); gap: 14px; padding: 6px 16px; white-space: nowrap; }
 .dash-val small { white-space: nowrap; }
@@ -363,7 +362,6 @@ canvas#minimapCanvas {
     position:static;display:block;width:188px;height:116px;max-width:100%;
     border:1px solid rgba(139,175,193,.16);border-radius:7px;background:#0a111a;
 }
-body.is-mobile #minimapFrame {display:none;}
 
 #hud-left,#hud-right,#damage-panel,#pit-assistant,#trial-panel {
     border:1px solid rgba(139,175,193,.27);border-radius:14px;
@@ -436,5 +434,5 @@ body.is-mobile #minimapFrame {display:none;}
 }
 @media(max-width:700px) {
     #pit-assistant {right:8px;top:56px;width:min(218px,calc(100vw - 16px));max-height:calc(100vh - 160px);}
-    #minimapFrame {display:none;}
+    #minimapFrame {bottom:160px;right:8px;}
 }
