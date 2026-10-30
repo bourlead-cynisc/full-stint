@@ -18,6 +18,9 @@ let selectedStrategyIndex = 0;
 
 let raceMode = 'TIMED';                // TIMED (WEC, 20 мин) | LAPS (F1)
 let raceDurationMs = ENDURANCE_MINUTES * 60000;
+const QUALIFYING_DURATION_MS = 5 * 60 * 1000;
+let qualifyingTimeExpired = false;
+let qualifyingFinishers = new Set();
 
 window.showRacingLine = true;
 window.transmissionMode = 'AUTO';
@@ -501,6 +504,7 @@ function startQualifyingSession() {
     initAudio();
     hideAllModals();
     currentSession = 'QUALI'; raceState = 'RACING'; isPaused = false; simTimeMs = 0;
+    qualifyingTimeExpired = false; qualifyingFinishers = new Set();
     clearInputs(); resetEffects(); releaseFocus();
     sessionBestLap = { time: null, driverName: '---', carName: '' };
     allCars.forEach((car, idx) => {
@@ -816,7 +820,7 @@ function updateHUD() {
             if (left > 0) { clockLbl.textContent = 'ОСТАЛОСЬ'; clockVal.textContent = formatClock(left); clockVal.style.color = left < 60000 ? '#ff4757' : '#fff'; }
             else { clockLbl.textContent = 'ФИНИШ'; clockVal.textContent = '🏁'; clockVal.style.color = '#fff'; }
         } else { clockLbl.textContent = 'ВРЕМЯ ГОНКИ'; clockVal.textContent = formatClock(el); clockVal.style.color = '#fff'; }
-    } else { clockLbl.textContent = 'СЕССИЯ'; clockVal.textContent = formatClock(simTimeMs); clockVal.style.color = '#fff'; }
+    } else if (currentSession === 'QUALI') { const left = Math.max(0, QUALIFYING_DURATION_MS - simTimeMs); clockLbl.textContent = 'КВАЛИФИКАЦИЯ'; clockVal.textContent = formatClock(left); clockVal.style.color = left < 60000 ? '#ff4757' : '#fff'; } else { clockLbl.textContent = 'СЕССИЯ'; clockVal.textContent = formatClock(simTimeMs); clockVal.style.color = '#fff'; }
 
     document.getElementById('cpStatus').textContent = `${p.getCurrentSectorNumber()} / 4`;
     document.getElementById('lastTime').textContent = formatTime(p.lastLapTime);
@@ -945,6 +949,13 @@ function stepSimulation(input) {
     if (currentSession === 'RACE' && raceMode === 'TIMED' && raceState === 'RACING' && !timeUpAnnounced && simTimeMs - raceStartTimestamp >= raceDurationMs) {
         timeUpAnnounced = true;
         showRaceControl('🏁 Время вышло! Финиш — на ближайшем круге', '#ffffff');
+    }
+    if (currentSession === 'QUALI' && simTimeMs >= QUALIFYING_DURATION_MS) {
+        if (!qualifyingTimeExpired) {
+            qualifyingTimeExpired = true;
+            showRaceControl('⏱ Время квалификации вышло. Завершите текущий круг.', '#ffffff');
+        }
+        if (allCars.length && allCars.every(c => qualifyingFinishers.has(c))) endQualifyingStartRace();
     }
 }
 
