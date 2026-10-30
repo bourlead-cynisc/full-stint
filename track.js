@@ -83,6 +83,17 @@ function buildActiveTrackGeometry() {
         cur.curv = dAng;
     }
 
+    // Filter small survey/spline wiggles before using curvature for the visual
+    // racing line or AI braking. A short cyclic Gaussian preserves real corners.
+    const signedCurv = trackSamples.map(p => p.curv);
+    const curvatureKernel = [1, 2, 3, 4, 3, 2, 1];
+    const curvatureWeight = curvatureKernel.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < totalSamples; i++) {
+        let smooth = 0;
+        for (let k = -3; k <= 3; k++) smooth += signedCurv[(i + k + totalSamples) % totalSamples] * curvatureKernel[k + 3];
+        trackSamples[i].curv = smooth / curvatureWeight;
+    }
+
     dynamicRacingLinePoints = [];
     for (let i = 0; i < totalSamples; i++) {
         const cur = trackSamples[i];
@@ -124,12 +135,12 @@ function buildActiveTrackGeometry() {
         while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
         let L3 = sampleCumDist[(i + 3) % totalSamples] - sampleCumDist[(i - 3 + totalSamples) % totalSamples]; if (L3 < 0) L3 += trackLengthPx;
         const k3 = Math.abs(d) / Math.max(1, L3 / 2);
-        rawK[i] = Math.max(k6, k3);
+        rawK[i] = k6 * 0.8 + k3 * 0.2;
     }
     for (let i = 0; i < totalSamples; i++) {
         let sum = 0;
-        for (let d = -2; d <= 2; d++) sum += rawK[(i + d + totalSamples) % totalSamples];
-        trackSamples[i].kappa = sum / 5;
+        for (let d = -4; d <= 4; d++) sum += rawK[(i + d + totalSamples) % totalSamples] * (5 - Math.abs(d));
+        trackSamples[i].kappa = sum / 25;
     }
 
     const prevPt = trackSamples[(totalSamples - 8) % totalSamples];
