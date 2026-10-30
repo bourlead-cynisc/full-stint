@@ -265,7 +265,6 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
 #steering-wheel-dash { gap:14px; padding:8px 18px; border:1px solid #415366; border-top:2px solid #5eead4; }
 #steering-wheel-dash .dash-block:has(#dashRpm),#steering-wheel-dash .dash-block:has(#dashTireTemp) { display:none; }
 #dashSpeed { font-size:30px; }
-#minimapCanvas { bottom:105px; }
 #race-control { top:160px; }
 * { scrollbar-width:thin; scrollbar-color:#405469 #111a25; }
 .modal-card,.modal-card * { touch-action: auto; }
