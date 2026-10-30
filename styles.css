@@ -192,6 +192,9 @@ h1 { margin: 0 0 2px 0; font-size: 13.5px; letter-spacing: 0.5px; color: #ff3b4e
 .car-item-team { font-size: 9px; color: #7d8aa3; text-align: center; margin-bottom: 2px; }
 
 .strategy-card { display: flex; flex-direction: column; gap: 3px; }
+.strategy-intro {font-size:11px;color:#a9bac9;line-height:1.5;flex:1;min-width:280px;padding:9px 11px;border-left:2px solid #5eead4;background:#14232d;border-radius:0 8px 8px 0;}
+.strategy-example-card {cursor:default;}
+.strategy-example-card:hover {border-color:#2b3a49;}
 .strategy-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
 .tire-chip { display: inline-block; padding: 1px 6px; border-radius: 9px; font-size: 9.5px; font-weight: 800; color: #0b0f17; }
 .tire-arrow { color: #8b95a5; font-size: 9px; }
@@ -266,7 +269,7 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
 #race-control { top:160px; }
 * { scrollbar-width:thin; scrollbar-color:#405469 #111a25; }
 .modal-card,.modal-card * { touch-action: auto; }
-@media(max-width:700px) { .modal-card {padding:16px;} .modal-title {font-size:18px;} .strategy-grid {grid-template-columns:1fr;} .start-actions {bottom:-16px;flex-wrap:wrap;} }
+@media(max-width:700px) { .modal-card {padding:16px;} .modal-title {font-size:18px;} .strategy-grid {grid-template-columns:1fr;} .start-actions {bottom:-16px;flex-wrap:wrap;} #pit-assistant {right:8px;top:56px;width:min(252px,calc(100vw - 16px));max-height:calc(100vh - 160px);overflow-y:auto;} }
 .car-item { border-radius:10px; background:#182431; border-color:#2b3a49; box-shadow:none; }
 .car-item.selected { border-color:#5eead4; background:#183a3a; box-shadow:none; }
 .season-cal { max-height:110px; overflow:auto; }
@@ -278,20 +281,36 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
 body.is-mobile #control-hint {display:none;}
 /* Visible pit decisions and a separate keyboard settings screen. */
 #btnHudControls {position:absolute;top:18px;left:16px;z-index:9;border:1px solid #567083;background:#142330;color:#e5f3ff;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;}
-#pit-assistant {position:absolute;right:16px;top:198px;width:238px;z-index:8;background:#101d28f2;border:1px solid #3d5568;border-radius:14px;padding:14px;color:#e4edf5;font-size:12px;}
+#pit-assistant {position:absolute;right:16px;top:198px;width:252px;z-index:8;background:linear-gradient(155deg,#122431f7,#0c1722f7);border:1px solid #456378;border-radius:15px;padding:13px;color:#e4edf5;font-size:12px;box-shadow:0 12px 30px #0005;backdrop-filter:blur(8px);}
 #pit-assistant[hidden] {display:none;}
-#pit-assistant h2 {font-size:15px;margin:0 0 14px;color:#fff;letter-spacing:0;}
-#pit-assistant p {margin:12px 0 8px;color:#b9cada;font-size:12px;}
-.next-tires {display:flex;gap:6px;}
-.next-tires button {flex:1;min-width:0;border:1px solid #456075;border-radius:9px;background:#1c2b39;color:#dce8f2;padding:8px 2px;cursor:pointer;display:flex;align-items:center;flex-direction:column;gap:6px;font:inherit;}
-.next-tires button.selected {border:2px solid #5eead4;padding:7px 1px;background:#18433f;color:#fff;}
-.next-tires small {font-size:10px;color:#a7bccb;}
+#pit-assistant .pit-panel-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+#pit-assistant h2 {font-size:17px;margin:2px 0 0;color:#fff;letter-spacing:0;}
+.pit-kicker,.race-strategy-heading {font-size:9px;letter-spacing:1.1px;font-weight:800;color:#91a8b7;}
+.pit-speed-badge {background:#153e3b;border:1px solid #287d73;color:#8df0dc;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;}
+#pit-assistant .pit-section-title {margin:0 0 8px;color:#c9d8e4;font-size:11px;font-weight:700;}
+.next-tires {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.next-tires button {min-width:0;border:1px solid #3b5364;border-radius:10px;background:#172837;color:#dce8f2;padding:8px 3px;cursor:pointer;display:flex;align-items:center;flex-direction:column;gap:5px;font:inherit;transition:background .16s,border-color .16s,transform .16s;}
+.next-tires button:hover {background:#203748;border-color:#68879c;transform:translateY(-1px);}
+.next-tires button.selected {border:2px solid #5eead4;padding:7px 2px;background:#17413f;color:#fff;box-shadow:0 0 0 2px #5eead41a;}
+.next-tires button span {font-size:11px;font-weight:700;}
+.next-tires small {font-size:9px;color:#9fb4c2;white-space:nowrap;}
 .tire-dot {display:grid;place-items:center;border:3px solid;border-radius:50%;width:27px;height:27px;font-size:12px;}
 .tire-dot.soft {border-color:#ff6b76;}.tire-dot.medium{border-color:#f9d968;}.tire-dot.hard{border-color:#e4edf5;}
-#nextTireSummary {margin-top:9px;color:#8cf3dc;font-size:12px;}
-#btnPitRequest {width:100%;border:0;border-radius:9px;background:#5eead4;color:#07332d;font-size:12px;font-weight:700;padding:11px 6px;cursor:pointer;}
-#pitPlanText {margin-top:10px;font-size:12px;color:#fff;line-height:1.5;}
-.pit-help {display:block;margin-top:8px;color:#9bb2c5;line-height:1.5;font-size:11px;}
+#nextTireSummary {margin:9px 1px 10px;color:#9cecdf;font-size:10px;font-weight:650;}
+#btnPitRequest {width:100%;border:0;border-radius:10px;background:linear-gradient(100deg,#69efcf,#50d7c8);color:#07332d;font-size:12px;font-weight:800;padding:11px 8px;cursor:pointer;box-shadow:0 5px 14px #35c9b329;}
+#btnPitRequest:hover:not(:disabled) {filter:brightness(1.06);}
+#pitPlanText {margin-top:9px;padding:9px 10px;border:1px solid #2d4353;border-radius:9px;background:#0b1721;color:#dce8f2;font-size:11px;line-height:1.45;}
+.race-strategy-card {margin-top:9px;padding:9px 10px;border:1px solid #2d4353;border-radius:10px;background:#14212c;}
+.race-strategy-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.auto-tag {border-radius:999px;padding:2px 6px;background:#263d4b;color:#9ac3d4;font-size:8px;letter-spacing:.5px;}
+#raceStrategyPlan {font-size:10px;color:#dbe7ef;line-height:1.45;}
+.race-plan-name {font-weight:750;color:#fff;margin-bottom:6px;}
+.race-plan-timeline {display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.race-plan-stint {display:flex;align-items:center;gap:4px;padding:4px 5px;border-radius:7px;background:#0d1923;color:#b9c9d5;font-size:9px;}
+.race-plan-stint i {display:grid;place-items:center;width:17px;height:17px;border-radius:50%;color:#101820;font-style:normal;font-weight:900;}
+.race-plan-arrow {color:#728b9b;font-weight:900;}
+.race-plan-next {margin-top:6px;color:#8ddfce;font-size:9px;}
+.pit-help {display:block;margin-top:8px;color:#91a8b7;line-height:1.4;font-size:9px;}
 #pit-assistant button:disabled {opacity:.5;cursor:default;}
 #hud-left {width:205px;background:#101d28e8;border-color:#314b5f;}
 #hud-right {min-width:238px;background:#101d28e8;border-color:#314b5f;}
