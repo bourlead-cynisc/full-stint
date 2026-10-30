@@ -130,7 +130,17 @@ class EngineVoice {
             const w = Math.max(0, 1 - d / 0.62);
             wsum += w * w; return w;
         });
-        const norm = 1 / Math.sqrt(wsum || 1);
+        // Below the first anchor (idle), keep the nearest sample audible.
+        // The triangular windows otherwise all become zero at low RPM.
+        if (wsum === 0) {
+            let nearest = 0;
+            this.layers.forEach((l, i) => {
+                if (Math.abs(Math.log(rpmReal / l.rpm)) < Math.abs(Math.log(rpmReal / this.layers[nearest].rpm))) nearest = i;
+            });
+            ws[nearest] = 1;
+            wsum = 1;
+        }
+        const norm = 1 / Math.sqrt(wsum);
         this.layers.forEach((l, i) => {
             l.src.playbackRate.setTargetAtTime(Math.max(0.3, Math.min(2.4, rpmReal / l.rpm)), t, 0.025);
             l.g.gain.setTargetAtTime(ws[i] * norm, t, 0.03);
@@ -165,8 +175,15 @@ class EngineVoice {
     }
 }
 
+function resumeAudio() {
+    if (audioCtx && audioCtx.state !== 'running' && audioCtx.state !== 'closed') {
+        // Autoplay can reject this until the next user gesture; allow a retry.
+        audioCtx.resume().catch(() => {});
+    }
+}
+
 function initAudio() {
-    if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
+    if (audioCtx) { resumeAudio(); return; }
     try {
         const AC = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AC();
@@ -195,6 +212,7 @@ function initAudio() {
         const rf = audioCtx.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 220;
         rumbleGain = audioCtx.createGain(); rumbleGain.gain.value = 0;
         rn.connect(rf); rf.connect(rumbleGain); rumbleGain.connect(masterGain); rn.start(0, 0.5);
+        resumeAudio();
     } catch (e) { audioCtx = null; }
 }
 
@@ -212,7 +230,7 @@ function carPitchTweak(car) { return 0.965 + ((car.driverNumber * 37) % 100) / 1
 
 function updateAudio(frameDt) {
     if (!audioCtx || !masterGain) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!engineVoices.length && playerCar && (currentSession === 'QUALI' || currentSession === 'RACE')) rebuildEngineVoices();
     const t = audioCtx.currentTime;
     const active = soundOn && !isPaused && (currentSession === 'QUALI' || currentSession === 'RACE') && playerCar && engineVoices.length;
     masterGain.gain.setTargetAtTime(active ? 0.9 : 0, t, 0.08);
