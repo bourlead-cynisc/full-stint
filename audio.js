@@ -228,11 +228,15 @@ function rebuildEngineVoices() {
 
 function carPitchTweak(car) { return 0.965 + ((car.driverNumber * 37) % 100) / 100 * 0.07; }
 
+function isAudioSession() {
+    return ['QUALI', 'RACE', 'TIME_TRIAL'].includes(currentSession);
+}
+
 function updateAudio(frameDt) {
     if (!audioCtx || !masterGain) return;
-    if (!engineVoices.length && playerCar && (currentSession === 'QUALI' || currentSession === 'RACE')) rebuildEngineVoices();
+    if (!engineVoices.length && playerCar && isAudioSession()) rebuildEngineVoices();
     const t = audioCtx.currentTime;
-    const active = soundOn && !isPaused && (currentSession === 'QUALI' || currentSession === 'RACE') && playerCar && engineVoices.length;
+    const active = soundOn && !isPaused && isAudioSession() && playerCar && engineVoices.length;
     masterGain.gain.setTargetAtTime(active ? 0.9 : 0, t, 0.08);
     if (!active) return;
 
