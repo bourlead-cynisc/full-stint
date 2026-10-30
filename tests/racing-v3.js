@@ -35,6 +35,9 @@ try {
  self.aiPassSide=0;other.y=300;other.velocity=12;planRaceTraffic(self,.5);check(self.aiMode==='DEFEND','AI does not defend');
  const firstLane=self.aiDefenseLane;other.x=-20;planRaceTraffic(self,.5);check(self.aiDefenseLane===firstLane,'AI weaves repeatedly on one straight');
  other.progressAcc=self.progressAcc+1.2;const yieldPlan=planRaceTraffic(self,.5);check(self.aiMode==='BLUE_FLAG'&&yieldPlan.pace<1,'Lapped AI does not yield');
+ self.aiYieldUntil=0;self.aiDefenseLane=null;self.aiPassSide=0;self.aiNextMistake=Infinity;self.x=0;self.y=0;self.angle=0;self.velocity=0;self.latOff=0;
+ other.x=0;other.y=-70;other.angle=0;other.velocity=0;other.progressAcc=self.progressAcc;allCars=[self,other];
+ const blockedPlan=planRaceTraffic(self,1/60);check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV===Infinity&&!blockedPlan.blockedByCar,'AI waits behind a stopped car instead of passing');
  allCars=[self];self.aiYieldUntil=0;self.aiDefenseLane=null;self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;self.latOff=0;
  setAiSetting('pace',80);self.aiControls(1/60);const slow=self.dbgVAllow;
  setAiSetting('pace',110);self.aiControls(1/60);check(self.dbgVAllow>slow,'Pace slider has no effect');
@@ -43,6 +46,16 @@ try {
  setAiSetting('aggression',0);check(aiSettings.pace===110,'Aggression changes pace');
 } finally {setAiSetting('pace',oldSettings.pace);setAiSetting('aggression',oldSettings.aggression);}
 const damagedBot=create();const entry=pitWaypoints[0];damagedBot.x=entry.x;damagedBot.y=entry.y;damagedBot.syncProgress();damagedBot.engineDamage=.7;allCars=[damagedBot];raceMode='LAPS';totalRaceLaps=100;damagedBot.update(1/60,null);check(damagedBot.pitPhase!=='none','Damaged AI does not request a repair');
+function steeringResponse(mode){
+ const c=create(0,true),p=getTrackPointAtProgress(.15),info=getTrackInfo(p.x,p.y,-1),a=trackSamples[info.index],b=trackSamples[(info.index+1)%totalSamples];
+ const angle=Math.atan2(b.x-a.x,-(b.y-a.y));c.x=p.x;c.y=p.y;c.angle=angle;c.velocity=100/20;c.dx=Math.sin(angle)*c.velocity;c.dy=-Math.cos(angle)*c.velocity;c.gear=4;c.rpm=.65;c.shiftTimer=1;c.syncProgress();allCars=[c];
+ const previousMode=window.handlingMode;window.handlingMode=mode;
+ for(let i=0;i<60;i++)c.update(1/60,{throttle:0,brake:0,steer:1});
+ window.handlingMode=previousMode;
+ let change=c.angle-angle;while(change>Math.PI)change-=Math.PI*2;while(change< -Math.PI)change+=Math.PI*2;return Math.abs(change);
+}
+check(steeringResponse('ARCADE')>.45,'Arcade steering response remains too weak');
+check(steeringResponse('REAL')>.35,'Realistic steering response remains too weak');
 // Record an actual lap using the ordinary physics; no fabricated timing samples.
 selectedCarClass='GT3';selectedTrackIndex=2;selectedCarIndex=0;buildWeekendRoster();
 const seasonBefore=JSON.stringify(season),seasonSave=localStorage.getItem(SEASON_KEY),key=trialKey(),oldGhost=localStorage.getItem(key);

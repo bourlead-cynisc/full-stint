@@ -32,8 +32,10 @@ check(a.velocity===10 && b.velocity===10 && a.wingDamage===0,'Rubbing slows or d
 a.applyImpact(5,1);const low=a.wingDamage;a.wingDamage=0;a.applyImpact(30,1);check(a.wingDamage>low,'Impact severity');
 check(Math.abs(getTireGripMultiplier(18.01,90)-getTireGripMultiplier(17.99,90))<.01,'Tire cliff discontinuity');
 check(planStints(3,'aggr').length===1 && planStints(10,'bal').length===2,'Strategies mismatch tire life');
-// Both drivers share one team box, and the pit route crosses the timing line once.
+// Both drivers share one team box; lap counting follows the straight section's
+// actual entry/exit progress and only advances when that section crosses S/F.
 const q1=make(),q2=make();
+const startingPitLap=q1.lap;
 for(const c of [q1,q2]) {const pt=pitWaypoints[0];c.x=pt.x;c.y=pt.y;c.syncProgress();c.sectorsPassed=[true,true,true];c.startPit('hard');}
 allCars=[q1,q2];
 for(let n=0;n<20000 && allCars.some(c=>c.pitPhase!=='none');n++) {
@@ -42,7 +44,9 @@ for(let n=0;n<20000 && allCars.some(c=>c.pitPhase!=='none');n++) {
     check(allCars.filter(c=>c.pitPhase==='service').length<=1,'Team box double booking');
     check(allCars.every(c=>c.pitPhase==='none'||c.velocity*20<=80.01),'Pit speed limit');
 }
-check(allCars.every(c=>c.pitStopsDone===1 && c.lap===2),'Pit queue or lap counting failed');
+const pitSectionCrossesStart=TRACKS_DB[selectedTrackIndex].pitExitNorm<TRACKS_DB[selectedTrackIndex].pitEntryNorm;
+const expectedPitLap=startingPitLap+(pitSectionCrossesStart?1:0);
+check(allCars.every(c=>c.pitStopsDone===1 && c.lap===expectedPitLap),'Pit queue or lap counting failed '+JSON.stringify(allCars.map(c=>({phase:c.pitPhase,stops:c.pitStopsDone,lap:c.lap,node:c.pitNode,entry:c.frontNormProgress,route:c.pitRouteProgress}))));
 // Expanding the calendar preserves old completed race results.
 const oldSave=localStorage.getItem(SEASON_KEY);
 try {

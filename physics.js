@@ -45,8 +45,8 @@ function powerCurve(r) {
 }
 
 // Поведение машины: «Аркада» — больше сцепления и мгновенная реакция, «Реализм» — честная физика
-const HC_ARC  = { hb: 1.32, circleK: 0.38, slipMul: 1.90, steerAttack: 10.0, steerAttackSp: 3.0, steerCross: 20, yawK: 30, steerSpLoss: 0.04, thrRise: 7.0, brkRise: 9.0, lock: 3.2 };
-const HC_REAL = { hb: 1.00, circleK: 0.80, slipMul: 1.30, steerAttack: 6.0,  steerAttackSp: 2.5, steerCross: 13, yawK: 16, steerSpLoss: 0.10, thrRise: 4.8, brkRise: 6.5, lock: 2.7 };
+const HC_ARC  = { hb: 1.42, circleK: 0.38, slipMul: 1.90, steerAttack: 11.5, steerAttackSp: 3.4, steerCross: 22, yawK: 32, steerSpLoss: 0.03, thrRise: 7.0, brkRise: 9.0, lock: 3.5 };
+const HC_REAL = { hb: 1.16, circleK: 0.80, slipMul: 1.30, steerAttack: 8.0,  steerAttackSp: 3.0, steerCross: 16, yawK: 21, steerSpLoss: 0.07, thrRise: 4.8, brkRise: 6.5, lock: 3.0 };
 function HC() { return (window.handlingMode === 'REAL') ? HC_REAL : HC_ARC; }
 
 class Car {
@@ -273,16 +273,13 @@ class Car {
 
     // ИИ: ведёт по гоночной линии, считает тормозные точки и скорость в поворотах
     aiControls(dt, speedFactor = 1.0, override = null) {
-        const stoppedAtWall = Math.abs(this.velocity) * MS < 1 && this.dbgDist > ASPHALT_HALF_W && this.smoothThrottle > 0.4;
-        this.aiBlockedTime = stoppedAtWall ? this.aiBlockedTime + dt : 0;
-        if (this.aiBlockedTime > 1) {this.aiRecoveryTime = 1.6; this.aiBlockedTime = 0;}
         const N = totalSamples;
         const vms = Math.abs(this.velocity) * MS;
         const base = Math.max(0, this.lastSampleIdx);
         const ds = trackLengthPx / N;
 
         // точка, на которую целимся
-        const lookPx = 110 + Math.abs(this.velocity) * 30;
+        const lookPx = 100 + Math.abs(this.velocity) * 24;
         const look = Math.max(2, Math.round(lookPx / ds));
         const tIdx = (base + look) % N;
         const rl = dynamicRacingLinePoints[tIdx];
@@ -303,13 +300,7 @@ class Car {
             edgeOver = Math.min(1.4, (Math.abs(lo) - edge) / (WALL_HALF_W - edge));
             steer -= Math.sign(lo) * Math.min(1.3, edgeOver * 2.6);
         }
-        steer = Math.max(-1, Math.min(1, steer));
-        this.smoothSteer += (steer - this.smoothSteer) * 0.35;
-        if (this.aiRecoveryTime > 0) {
-            this.aiRecoveryTime -= dt;
-            this.smoothThrottle = 0; this.smoothBrake = 1;
-            return {thr:0,brake:1,steer:-steer,manual:false,reverse:true};
-        }
+        const edgeCorrection=steer-diff*2.2;
 
 
         // скорость: минимум по всем впереди лежащим поворотам с учётом торможения
@@ -325,6 +316,29 @@ class Car {
         const gAero = G * this.perf.aero * 1.45 * this.character.aeroResponse * this.aeroCondition * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
         const vmax2 = this.vmaxMs * this.vmaxMs;
         const qNow = Math.min(1.2, vms * vms / vmax2);
+        const lateralAuthority=(gA+gAero*qNow)/Math.max(vms,2.5);
+        const desiredYaw=vms*(Math.sign(trackSamples[tIdx].curv||0)*trackSamples[tIdx].kappa/PX_M);
+        const curvatureFeedForward=Math.max(-1,Math.min(1,desiredYaw/Math.max(.18,lateralAuthority)));
+        steer=Math.max(-1,Math.min(1,diff*2.5+curvatureFeedForward*.22+edgeCorrection));
+        this.smoothSteer+=(steer-this.smoothSteer)*Math.min(1,dt*8);
+
+        const stoppedAtWall=vms<1.2&&(this.dbgDist||0)>ASPHALT_HALF_W+8;
+        let progressDelta=0;
+        if(this.aiLastProgressAcc!==undefined) {
+            progressDelta=(this.progressAcc||0)-this.aiLastProgressAcc;
+            if(progressDelta<-.5)progressDelta+=1;
+        }
+        const noProgress=this.aiLastProgressAcc!==undefined&&Math.abs(progressDelta)<0.000012;
+        this.aiLastProgressAcc=this.progressAcc||0;
+        if(vms<1.2&&(stoppedAtWall||(noProgress&&!traffic.blockedByCar)))this.aiStuckTime=(this.aiStuckTime||0)+dt;
+        else this.aiStuckTime=Math.max(0,(this.aiStuckTime||0)-dt*2);
+        if(this.aiStuckTime>2.2) {this.aiRecoveryTime=2.4;this.aiStuckTime=0;}
+        if(this.aiRecoveryTime>0) {
+            this.aiRecoveryTime-=dt;this.smoothThrottle=0;this.smoothBrake=1;
+            const lateral=this.latOff||0;
+            const recoverySteer=Math.abs(lateral)>14?-Math.sign(lateral)*.7:-steer*.65;
+            return {thr:0,brake:1,steer:recoverySteer,manual:false,reverse:true};
+        }
         const aBrCap = (this.brake0 + this.brakeAero * qNow) * tg * G * Math.sqrt(hb);       // что реально может тормоз
         const aBr = (this.spec.carClass === 'F1' ? 0.52 : 0.62) * aBrCap;       // планируем с запасом
         const vTop = this.vmaxMs * comp.speedMult;
@@ -343,6 +357,7 @@ class Car {
             if (vms > vc) reqDecel = Math.max(reqDecel, (vms * vms - vc * vc) / (2 * dm));
         }
         vAllow = Math.min(vAllow * speedFactor * traffic.pace * (this.form || 1) * (1 - 0.14 * Math.min(1, edgeOver)), followV);
+        if(!Number.isFinite(followV))vAllow=Math.max(vAllow,2.0);
         if (this.tireHealth < TIRE_CLIFF_PCT * 0.6) vAllow *= 0.94;
 
         vAllow=Math.min(vAllow,this.vmaxMs*Math.min(1,aiSettings.pace/100));
@@ -350,7 +365,7 @@ class Car {
         let thr = 0, brake = 0;
         if (reqDecel > 0.9 * aBr) brake = Math.min(1, 0.2 + reqDecel / (0.85 * aBrCap));
         else if (vms > vAllow + 0.8) brake = Math.min(1, 0.2 + (vms - vAllow) / 6);
-        else if (vms < vAllow - 0.5) thr = Math.min(1, (vAllow - vms) / 3 + 0.2);
+        else if (vms < vAllow - 0.18) thr = Math.max(0.28,Math.min(1, (vAllow - vms) / 3 + 0.2));
         this.smoothThrottle = thr; this.smoothBrake = brake;
         return { thr, brake, steer, manual: false, aiSteer: true };
     }
@@ -404,6 +419,12 @@ class Car {
         const distance = Math.hypot(dx, dy);
         const occupied = allCars.some(c => c !== this && c.specIndex === this.specIndex && c.pitPhase === 'service');
         const toBox = Math.hypot(box.x - this.x, box.y - this.y);
+        const queuedAtBox=occupied&&!this.pitServiced&&this.pitNode>=box.node-2;
+        if(queuedAtBox&&toBox<30&&this.pitSpeed<0.6) {
+            this.pitSpeed=0;this.velocity=this.dx=this.dy=0;this.braking=true;
+            this.updateLapAndSectors();
+            return;
+        }
         let limit = TRACKS_DB[selectedTrackIndex].pitSpeedLimit / 3.6;
         if (!this.pitServiced && this.pitNode >= box.node - 2) limit = Math.min(limit, Math.sqrt(2 * 3.8 * Math.max(0, (toBox - 3) * PX_M)));
         if (occupied && !this.pitServiced && this.pitNode >= box.node - 2) limit = 0;
@@ -433,7 +454,7 @@ class Car {
             this.pitTimer = tireChangeSeconds + repairSeconds;
             this.velocity = this.dx = this.dy = 0;
             if (this.isPlayer) showRaceControl(`Обслуживание: ${this.pitTimer.toFixed(1)} с · шины и ремонт`, '#38bdf8');
-        } else if (distance <= move + 2) {
+        } else if (!queuedAtBox && distance <= move + 2) {
             this.pitNode++;
             if (this.pitNode >= pitWaypoints.length - 1) {
                 this.pitPhase = 'none';
