@@ -405,11 +405,13 @@ class Car {
         const occupied = allCars.some(c => c !== this && c.specIndex === this.specIndex && c.pitPhase === 'service');
         const toBox = Math.hypot(box.x - this.x, box.y - this.y);
         let limit = TRACKS_DB[selectedTrackIndex].pitSpeedLimit / 3.6;
-        if (!this.pitServiced && this.pitNode >= box.node - 2) limit = Math.min(limit, Math.sqrt(2 * 7 * Math.max(0, (toBox - 3) * PX_M)));
+        if (!this.pitServiced && this.pitNode >= box.node - 2) limit = Math.min(limit, Math.sqrt(2 * 3.8 * Math.max(0, (toBox - 3) * PX_M)));
         if (occupied && !this.pitServiced && this.pitNode >= box.node - 2) limit = 0;
         const merging = this.pitNode >= pitWaypoints.length - 3;
         if (merging && allCars.some(c => c !== this && c.pitPhase === 'none' && Math.hypot(c.x - target.x, c.y - target.y) < 130)) limit = 0;
-        this.pitSpeed = Math.max(0, Math.min(limit, this.pitSpeed + 5 * dt));
+        const speedError=limit-this.pitSpeed;
+        const speedChange=Math.min(Math.abs(speedError),(speedError<0?4.2:2.4)*dt);
+        this.pitSpeed=Math.max(0,this.pitSpeed+Math.sign(speedError)*speedChange);
         const move = Math.min(distance, this.pitSpeed * dt / PX_M);
         if (distance > 0) {
             this.dx = dx / distance * move; this.dy = dy / distance * move;
@@ -488,12 +490,22 @@ class Car {
             return;
         }
 
+        let pitApproachTargetMs = null, pitApproachRemainingM = 0;
         if (currentSession === 'RACE' && this.pitPhase === 'none' && !this.finishedRace) {
             const scheduled = this.strategy?.stops[this.pitStopsDone];
             const due = scheduled && this.lap >= scheduled.lap;
             const needsTires = !this.isPlayer && this.tireHealth < 28;
             const needsRepair = !this.isPlayer && this.damageLevel > 0.50;
-            if ((this.pitRequested || due || needsTires || needsRepair) && isPitEntryProgress(frontInfo.normProgress) && this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity)) {
+            const wantsPit = (this.pitRequested || due || needsTires || needsRepair) &&
+                this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity);
+            const toEntryPx = ((TRACKS_DB[selectedTrackIndex].pitEntryNorm-frontInfo.normProgress+1)%1)*trackLengthPx;
+            pitApproachRemainingM = Math.max(0,toEntryPx-PIT_ENTRY_MARKER_DISTANCE_PX)*PX_M;
+            if (wantsPit && toEntryPx >= PIT_ENTRY_MARKER_DISTANCE_PX &&
+                toEntryPx-PIT_ENTRY_MARKER_DISTANCE_PX <= PIT_APPROACH_DISTANCE_PX) {
+                const pitLimitMs=TRACKS_DB[selectedTrackIndex].pitSpeedLimit/3.6;
+                pitApproachTargetMs=Math.sqrt(pitLimitMs*pitLimitMs+2*4.5*pitApproachRemainingM);
+            }
+            if (wantsPit && isPitEntryProgress(frontInfo.normProgress)) {
                 this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
             }
         }
@@ -503,6 +515,19 @@ class Car {
         let ctl;
         if (this.isHumanControlled()) ctl = this.humanControls(dt, input);
         else ctl = this.aiControls(dt, this.finishedRace ? 0.55 : 1.0);
+
+        // Brake toward the pit limiter over the approach zone. This keeps
+        // regular vehicle inertia and avoids an abrupt speed clamp at entry.
+        if (pitApproachTargetMs !== null) {
+            if (vms > pitApproachTargetMs + 0.35) {
+                const requiredDecel=(vms*vms-pitApproachTargetMs*pitApproachTargetMs)/
+                    (2*Math.max(1,pitApproachRemainingM));
+                ctl.thr=0;
+                ctl.brake=Math.max(ctl.brake,Math.min(0.85,Math.max(0.08,requiredDecel/8)));
+            } else if (vms >= pitApproachTargetMs - 0.35) {
+                ctl.thr=0;
+            }
+        }
 
         this.dbgDist = frontInfo.dist;
         this.latOff = (frontPt.x - frontInfo.center.x) * (frontInfo.center.nx || 0) + (frontPt.y - frontInfo.center.y) * (frontInfo.center.ny || 0);
