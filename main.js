@@ -409,8 +409,17 @@ function renderGarageUI() {
         card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
         card.innerHTML = `<div><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
         const selectTrack=()=>{
-            if(selectedTrackIndex===tIdx)return;
-            selectedTrackIndex=tIdx;buildActiveTrackGeometry();renderGarageUI();
+            const previousTrackIndex=selectedTrackIndex;
+            selectedTrackIndex=tIdx;
+            try {
+                buildActiveTrackGeometry();
+            } catch(error) {
+                selectedTrackIndex=previousTrackIndex;
+                console.error('Unable to select track '+tObj.id,error);
+                renderGarageUI();
+                return;
+            }
+            renderGarageUI();
         };
         let pointerStart=null;
         card.addEventListener('pointerdown',e=>{if(e.button===0)pointerStart={x:e.clientX,y:e.clientY,id:e.pointerId};});
