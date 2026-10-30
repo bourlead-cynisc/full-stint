@@ -23,7 +23,11 @@ for(const track of TRACKS_DB) {
             changed=false;const keep=[];
             for(let i=0;i<current.length;i++){
                 const a=current[(i-1+current.length)%current.length],p=current[i],b=current[(i+1)%current.length];
-                if(distanceToSegment(p,a,b)<=tolerance&&current.length-keep.length>24){changed=true;continue;}
+                // Count points still available after this one. The former
+                // current.length - keep.length check ignored the loop index,
+                // so it could discard every point from long, smooth outlines.
+                const remainingAfterThis=current.length-i-1;
+                if(distanceToSegment(p,a,b)<=tolerance&&keep.length+remainingAfterThis>=24){changed=true;continue;}
                 keep.push(p);
             }
             current=keep;
