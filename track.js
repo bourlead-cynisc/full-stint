@@ -22,8 +22,11 @@ const WALL_HALF_W      = 122;
 const PIT_WALL_INNER_W = 345;
 const PIT_CORRIDOR_OFFSET = 236;
 const PIT_ENTRY_MARKER_DISTANCE_PX = 150;
+const PIT_ENTRY_TRIGGER_DISTANCE_PX = 14;
 const PIT_APPROACH_DISTANCE_PX = 11500;
-const PIT_STRAIGHT_CLEARANCE_PX = WALL_HALF_W + 42;
+const PIT_LANE_CLEARANCE_PX = WALL_HALF_W + 34 + 20;
+const PIT_WAYPOINT_COUNT = 161;
+const PIT_TRANSITION_MAX_PX = 720;
 
 function getSplinePoint(p0, p1, p2, p3, fraction) {
     // Centripetal knots prevent loops where sparse survey points meet dense corners.
@@ -59,7 +62,7 @@ function buildActiveTrackGeometry() {
     trackSamples = resampleCenterline(trackSamples, 24);
     // Filter only sub-road-width ripples in every layout before deriving normals.
     // Asphalt, kerbs, walls and the racing line then share the same clean centerline.
-    trackSamples = smoothCenterlineSamples(trackSamples);
+    trackSamples = smoothCenterlineSamples(trackSamples,2);
     totalSamples = trackSamples.length;
 
     for (let i = 0; i < totalSamples; i++) {
@@ -162,12 +165,12 @@ function buildActiveTrackGeometry() {
     const entry=trackSamples[pitSection.start],exit=trackSamples[pitSection.end];
     trk.pitEntryNorm=pitSection.start/totalSamples;trk.pitExitNorm=pitSection.end/totalSamples;
     trk.pitProgressSpan=pitSection.span/totalSamples;
-    pitWaypoints=sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,81);
+    pitWaypoints=sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,PIT_WAYPOINT_COUNT);
     pitCumDist=[0];
     for(let i=1;i<pitWaypoints.length;i++)pitCumDist.push(pitCumDist[i-1]+Math.hypot(pitWaypoints[i].x-pitWaypoints[i-1].x,pitWaypoints[i].y-pitWaypoints[i-1].y));
     pitRouteLength=pitCumDist.at(-1);
-    pitLaneStartPt=pitWaypoints[8];pitLaneEndPt=pitWaypoints.at(-9);
-    pitWallStartPt=pitWaypoints[12];pitWallEndPt=pitWaypoints.at(-12);
+    pitLaneStartPt=pitWaypoints[Math.round((PIT_WAYPOINT_COUNT-1)*.08)];pitLaneEndPt=pitWaypoints[Math.round((PIT_WAYPOINT_COUNT-1)*.92)];
+    pitWallStartPt=pitWaypoints[Math.round((PIT_WAYPOINT_COUNT-1)*.12)];pitWallEndPt=pitWaypoints[Math.round((PIT_WAYPOINT_COUNT-1)*.88)];
     pitSpeedLinePt=getTrackPointAtProgress((trk.pitEntryNorm-PIT_ENTRY_MARKER_DISTANCE_PX/trackLengthPx+1)%1);
 
     buildTeamPitBoxes();
@@ -194,56 +197,73 @@ function buildActiveTrackGeometry() {
 }
 
 function findStraightPitSection(track) {
-    const N=totalSamples,spacing=trackLengthPx/N;
-    const spanPx=Math.min(4800,Math.max(2800,trackLengthPx*.08));
-    const span=Math.min(N-4,Math.max(48,Math.round(spanPx/spacing)));
-    const stride=Math.max(1,Math.floor(N/420));
-    const candidates=[];
-    let bestFallback=null;
-    for(let start=0;start<N;start+=stride) {
-        const end=(start+span)%N,a=trackSamples[start],b=trackSamples[end];
-        const dx=b.x-a.x,dy=b.y-a.y,chord=Math.hypot(dx,dy)||1;
-        let maxDeviation=0,totalDeviation=0,count=0;
-        const probes=16;
-        for(let k=0;k<=probes;k++) {
-            const p=trackSamples[(start+Math.round(span*k/probes))%N];
-            const deviation=Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)/chord;
-            maxDeviation=Math.max(maxDeviation,deviation);totalDeviation+=deviation;count++;
+    const N=totalSamples,spacing=trackLengthPx/N,stride=Math.max(1,Math.floor(N/520));
+    const preferredSpan=Math.min(4800,Math.max(2200,trackLengthPx*.08));
+    let best=null;
+    for(const spanPx of [...new Set([preferredSpan,2100,1650])]) {
+        const span=Math.min(N-4,Math.max(40,Math.round(spanPx/spacing)));
+        const candidates=[];
+        for(let start=0;start<N;start+=stride) {
+            const end=(start+span)%N,a=trackSamples[start],b=trackSamples[end];
+            const dx=b.x-a.x,dy=b.y-a.y,chord=Math.hypot(dx,dy)||1,dirX=dx/chord,dirY=dy/chord;
+            let maxDeviation=0,totalDeviation=0;
+            for(let k=0;k<=20;k++) {
+                const p=trackSamples[(start+Math.round(span*k/20))%N];
+                const deviation=Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)/chord;
+                maxDeviation=Math.max(maxDeviation,deviation);totalDeviation+=deviation;
+            }
+            const tangentError=(index)=>{
+                const before=trackSamples[(index-5+N)%N],after=trackSamples[(index+5)%N];
+                const tx=after.x-before.x,ty=after.y-before.y;
+                return Math.abs(Math.atan2(tx*dirY-ty*dirX,tx*dirX+ty*dirY));
+            };
+            const startAngleError=tangentError(start),endAngleError=tangentError(end);
+            const maxAngleError=Math.max(startAngleError,endAngleError);
+            const meanDeviation=totalDeviation/21;
+            const score=maxDeviation+meanDeviation*.35+maxAngleError*125;
+            candidates.push({start,end,span,dx:dirX,dy:dirY,nx:-dirY,ny:dirX,maxDeviation,meanDeviation,startAngleError,endAngleError,maxAngleError,score});
         }
-        candidates.push({start,end,span,dx:dx/chord,dy:dy/chord,maxDeviation,meanDeviation:totalDeviation/count});
-    }
-    candidates.sort((a,b)=>(a.maxDeviation+a.meanDeviation*.4)-(b.maxDeviation+b.meanDeviation*.4));
-
-    // Keep the pit lane entirely outside the racing surface. If a nearby
-    // section of the circuit sits close to one side, test the other side and
-    // several clearances before settling on this straight.
-    for(const candidate of candidates.slice(0,32)) {
-        const nx=-candidate.dy,ny=candidate.dx;
-        const entry=trackSamples[candidate.start],exit=trackSamples[candidate.end];
-        const chord=Math.hypot(exit.x-entry.x,exit.y-entry.y);
-        let best=null;
-        for(const offset of [PIT_CORRIDOR_OFFSET,300,380,480]) {
-            for(const side of [track.pitSideSign||1,-(track.pitSideSign||1)]) {
-                let minDistance=Infinity;
-                for(let k=1;k<=7;k++) {
-                    const t=k/8;
-                    const x=entry.x+(exit.x-entry.x)*t+nx*side*offset;
-                    const y=entry.y+(exit.y-entry.y)*t+ny*side*offset;
-                    minDistance=Math.min(minDistance,getTrackInfo(x,y,-1).dist);
+        candidates.sort((a,b)=>a.score-b.score);
+        for(const candidate of candidates.slice(0,96)) {
+            if(candidate.maxDeviation>Math.max(42,spanPx*.016)||candidate.maxAngleError>Math.PI/12) continue;
+            const transition=Math.min(PIT_TRANSITION_MAX_PX,spanPx*.25);
+            for(const offset of [PIT_CORRIDOR_OFFSET,286,350,430,520]) {
+                for(const side of [track.pitSideSign||1,-(track.pitSideSign||1)]) {
+                    const path=sampleStraightPitPath(trackSamples[candidate.start],trackSamples[candidate.end],candidate.dx,candidate.dy,candidate.nx,candidate.ny,side,offset,PIT_WAYPOINT_COUNT,transition);
+                    const clearance=measurePitLaneClearance(path,candidate);
+                    const option={...candidate,side,offset,clearance,transition};
+                    if(!best||option.clearance>best.clearance||(option.clearance===best.clearance&&option.score<best.score))best=option;
+                    if(clearance>=PIT_LANE_CLEARANCE_PX) return option;
                 }
-                const option={...candidate,nx,ny,side,offset,minDistance};
-                if(!best||option.minDistance>best.minDistance)best=option;
-                if(minDistance>=PIT_STRAIGHT_CLEARANCE_PX) return option;
             }
         }
-        if(best&&(!bestFallback||best.minDistance>bestFallback.minDistance))bestFallback=best;
     }
-    return bestFallback||{start:0,end:Math.round(span)%N,span,dx:1,dy:0,nx:0,ny:1,side:1,offset:PIT_CORRIDOR_OFFSET};
+    if(best) return best;
+    const span=Math.min(N-4,Math.max(36,Math.round(1500/spacing))),start=0,end=(start+span)%N,a=trackSamples[start],b=trackSamples[end],len=Math.hypot(b.x-a.x,b.y-a.y)||1;
+    return {start,end,span,dx:(b.x-a.x)/len,dy:(b.y-a.y)/len,nx:-(b.y-a.y)/len,ny:(b.x-a.x)/len,side:track.pitSideSign||1,offset:520,clearance:0,transition:500};
 }
 
-function sampleStraightPitPath(entry,exit,dirX,dirY,normX,normY,side,offset,count) {
+function measurePitLaneClearance(path,candidate) {
+    const N=totalSamples,step=Math.max(1,Math.floor(N/760)),localGap=Math.max(16,Math.ceil(430/(trackLengthPx/N)));
+    let minDistance=Infinity;
+    for(let j=0;j<path.length;j+=3) {
+        const expected=(candidate.start+candidate.span*j/(path.length-1))%N,p=path[j];
+        for(let i=0;i<N;i+=step) {
+            let delta=Math.abs(i-expected);delta=Math.min(delta,N-delta);
+            if(delta<localGap) continue;
+            const a=trackSamples[i],b=trackSamples[(i+1)%N],dx=b.x-a.x,dy=b.y-a.y;
+            const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+            const distance=Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);
+            minDistance=Math.min(minDistance,distance);
+            if(minDistance<PIT_LANE_CLEARANCE_PX) return minDistance;
+        }
+    }
+    return minDistance;
+}
+
+function sampleStraightPitPath(entry,exit,dirX,dirY,normX,normY,side,offset,count,transitionOverride=null) {
     const chord=Math.hypot(exit.x-entry.x,exit.y-entry.y);
-    const transition=Math.min(240,chord*.18);
+    const transition=transitionOverride||Math.min(PIT_TRANSITION_MAX_PX,chord*.24);
     const start={x:entry.x+dirX*transition+normX*side*offset,y:entry.y+dirY*transition+normY*side*offset};
     const end={x:exit.x-dirX*transition+normX*side*offset,y:exit.y-dirY*transition+normY*side*offset};
     const curvePoints=[];
@@ -254,11 +274,12 @@ function sampleStraightPitPath(entry,exit,dirX,dirY,normX,normY,side,offset,coun
                 y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y});
         }
     };
-    addBezier(entry,{x:entry.x+dirX*transition*.38,y:entry.y+dirY*transition*.38},
-        {x:start.x-dirX*transition*.38,y:start.y-dirY*transition*.38},start,24,true);
+    const handle=transition/3;
+    addBezier(entry,{x:entry.x+dirX*handle,y:entry.y+dirY*handle},
+        {x:start.x-dirX*handle,y:start.y-dirY*handle},start,36,true);
     curvePoints.push(end);
-    addBezier(end,{x:end.x+dirX*transition*.38,y:end.y+dirY*transition*.38},
-        {x:exit.x-dirX*transition*.38,y:exit.y-dirY*transition*.38},exit,24,false);
+    addBezier(end,{x:end.x+dirX*handle,y:end.y+dirY*handle},
+        {x:exit.x-dirX*handle,y:exit.y-dirY*handle},exit,36,false);
 
     const distances=[0];
     for(let i=1;i<curvePoints.length;i++) distances.push(distances[i-1]+Math.hypot(curvePoints[i].x-curvePoints[i-1].x,curvePoints[i].y-curvePoints[i-1].y));
@@ -277,7 +298,7 @@ function buildTeamPitBoxes() {
     teamPitBoxes = [];
     for (let i = 0; i < catalog.length; i++) {
         const spec = catalog[i];
-        const node = Math.round(81*(.25+.38*i/Math.max(1,catalog.length-1)));
+        const node = Math.round((pitWaypoints.length-1)*(.25+.38*i/Math.max(1,catalog.length-1)));
         const pt = pitWaypoints[node];
         teamPitBoxes.push({teamIndex: i, shortName: spec.shortName, color: spec.livery.primary,
             node, x: pt.x, y: pt.y, garageX: pt.x + sfNormX * 70, garageY: pt.y + sfNormY * 70});
@@ -314,6 +335,8 @@ function getTrackInfo(px, py, hintIdx = -1) {
     const searchAll = (hintIdx < 0);
     const range = searchAll ? N : 68;
     const startI = searchAll ? 0 : (hintIdx - 34 + N) % N;
+    let bestScore=Infinity;
+    const spacing=trackLengthPx/N;
 
     for (let step = 0; step < range; step++) {
         const i = (startI + step) % N;
@@ -324,13 +347,27 @@ function getTrackInfo(px, py, hintIdx = -1) {
         t = Math.max(0, Math.min(1, t));
         const cx = a.x + abx * t, cy = a.y + aby * t;
         const dSq = (px - cx) * (px - cx) + (py - cy) * (py - cy);
-        if (dSq < minDistSq) {
+        const sampleDelta=searchAll?0:Math.min(Math.abs(i-hintIdx),N-Math.abs(i-hintIdx));
+        const score=dSq+(sampleDelta*spacing*.72)**2;
+        if (score < bestScore) {
+            bestScore=score;
             minDistSq = dSq;
             closestPt = { x: cx, y: cy, z: a.z + (b.z - a.z) * t, slopeDeg: a.slopeDeg + (b.slopeDeg - a.slopeDeg) * t, nx: a.nx, ny: a.ny };
             closestIdx = i; bestT = t;
         }
     }
-    if (!searchAll && minDistSq > 520 * 520) return getTrackInfo(px, py, -1);
+    if (!searchAll && minDistSq > 520 * 520) {
+        let global={dist:Infinity,center:closestPt,index:closestIdx,normProgress:0},globalScore=Infinity;
+        for(let i=0;i<N;i++) {
+            const a=trackSamples[i],b=trackSamples[(i+1)%N],abx=b.x-a.x,aby=b.y-a.y;
+            const t=Math.max(0,Math.min(1,((px-a.x)*abx+(py-a.y)*aby)/(abx*abx+aby*aby||1)));
+            const cx=a.x+abx*t,cy=a.y+aby*t,dSq=(px-cx)**2+(py-cy)**2;
+            const sampleDelta=Math.min(Math.abs(i-hintIdx),N-Math.abs(i-hintIdx));
+            const score=dSq+(sampleDelta*spacing*.72)**2;
+            if(score<globalScore){globalScore=score;global={dist:Math.sqrt(dSq),center:{x:cx,y:cy,z:a.z+(b.z-a.z)*t,slopeDeg:a.slopeDeg+(b.slopeDeg-a.slopeDeg)*t,nx:a.nx,ny:a.ny},index:i,normProgress:(sampleCumDist[i]+t*Math.hypot(abx,aby))/trackLengthPx};}
+        }
+        return global;
+    }
     return { dist: Math.sqrt(minDistSq), center: closestPt, index: closestIdx, normProgress: (sampleCumDist[closestIdx] + bestT * Math.hypot(trackSamples[(closestIdx+1)%N].x-trackSamples[closestIdx].x, trackSamples[(closestIdx+1)%N].y-trackSamples[closestIdx].y)) / trackLengthPx };
 }
 
@@ -471,11 +508,13 @@ function getTrackPointAtProgress(norm) {
     return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,nx:a.nx,ny:a.ny};
 }
 
-function smoothCenterlineSamples(points) {
-    return points.map((p,i)=>{
-        const a=points[(i-1+points.length)%points.length],b=points[(i+1)%points.length];
+function smoothCenterlineSamples(points,passes=2) {
+    let current=points;
+    for(let pass=0;pass<passes;pass++) current=current.map((p,i)=>{
+        const a=current[(i-1+current.length)%current.length],b=current[(i+1)%current.length];
         return {...p,x:(a.x+2*p.x+b.x)/4,y:(a.y+2*p.y+b.y)/4};
     });
+    return current;
 }
 
 function resampleCenterline(points, spacing) {
@@ -523,7 +562,13 @@ function simplifyOpenPitPolyline(points,tolerance) {
     }
     return points.filter((_,i)=>keep[i]);
 }
-function isPitEntryProgress(norm) {
-    const delta=(norm-TRACKS_DB[selectedTrackIndex].pitEntryNorm+1.5)%1-.5;
-    return Math.abs(delta)<=PIT_ENTRY_MARKER_DISTANCE_PX/trackLengthPx;
+function isPitEntryProgress(norm,previousNorm) {
+    const entry=TRACKS_DB[selectedTrackIndex].pitEntryNorm;
+    const signedDistance=value=>(value-entry+1.5)%1-.5;
+    const current=signedDistance(norm);
+    const previous=previousNorm===undefined?current:signedDistance(previousNorm);
+    const tolerance=PIT_ENTRY_TRIGGER_DISTANCE_PX/trackLengthPx;
+    // Pit entry is a one-way crossing. The previous symmetric window could
+    // start the lane 150 px early or after the car had already passed it.
+    return (previous<0&&current>=0)||(current<0&&current>=-tolerance);
 }

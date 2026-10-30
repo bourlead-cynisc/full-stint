@@ -210,7 +210,6 @@ h1 { margin: 0 0 2px 0; font-size: 13.5px; letter-spacing: 0.5px; color: #ff3b4e
 .hud-tire-warn { color: #ff4757 !important; }
 #race-control { max-width: 520px; }
 
-
 #steering-wheel-dash { left: calc(50% - 34px); gap: 14px; padding: 6px 16px; white-space: nowrap; }
 .dash-val small { white-space: nowrap; }
 
@@ -341,7 +340,6 @@ body.is-mobile #control-hint {display:none;}
 #damageEffect {color:#dbeaf6;font-size:11px;line-height:1.5;}#damage-panel small{color:#91adbf;font-size:10px;}
 #trial-panel {position:absolute;right:16px;top:198px;width:238px;background:#102633f2;border:1px solid #67e8f9;border-radius:14px;padding:15px;z-index:8;font-size:12px;color:#bdd9e8;}#trial-panel[hidden]{display:none;}#trialRecord{font-size:22px;color:#a5f3fc;font-variant-numeric:tabular-nums;}#trialStatus{line-height:1.6;color:#8cf3dc;}#trialStatus.invalid{color:#fca5a5;}#trial-panel p{line-height:1.6;}#trialGhostStatus{color:#a5f3fc;}.settings-note{font-size:11px;color:#a8c0d0;line-height:1.6;}
 @media(max-width:600px){.ai-settings{grid-template-columns:1fr;}.start-actions{gap:6px;}.ghost-btn{padding:10px;font-size:12px;}}
-
 
 /* Unified race HUD: separated map and pit areas with restrained telemetry styling. */
 #minimapFrame {

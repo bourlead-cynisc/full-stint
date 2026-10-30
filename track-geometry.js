@@ -65,7 +65,8 @@ for(const track of TRACKS_DB) {
         track.desc=track.desc.replace(' · упрощённая схема','')+' · реальный контур';
     }
     track.realPitPoints=source.pit.map(project);
-    // Use the same 80 km/h limiter on every circuit, including legacy 60 km/h paths.
+    // Use a consistent 80 km/h pit limiter on every circuit. Some source
+    // geometries still carry the previous 60 km/h value.
     track.pitSpeedLimit=Math.max(80,source.pitLimit||80);
     track.layoutVersion='osm-20261030-contour-cleanup';
 }

@@ -25,6 +25,18 @@ check(Math.abs(a.mass*a.dy+b.mass*b.dy-momentumBefore)<1e-6,'Collision impulse v
 selectedCarClass='F1';buildActiveTrackGeometry();const w1=create(),w2=create();w1.x=0;w1.y=0;w2.x=w1.width*.9;w2.y=w1.height*.5;w1.angle=w2.angle=0;w1.dx=1;w2.dx=-1;w1.dy=w2.dy=-8;w1.velocity=w2.velocity=8;
 resolveContourCarCollision(w1,w2);check(w1.suspensionDamage+w2.suspensionDamage>0,'Wheel contact has no suspension consequence');
 selectedCarClass='GT3';buildActiveTrackGeometry();
+selectedTrackIndex=5;buildActiveTrackGeometry();
+let closeBranches=null;
+for(let i=0;i<totalSamples&&!closeBranches;i+=2)for(let j=i+40;j<totalSamples;j+=2){if(j-i>totalSamples-40)continue;const a=trackSamples[i],b=trackSamples[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<60){closeBranches={i,j,d};break;}}
+check(closeBranches,'No close-branch geometry fixture');
+const crossing={x:(trackSamples[closeBranches.i].x+trackSamples[closeBranches.j].x)/2,y:(trackSamples[closeBranches.i].y+trackSamples[closeBranches.j].y)/2};
+const branchA=getTrackInfo(crossing.x,crossing.y,closeBranches.i),branchB=getTrackInfo(crossing.x,crossing.y,closeBranches.j);
+const indexGap=(a,b)=>Math.min(Math.abs(a-b),totalSamples-Math.abs(a-b));
+check(indexGap(branchA.index,closeBranches.i)<12&&indexGap(branchB.index,closeBranches.j)<12,'Track locator jumps to the other branch');
+const pitEntryNormTest=TRACKS_DB[selectedTrackIndex].pitEntryNorm,entryPx=20/trackLengthPx;
+check(!isPitEntryProgress(pitEntryNormTest-3*entryPx,pitEntryNormTest-5*entryPx),'Pit starts before the entry trigger');
+check(isPitEntryProgress(pitEntryNormTest+entryPx,pitEntryNormTest-entryPx),'Pit misses the entry crossing');
+check(!isPitEntryProgress(pitEntryNormTest+3*entryPx,pitEntryNormTest+entryPx),'Pit starts after the entry point');
 const oldSettings={...aiSettings};
 try {
  setAiSetting('aggression',55);
@@ -45,7 +57,9 @@ try {
  for(let i=0;i<200&&!pressureError;i++){simTimeMs+=5000;planRaceTraffic(self,.1);pressureError=self.aiMode==='PRESSURE';}simTimeMs=oldTime;check(pressureError,'Pressure never causes a recoverable mistake');
  setAiSetting('aggression',0);check(aiSettings.pace===110,'Aggression changes pace');
 } finally {setAiSetting('pace',oldSettings.pace);setAiSetting('aggression',oldSettings.aggression);}
-const damagedBot=create();const entry=pitWaypoints[0];damagedBot.x=entry.x;damagedBot.y=entry.y;damagedBot.syncProgress();damagedBot.engineDamage=.7;allCars=[damagedBot];raceMode='LAPS';totalRaceLaps=100;damagedBot.update(1/60,null);check(damagedBot.pitPhase!=='none','Damaged AI does not request a repair');
+const damagedBot=create(),entry=pitWaypoints[0],entryIdx=Math.round(TRACKS_DB[selectedTrackIndex].pitEntryNorm*totalSamples)%totalSamples,entryBefore=trackSamples[(entryIdx-4+totalSamples)%totalSamples],entryAfter=trackSamples[(entryIdx+4)%totalSamples];
+currentSession='RACE';raceMode='LAPS';raceState='RACING';damagedBot.x=entry.x;damagedBot.y=entry.y;damagedBot.angle=Math.atan2(entryAfter.x-entryBefore.x,-(entryAfter.y-entryBefore.y));damagedBot.syncProgress();
+damagedBot.prevNorm=(TRACKS_DB[selectedTrackIndex].pitEntryNorm-100/trackLengthPx+1)%1;damagedBot.engineDamage=.7;allCars=[damagedBot];raceMode='LAPS';totalRaceLaps=100;damagedBot.update(1/60,null);check(damagedBot.pitPhase!=='none','Damaged AI does not request a repair');
 function steeringResponse(mode){
  const c=create(0,true),p=getTrackPointAtProgress(.15),info=getTrackInfo(p.x,p.y,-1),a=trackSamples[info.index],b=trackSamples[(info.index+1)%totalSamples];
  const angle=Math.atan2(b.x-a.x,-(b.y-a.y));c.x=p.x;c.y=p.y;c.angle=angle;c.velocity=100/20;c.dx=Math.sin(angle)*c.velocity;c.dy=-Math.cos(angle)*c.velocity;c.gear=4;c.rpm=.65;c.shiftTimer=1;c.syncProgress();allCars=[c];

@@ -14,7 +14,7 @@ let selectedCarClass = 'GT3';
 let selectedCarIndex = 0;
 let selectedTeammateSlot = 0;
 let totalRaceLaps = 3;                 // для F1: выбранное число кругов
-let selectedStrategyIndex = 1; // balanced strategy is the default; examples are not selectable
+let selectedStrategyIndex = 1; // сбалансированный план по умолчанию; примеры не выбираются
 
 let raceMode = 'TIMED';                // TIMED (WEC, 20 мин) | LAPS (F1)
 let raceDurationMs = ENDURANCE_MINUTES * 60000;

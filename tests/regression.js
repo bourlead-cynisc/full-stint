@@ -1,4 +1,5 @@
 const check = (ok, message) => { if (!ok) throw new Error(message); };
+const angleErrorDeg=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b))*180/Math.PI);
 isPaused = true;
 const results = [];
 for (const cls of ['GT3','F1']) {
@@ -8,6 +9,21 @@ for (const cls of ['GT3','F1']) {
         buildActiveTrackGeometry();
         check(trackLengthPx > 1000 && trackSamples.every(p => Number.isFinite(p.kappa)), 'Invalid geometry '+track);
         check(teamPitBoxes.every(b => Number.isFinite(b.x)), 'Invalid pit boxes');
+        const circuit=TRACKS_DB[track],N=totalSamples,entryIndex=Math.round(circuit.pitEntryNorm*N)%N,exitIndex=Math.round(circuit.pitExitNorm*N)%N;
+        check(pitWaypoints.length===PIT_WAYPOINT_COUNT,'Pit path resolution '+circuit.id);
+        check(Math.hypot(pitWaypoints[0].x-trackSamples[entryIndex].x,pitWaypoints[0].y-trackSamples[entryIndex].y)<1,'Pit entry misses track '+circuit.id);
+        check(Math.hypot(pitWaypoints.at(-1).x-trackSamples[exitIndex].x,pitWaypoints.at(-1).y-trackSamples[exitIndex].y)<1,'Pit exit misses track '+circuit.id);
+        const heading=(a,b)=>Math.atan2(b.x-a.x,-(b.y-a.y));
+        const entryTrack=heading(trackSamples[(entryIndex-4+N)%N],trackSamples[(entryIndex+4)%N]);
+        const exitTrack=heading(trackSamples[(exitIndex-4+N)%N],trackSamples[(exitIndex+4)%N]);
+        check(angleErrorDeg(heading(pitWaypoints[0],pitWaypoints[1]),entryTrack)<8,'Pit entry angle '+circuit.id);
+        check(angleErrorDeg(heading(pitWaypoints.at(-2),pitWaypoints.at(-1)),exitTrack)<8,'Pit exit angle '+circuit.id);
+        const middle=pitWaypoints[Math.floor(pitWaypoints.length/2)];
+        const expectedMiddle=(entryIndex+Math.round(circuit.pitProgressSpan*N/2))%N;
+        check(getTrackInfo(middle.x,middle.y,expectedMiddle).dist>WALL_HALF_W+30,'Pit lane too close to track '+circuit.id);
+        check(measurePitLaneClearance(pitWaypoints,{start:entryIndex,span:Math.round(circuit.pitProgressSpan*N)})>=PIT_LANE_CLEARANCE_PX,'Pit lane overlaps another track section '+circuit.id);
+        const lineA=pitWaypoints[55],lineB=pitWaypoints[105],lineDx=lineB.x-lineA.x,lineDy=lineB.y-lineA.y,lineLength=Math.hypot(lineDx,lineDy);
+        for(let j=65;j<=95;j+=10){const p=pitWaypoints[j];check(Math.abs((p.x-lineA.x)*lineDy-(p.y-lineA.y)*lineDx)/lineLength<4,'Pit straight is curved '+circuit.id);}
         currentSession = 'RACE'; raceState = 'RACING'; raceMode = 'LAPS'; totalRaceLaps = 100;
         simTimeMs = 0;
         const c = new Car('Test',1,0,false,false);
@@ -21,6 +37,7 @@ for (const cls of ['GT3','F1']) {
         c.nextCompound='hard'; c.pitRequested=true;
         for (let n=0;n<18000 && (c.pitStopsDone===0 || c.pitPhase!=='none');n++) {simTimeMs+=1000/60;c.update(1/60,null);}
         check(c.pitPhase==='none' && c.pitStopsDone===1 && c.compound==='hard' && c.engineDamage===0 && c.suspensionDamage===0 && c.wingDamage===0, 'Pit stuck '+cls+track+' '+c.pitNode+' '+c.pitPhase);
+        check(c.lastSampleIdx===exitIndex,'Pit exit lost track branch '+circuit.id);
         results.push({cls,track:TRACKS_DB[track].id,progress:+progress.toFixed(2)});
     }
 }

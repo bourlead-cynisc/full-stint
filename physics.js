@@ -45,8 +45,8 @@ function powerCurve(r) {
 }
 
 // Поведение машины: «Аркада» — больше сцепления и мгновенная реакция, «Реализм» — честная физика
-const HC_ARC  = { hb: 1.42, circleK: 0.38, slipMul: 1.90, steerAttack: 11.5, steerAttackSp: 3.4, steerCross: 22, yawK: 32, steerSpLoss: 0.03, thrRise: 7.0, brkRise: 9.0, lock: 3.5 };
-const HC_REAL = { hb: 1.16, circleK: 0.80, slipMul: 1.30, steerAttack: 8.0,  steerAttackSp: 3.0, steerCross: 16, yawK: 21, steerSpLoss: 0.07, thrRise: 4.8, brkRise: 6.5, lock: 3.0 };
+const HC_ARC  = { hb: 1.55, circleK: 0.38, slipMul: 1.90, steerAttack: 13.0, steerAttackSp: 4.0, steerCross: 25, yawK: 36, steerSpLoss: 0.02, thrRise: 7.0, brkRise: 9.0, lock: 3.8 };
+const HC_REAL = { hb: 1.27, circleK: 0.80, slipMul: 1.30, steerAttack: 9.5,  steerAttackSp: 3.5, steerCross: 18, yawK: 25, steerSpLoss: 0.045, thrRise: 4.8, brkRise: 6.5, lock: 3.25 };
 function HC() { return (window.handlingMode === 'REAL') ? HC_REAL : HC_ARC; }
 
 class Car {
@@ -458,7 +458,12 @@ class Car {
             this.pitNode++;
             if (this.pitNode >= pitWaypoints.length - 1) {
                 this.pitPhase = 'none';
-                this.lastSampleIdx = -1;
+                const exitIndex=Math.round(TRACKS_DB[selectedTrackIndex].pitExitNorm*totalSamples)%totalSamples;
+                const before=trackSamples[(exitIndex-4+totalSamples)%totalSamples],after=trackSamples[(exitIndex+4)%totalSamples];
+                this.angle=Math.atan2(after.x-before.x,-(after.y-before.y));
+                this.dx=Math.sin(this.angle)*this.velocity;
+                this.dy=-Math.cos(this.angle)*this.velocity;
+                this.lastSampleIdx=exitIndex;
                 if (this.isPlayer) showRaceControl('Пит-лейн пройден. Управление возвращено', '#00e676');
             }
         }
@@ -526,7 +531,7 @@ class Car {
                 const pitLimitMs=TRACKS_DB[selectedTrackIndex].pitSpeedLimit/3.6;
                 pitApproachTargetMs=Math.sqrt(pitLimitMs*pitLimitMs+2*4.5*pitApproachRemainingM);
             }
-            if (wantsPit && isPitEntryProgress(frontInfo.normProgress)) {
+            if (wantsPit && isPitEntryProgress(frontInfo.normProgress,this.prevNorm)) {
                 this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
             }
         }
