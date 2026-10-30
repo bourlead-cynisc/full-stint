@@ -1,3 +1,18 @@
+function roundedRectPath(ctx, x, y, w, h, radius) {
+    const r = Math.max(0, Math.min(radius, Math.abs(w) / 2, Math.abs(h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
 function renderCarBody(ctx, spec, livery, compoundKey = 'soft', isBraking = false, drsActive = false, driverNumber = 1) {
     const w = spec.width;
     const h = spec.height;
@@ -6,8 +21,7 @@ function renderCarBody(ctx, spec, livery, compoundKey = 'soft', isBraking = fals
 
     if (spec.carClass === 'F1') {
         ctx.fillStyle = '#0c0f16';
-        ctx.beginPath();
-        ctx.roundRect(-w * 0.44, -h * 0.16, w * 0.88, h * 0.50, 3);
+        roundedRectPath(ctx, -w * 0.44, -h * 0.16, w * 0.88, h * 0.50, 3);
         ctx.fill();
 
         ctx.strokeStyle = '#181e29';
@@ -25,8 +39,7 @@ function renderCarBody(ctx, spec, livery, compoundKey = 'soft', isBraking = fals
 
         const drawF1Wheel = (wx, wy, ww, wh) => {
             ctx.fillStyle = '#0f1218';
-            ctx.beginPath();
-            ctx.roundRect(wx - ww / 2, wy - wh / 2, ww, wh, 2.5);
+            roundedRectPath(ctx, wx - ww / 2, wy - wh / 2, ww, wh, 2.5);
             ctx.fill();
             ctx.strokeStyle = tireStripeColor;
             ctx.lineWidth = 1.25;
@@ -118,8 +131,7 @@ function renderCarBody(ctx, spec, livery, compoundKey = 'soft', isBraking = fals
     ctx.fillRect( wx - 1.2,  h * 0.27 - 4.2, 3.2, 9.4);
 
     ctx.fillStyle = '#12161f';
-    ctx.beginPath();
-    ctx.roundRect(-w * 0.50, -h * 0.515, w * 1.00, 6.0, 2.5);
+    roundedRectPath(ctx, -w * 0.50, -h * 0.515, w * 1.00, 6.0, 2.5);
     ctx.fill();
 
     ctx.fillStyle = livery.primary;
@@ -161,12 +173,10 @@ function renderSafetyCar(ctx) {
     const w = 22, h = 45;
     ctx.save();
     ctx.fillStyle = '#d1d5db';
-    ctx.beginPath();
-    ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+    roundedRectPath(ctx, -w / 2, -h / 2, w, h, 6);
     ctx.fill();
     ctx.fillStyle = '#1e293b';
-    ctx.beginPath();
-    ctx.roundRect(-w * 0.36, -h * 0.16, w * 0.72, h * 0.36, 4);
+    roundedRectPath(ctx, -w * 0.36, -h * 0.16, w * 0.72, h * 0.36, 4);
     ctx.fill();
     const blink = Math.floor(performance.now() / 220) % 2 === 0;
     ctx.fillStyle = blink ? '#22c55e' : '#f97316';
