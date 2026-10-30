@@ -12,27 +12,42 @@ for(const track of TRACKS_DB) {
     // Keep their shape and aspect ratio while bringing them into the same visual scale.
     const layoutScale=source.outline?0.78:1;
     const project=p=>{const q=baseProject(p);return {x:q.x*scale*layoutScale,y:q.y*scale*layoutScale};};
-    const simplifyClosedPolyline=(points,tolerance=18)=>{
-        let current=points.slice(),changed=true;
-        const distanceToSegment=(p,a,b)=>{
+    const simplifyOpenPolyline=(points,tolerance)=>{
+        if(points.length<=2)return points;
+        const keep=new Uint8Array(points.length),stack=[[0,points.length-1]];
+        keep[0]=keep[points.length-1]=1;
+        while(stack.length){
+            const [start,end]=stack.pop(),a=points[start],b=points[end];
             const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
-            const t=len2?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/len2)):0;
-            return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);
-        };
-        while(changed&&current.length>24){
-            changed=false;const keep=[];
-            for(let i=0;i<current.length;i++){
-                const a=current[(i-1+current.length)%current.length],p=current[i],b=current[(i+1)%current.length];
-                // Count points still available after this one. The former
-                // current.length - keep.length check ignored the loop index,
-                // so it could discard every point from long, smooth outlines.
-                const remainingAfterThis=current.length-i-1;
-                if(distanceToSegment(p,a,b)<=tolerance&&keep.length+remainingAfterThis>=24){changed=true;continue;}
-                keep.push(p);
+            let farthest=tolerance,farthestIndex=-1;
+            for(let i=start+1;i<end;i++){
+                const p=points[i];
+                const t=len2?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/len2)):0;
+                const distance=Math.hypot(p.x-a.x-dx*t,p.y-a.y-dy*t);
+                if(distance>farthest){farthest=distance;farthestIndex=i;}
             }
-            current=keep;
+            if(farthestIndex>=0){
+                keep[farthestIndex]=1;
+                stack.push([start,farthestIndex],[farthestIndex,end]);
+            }
         }
-        return current;
+        return points.filter((_,i)=>keep[i]);
+    };
+    const simplifyClosedPolyline=(points,tolerance=18)=>{
+        if(points.length<=3)return points;
+        // Split the loop at its point opposite the first point. Simplifying
+        // the two open arcs independently preserves the whole circuit; a
+        // greedy cyclic remover could erase entire distant sections and
+        // reduce Le Mans to a short straight despite thousands of OSM points.
+        let farthestIndex=1,farthestDistance=0;
+        for(let i=1;i<points.length;i++){
+            const distance=Math.hypot(points[i].x-points[0].x,points[i].y-points[0].y);
+            if(distance>farthestDistance){farthestDistance=distance;farthestIndex=i;}
+        }
+        const firstArc=points.slice(0,farthestIndex+1);
+        const secondArc=points.slice(farthestIndex).concat(points.slice(0,1));
+        const simplified=[...simplifyOpenPolyline(firstArc,tolerance),...simplifyOpenPolyline(secondArc,tolerance).slice(1,-1)];
+        return simplified.length>=3?simplified:points;
     };
     const smoothClosedPolyline=(points,passes=2)=>{
         let current=points;
