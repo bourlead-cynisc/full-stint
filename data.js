@@ -305,12 +305,12 @@ for (const cat of [GT3_CATALOG, F1_CATALOG]) {
 }
 
 const TIRE_COMPOUNDS = {
-    soft:   { name: '🔴 SOFT',   label: 'Soft (мягкие)',   shortTag: '🔴 S', gripMult: 1.08, speedMult: 1.010, wearPerLap: 14, color: '#ff4757',
-              info: 'Максимум сцепления. Стинт около 5 кругов.' },
-    medium: { name: '🟡 MEDIUM', label: 'Medium (средние)', shortTag: '🟡 M', gripMult: 1.00, speedMult: 1.000, wearPerLap: 9, color: '#f1c40f',
-              info: 'Ровный темп. Стинт около 8 кругов.' },
-    hard:   { name: '⚪ HARD',   label: 'Hard (жёсткие)',  shortTag: '⚪ H', gripMult: 0.93, speedMult: 0.992, wearPerLap: 6, color: '#dfe4ea',
-              info: 'Меньше сцепления. Стинт около 12 кругов.' }
+    soft:   { name: '🔴 SOFT',   label: 'Soft (мягкие)',   shortTag: '🔴 S', gripMult: 1.08, speedMult: 1.010, wearPerLap: 28, color: '#ff4757',
+              info: 'Максимум сцепления. Стинт около 2–3 кругов.' },
+    medium: { name: '🟡 MEDIUM', label: 'Medium (средние)', shortTag: '🟡 M', gripMult: 1.00, speedMult: 1.000, wearPerLap: 18, color: '#f1c40f',
+              info: 'Ровный темп. Стинт около 4 кругов.' },
+    hard:   { name: '⚪ HARD',   label: 'Hard (жёсткие)',  shortTag: '⚪ H', gripMult: 0.93, speedMult: 0.992, wearPerLap: 12, color: '#dfe4ea',
+              info: 'Меньше сцепления. Стинт около 6 кругов.' }
 };
 
 // Условная потеря времени на пит-стопе (торможение + замена + разгон), в секундах.
