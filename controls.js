@@ -1,16 +1,23 @@
 // Physical key codes work in both Latin and Cyrillic keyboard layouts.
 const DEFAULT_BINDINGS = {
-    throttle:['KeyW','ArrowUp'], brake:['KeyS','ArrowDown','Space'], left:['KeyA','ArrowLeft'], right:['KeyD','ArrowRight'],
+    throttle:['KeyW','ArrowUp'], brake:['KeyS','ArrowDown'], handbrake:['Space'], left:['KeyA','ArrowLeft'], right:['KeyD','ArrowRight'],
     shiftUp:['KeyE','ShiftLeft','ShiftRight'], shiftDown:['KeyQ','ControlLeft','ControlRight'],
     pit:['KeyP'], soft:['Digit1'], medium:['Digit2'], hard:['Digit3'], camera:['KeyC'], line:['KeyH'],
     sound:['KeyM'], zoomIn:['Equal','NumpadAdd'], zoomOut:['Minus','NumpadSubtract'], pause:['Escape'], settings:['F2']
 };
-const ACTION_LABELS = {throttle:'Газ',brake:'Тормоз / задний ход',left:'Руль влево',right:'Руль вправо',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',line:'Показать траекторию',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза',settings:'Настройки управления'};
+const ACTION_LABELS = {throttle:'Газ',brake:'Тормоз / задний ход',handbrake:'Ручник',left:'Руль влево',right:'Руль вправо',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',line:'Показать траекторию',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза',settings:'Настройки управления'};
 const BINDINGS_KEY='fiaSim.controls.v1';
 function loadBindings() {
     const defaults=JSON.parse(JSON.stringify(DEFAULT_BINDINGS));
     try {
         const saved=JSON.parse(localStorage.getItem(BINDINGS_KEY));
+        // Move Space from the old brake binding to the new handbrake without resetting other keys.
+        if(saved && typeof saved==='object' && !Array.isArray(saved) && !Array.isArray(saved.handbrake)) {
+            const brakeKeys=Array.isArray(saved.brake)?saved.brake:defaults.brake;
+            saved.brake=brakeKeys.filter(code=>code!=='Space');
+            if(!saved.brake.length)saved.brake=[...defaults.brake];
+            saved.handbrake=['Space'];
+        }
         const used=new Set();
         if(!saved || !Object.keys(defaults).every(action=>Array.isArray(saved[action]) && saved[action].length>0 && saved[action].length<=4 && saved[action].every(code=>{
             if(typeof code!=='string'||!/^[A-Za-z][A-Za-z0-9]{0,31}$/.test(code)||used.has(code))return false;
@@ -27,7 +34,7 @@ function keyName(code) {
 function bindingLabel(action) {return keyBindings[action].map(keyName).join(' / ');}
 function bindingMatches(action,code) {return keyBindings[action].includes(code);}
 function syncKeyboardInputs() {
-    for(const [action,key] of [['throttle','w'],['brake','s'],['left','a'],['right','d']]) keys[key]=keyBindings[action].some(code=>pressedCodes.has(code));
+    for(const [action,key] of [['throttle','w'],['brake','s'],['handbrake','space'],['left','a'],['right','d']]) keys[key]=keyBindings[action].some(code=>pressedCodes.has(code));
 }
 function renderBindings() {
     for(const button of document.querySelectorAll('[data-hm],#btnGearAuto,#btnGearManual'))button.disabled=currentSession==='TIME_TRIAL';
@@ -79,7 +86,7 @@ function handleBindingCapture(e) {
     return true;
 }
 function updateControlHints() {
-    document.getElementById('control-hint').textContent=`${bindingLabel('throttle')} — газ · ${bindingLabel('brake')} — тормоз · ${bindingLabel('pause')} — пауза`;
+    document.getElementById('control-hint').textContent=`${bindingLabel('throttle')} — газ · ${bindingLabel('brake')} — тормоз · ${bindingLabel('handbrake')} — ручник · ${bindingLabel('pause')} — пауза`;
     document.getElementById('btnHudControls').textContent=`Управление · ${bindingLabel('settings')}`;
     for(const tire of ['soft','medium','hard']) document.querySelector(`[data-next-tire="${tire}"] small`).textContent=bindingLabel(tire);
 }
