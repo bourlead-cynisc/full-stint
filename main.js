@@ -304,6 +304,7 @@ function collectInput() {
     return {
         throttle: Math.max(keys.w ? 1 : 0, gp.throttle, mobileThrottle),
         brake: Math.max(keys.s ? 1 : 0, gp.brake, mobileBrake),
+        handbrake: keys.space ? 1 : 0,
         steer: kSteer !== 0 ? kSteer : (gp.steer !== 0 ? gp.steer : mobileSteer)
     };
 }
@@ -1030,10 +1031,8 @@ function gameLoop(now) {
             ctx.restore();
         }
 
-        // в режиме «вся трасса» миникарта не нужна — трасса и так на экране целиком
-        const hideMini = (topFollow === 'TRACK');
-        minimapCanvas.style.display = hideMini ? 'none' : '';
-        if (!hideMini) drawMinimap();
+        minimapCanvas.style.display = '';
+        drawMinimap();
         updateHUD();
     } else {
         ctx.fillStyle = '#0b1220';
