@@ -14,7 +14,7 @@ let selectedCarClass = 'GT3';
 let selectedCarIndex = 0;
 let selectedTeammateSlot = 0;
 let totalRaceLaps = 3;                 // для F1: выбранное число кругов
-let selectedStrategyIndex = 0;
+let selectedStrategyIndex = 1; // balanced strategy is the default; examples are not selectable
 
 let raceMode = 'TIMED';                // TIMED (WEC, 20 мин) | LAPS (F1)
 let raceDurationMs = ENDURANCE_MINUTES * 60000;
@@ -114,7 +114,7 @@ window.setHandling = function (mode) {
 window.setLaps = function (laps) {
     if (selectedCarClass === 'GT3') return;       // в WEC число кругов не выбирается
     totalRaceLaps = laps;
-    selectedStrategyIndex = 0;
+    selectedStrategyIndex = 1;
     document.querySelectorAll('.lap-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.laps) === laps));
     renderStrategyCards();
 };
@@ -140,7 +140,7 @@ function applyClassMode() {
 
 window.selectCarClass = function (cls) {
     selectedCarClass = cls;
-    selectedCarIndex = 0; selectedTeammateSlot = 0; selectedStrategyIndex = 0;
+    selectedCarIndex = 0; selectedTeammateSlot = 0; selectedStrategyIndex = 1;
     applyClassMode();
     buildActiveTrackGeometry();
     renderGarageUI();
@@ -321,14 +321,9 @@ function renderStrategyCards() {
     const rules = document.getElementById('strategyRules');
     const laps = getPlannedLaps();
     const list = getStrategyPresetsForLaps(laps);
-    if (selectedStrategyIndex >= list.length) selectedStrategyIndex = 0;
-    const timed = selectedCarClass === 'GT3';
-    rules.innerHTML = `${timed ? `Тактика рассчитана примерно на <b>${laps}</b> кр. (оценка для ${ENDURANCE_MINUTES} минут). ` : ''}` +
-        `Заезд в отдельный пит-лейн автоматический, лимит ${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} км/ч. Оценка потери — ${getPitStopLossEstimate()} с. ` +
-        `Остаток ниже ${TIRE_CLIFF_PCT}% — снижение сцепления (⚠). ` +
-        `Во время гонки выберите шины в панели справа и нажмите «Запросить заезд».`;
-    grid.innerHTML = '';
-    list.forEach((s, i) => {
+    selectedStrategyIndex = 1;
+    rules.innerHTML = `По умолчанию стартуем со сбалансированным планом. Ниже — примеры темпа и остановок; план гонки будет показан в HUD «Пит-стоп».`;
+    grid.innerHTML = list.map(s => {
         const stints = analyzeStrategy(laps, s);
         const plan = stints.map((st, k) => {
             let h = tireChip(st.tire, `${st.laps} кр.`);
@@ -338,19 +333,14 @@ function renderStrategyCards() {
         const nStops = s.stops.length;
         const wear = stints.map(st => `${TIRE_COMPOUNDS[st.tire].shortTag} ${st.endHealth}%${st.cliff ? ' ⚠' : ''}`).join(' · ');
         const riskCls = s.risk === 'Низкий' ? 'risk-low' : (s.risk === 'Высокий' ? 'risk-high' : 'risk-mid');
-        const card = document.createElement('div');
-        card.tabIndex = 0; card.setAttribute('role','button');
-        card.className = 'strategy-card' + (i === selectedStrategyIndex ? ' active' : '');
-        card.innerHTML = `
+        return `
+        <article class="strategy-card strategy-example-card">
             <div class="strategy-title"><span>${s.name}</span><span class="risk-badge ${riskCls}">риск: ${s.risk.toLowerCase()}</span></div>
             <div class="strategy-plan">${plan}</div>
             <div class="strategy-idea">${s.idea}</div>
-
-
-            <div class="strategy-stats">Пит-стопов: ${nStops}${nStops ? ` (≈ −${nStops * getPitStopLossEstimate()} с)` : ''} · Остаток шин: ${wear}</div>`;
-        card.addEventListener('click', () => { selectedStrategyIndex = i; renderStrategyCards(); });
-        grid.appendChild(card);
-    });
+            <div class="strategy-stats">Остановок: ${nStops}${nStops ? ` (потеря ≈${nStops * getPitStopLossEstimate()} с)` : ''} · Шины к концу: ${wear}</div>
+        </article>`;
+    }).join('');
 }
 
 function drawCarThumb(canvasEl, spec) {
@@ -870,12 +860,20 @@ function updateHUD() {
     let plan = '—';
     if (currentSession === 'RACE') {
         const sched = p.strategy && p.strategy.stops && p.strategy.stops[p.pitStopsDone];
-        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Ремонт / шины: ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? 'Въезд · '+TRACKS_DB[selectedTrackIndex].pitSpeedLimit+' км/ч' : 'Выезд · уступаем трафику');
-        else if (p.pitRequested) plan = 'Заедем на ближайшем въезде';
-        else if (sched) plan = `План: конец круга ${sched.lap}`;
-        else plan = p.tireHealth < 40 ? 'Шины изношены — пора в боксы' : 'Заезд пока не запланирован';
+        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Обслуживание · ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? `Въезд · ${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} км/ч` : 'Выезд · ждём безопасное окно');
+        else if (p.pitRequested) plan = 'Пит запрошен · подъезжаем к линии ограничения';
+        else if (sched) plan = `Плановый пит · после круга ${sched.lap}`;
+        else plan = p.tireHealth < 40 ? 'Шины изношены · рекомендуется пит' : 'Нет планового пита · остановку можно запросить вручную';
     }
     document.getElementById('pitPlanText').textContent = plan;
+    const strategyBox = document.getElementById('raceStrategyPlan');
+    if (p.strategy) {
+        const stints = analyzeStrategy(getPlannedLaps(), p.strategy);
+        const timeline = stints.map(st => `<span class="race-plan-stint"><b>Кр. ${st.fromLap}–${st.toLap}</b><i style="background:${TIRE_COMPOUNDS[st.tire].color}">${TIRE_COMPOUNDS[st.tire].shortTag}</i></span>`).join('<span class="race-plan-arrow">›</span>');
+        const nextStop = p.strategy.stops[p.pitStopsDone];
+        const nextLine = nextStop ? `Пит после круга ${nextStop.lap} · ${TIRE_COMPOUNDS[nextStop.tire].name}` : 'Без планового пита · остановка по износу, повреждению или запросу';
+        strategyBox.innerHTML = `<div class="race-plan-name">${p.strategy.name}</div><div class="race-plan-timeline">${timeline}</div><div class="race-plan-next">${nextLine}</div>`;
+    } else strategyBox.textContent = 'План будет рассчитан на старте';
     document.getElementById('pit-assistant').hidden=currentSession!=='RACE';
     const nextLabel={soft:'Мягкие',medium:'Средние',hard:'Жёсткие'}[p.nextCompound];
     document.getElementById('nextTireSummary').textContent='Поставят: '+nextLabel;
@@ -1062,7 +1060,7 @@ refreshOptionButtons();
 setTimeout(() => { if (currentSession === 'MENU') renderGarageUI(); }, 400);
 requestAnimationFrame(gameLoop);
 
-document.addEventListener('keydown',e=>{if((e.code==='Enter'||e.code==='Space') && e.target.matches('.track-card,.car-item,.strategy-card')){e.preventDefault();e.target.click();}});
+document.addEventListener('keydown',e=>{if((e.code==='Enter'||e.code==='Space') && e.target.matches('.track-card,.car-item')){e.preventDefault();e.target.click();}});
 
 for(const button of document.querySelectorAll('[data-next-tire]')) button.addEventListener('click',()=>{selectNextTire(button.dataset.nextTire);updateHUD();releaseFocus();});
 document.getElementById('btnPitRequest').addEventListener('click',()=>{requestPitStop();updateHUD();releaseFocus();});
