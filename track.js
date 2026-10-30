@@ -53,6 +53,9 @@ function buildActiveTrackGeometry() {
         }
     }
     trackSamples = resampleCenterline(trackSamples, 24);
+    // Filter only sub-road-width ripples in every layout before deriving normals.
+    // Asphalt, kerbs, walls and the racing line then share the same clean centerline.
+    trackSamples = smoothCenterlineSamples(trackSamples);
     totalSamples = trackSamples.length;
 
     for (let i = 0; i < totalSamples; i++) {
@@ -379,6 +382,13 @@ function getTrackPointAtProgress(norm) {
     const length=Math.hypot(b.x-a.x,b.y-a.y) || 1;
     const t=(distance-sampleCumDist[lo])/length;
     return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,nx:a.nx,ny:a.ny};
+}
+
+function smoothCenterlineSamples(points) {
+    return points.map((p,i)=>{
+        const a=points[(i-1+points.length)%points.length],b=points[(i+1)%points.length];
+        return {...p,x:(a.x+2*p.x+b.x)/4,y:(a.y+2*p.y+b.y)/4};
+    });
 }
 
 function resampleCenterline(points, spacing) {
