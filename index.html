@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
-    <title>FIA Motorsport Sim: WEC GT3 &amp; F1</title>
-    <link rel="stylesheet" href="styles.css?v=20261030-hud-v5">
+    <title>Full Stint — F1 &amp; GT3 Racing</title>
+    <link rel="stylesheet" href="styles.css?v=20261030-full-stint-start">
 </head>
 <body tabindex="-1">
 
@@ -107,56 +107,67 @@
 
 <!-- ============ ГАРАЖ ============ -->
 <div id="garageModal" class="modal-overlay">
-    <div class="modal-card">
+    <div class="modal-card garage-card">
         <div class="modal-title">
-            <span>FIA / RACING CLUB</span>
-            <span style="font-size:12px; color:#38bdf8;">2D MOTORSPORT · F1 / GT3</span>
+            <span>FULL STINT</span>
+            <span style="font-size:12px; color:#5eead4;">F1 · GT3 · RACING SIMULATOR</span>
         </div>
 
-        <div class="section-label">1. ЧЕМПИОНАТ</div>
+        <div class="section-label">КЛАСС ГОНКИ</div>
         <div class="class-switch-row">
             <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small>Гонка на выживание 20 минут после квалификации · 6 передач</small></button>
             <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Большой календарь гонок · очки, кубок гонщиков и конструкторов · DRS</small></button>
         </div>
 
-        <div id="seasonPanel" class="season-panel" style="display:none;">
-            <div class="season-head">
-                <div><b id="seasonTitle">СЕЗОН</b> <span id="seasonSub" style="color:#8b95a5; font-size:11px;"></span></div>
-                <div style="display:flex; gap:8px;">
-                    <button class="secondary-btn" id="btnSeasonTable">📊 Таблицы очков</button>
-                    <button class="secondary-btn" id="btnNewSeason">🔀 Новый сезон</button>
+        <div class="garage-layout">
+            <section class="garage-section garage-track-section">
+                <div class="section-label">ТРАССА <span id="trackLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
+                <div id="seasonPanel" class="season-panel" style="display:none;">
+                    <div class="season-head">
+                        <div><b id="seasonTitle">СЕЗОН</b> <span id="seasonSub" style="color:#8b95a5; font-size:11px;"></span></div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="secondary-btn" id="btnSeasonTable">📊 Таблицы</button>
+                            <button class="secondary-btn" id="btnNewSeason">🔀 Новый</button>
+                        </div>
+                    </div>
+                    <div id="seasonCalendar" class="season-cal"></div>
                 </div>
-            </div>
-            <div id="seasonCalendar" class="season-cal"></div>
-        </div>
+                <div class="track-grid" id="trackSelectorGrid"></div>
+            </section>
 
-        <div class="section-label">2. АВТОДРОМ <span id="trackLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
-        <div class="track-grid" id="trackSelectorGrid"></div>
-
-        <div class="section-label">3. КОМАНДА И ПИЛОТ <span id="teamLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
-        <div class="car-grid" id="carSelectorGrid"></div>
-        <div class="teammate-bar" id="driverBar">
-            <span>Ваше место в команде:</span>
-            <span id="driverPills" style="display:flex; gap:8px;"></span>
-            <span id="driverHint" style="color:#95a5a6; font-size:10.5px;"></span>
-        </div>
-
-        <div class="section-label">СОПЕРНИКИ</div><div class="ai-settings"><label>Темп соперников <output>106%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="106" aria-label="Темп соперников"></label><label>Агрессивность <output>65%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="65" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
-        <div class="section-label">4. ПРИМЕРЫ ТАКТИКИ НА ГОНКУ</div>
-        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
-            <div id="lapSection" style="display:flex; gap:10px; align-items:center;">
-                <div style="font-size:10.5px; color:#95a5a6; font-weight:700;">КРУГОВ В ГОНКЕ:</div>
-                <div id="lapButtons" style="display:flex; gap:5px;">
-                    <button class="lap-btn" data-laps="2"  onclick="setLaps(2)">2 кр.</button>
-                    <button class="lap-btn active" data-laps="3" onclick="setLaps(3)">3 кр.</button>
-                    <button class="lap-btn" data-laps="5"  onclick="setLaps(5)">5 кр.</button>
-                    <button class="lap-btn" data-laps="10" onclick="setLaps(10)">10 кр.</button>
+            <section class="garage-section garage-car-section">
+                <div class="section-label">МАШИНА И ПИЛОТ <span id="teamLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
+                <div class="car-grid" id="carSelectorGrid"></div>
+                <div class="teammate-bar" id="driverBar">
+                    <span>Пилот</span>
+                    <span id="driverPills" style="display:flex; gap:8px;"></span>
+                    <span id="driverHint" style="color:#95a5a6; font-size:10.5px;"></span>
                 </div>
-            </div>
-            <div id="enduranceNote" class="endurance-note" style="display:none;"></div>
-            <div id="strategyRules" class="strategy-intro"></div>
+            </section>
         </div>
-        <div class="strategy-grid" id="strategyGrid"></div>
+
+        <details class="garage-advanced">
+            <summary>Дополнительные настройки · дистанция, соперники, тактика</summary>
+            <div class="garage-advanced-content">
+                <div class="section-label">СОПЕРНИКИ</div>
+                <div class="ai-settings"><label>Темп соперников <output>106%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="106" aria-label="Темп соперников"></label><label>Агрессивность <output>65%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="65" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
+                <div class="section-label">ДИСТАНЦИЯ И ТАКТИКА</div>
+                <div class="garage-strategy-options">
+                    <div id="lapSection" style="display:flex; gap:10px; align-items:center;">
+                        <div style="font-size:10.5px; color:#95a5a6; font-weight:700;">КРУГОВ В ГОНКЕ:</div>
+                        <div id="lapButtons" style="display:flex; gap:5px;">
+                            <button class="lap-btn" data-laps="2" onclick="setLaps(2)">2 кр.</button>
+                            <button class="lap-btn active" data-laps="3" onclick="setLaps(3)">3 кр.</button>
+                            <button class="lap-btn" data-laps="5" onclick="setLaps(5)">5 кр.</button>
+                            <button class="lap-btn" data-laps="10" onclick="setLaps(10)">10 кр.</button>
+                        </div>
+                    </div>
+                    <div id="enduranceNote" class="endurance-note" style="display:none;"></div>
+                    <div id="strategyRules" class="strategy-intro"></div>
+                </div>
+                <div class="strategy-grid" id="strategyGrid"></div>
+            </div>
+        </details>
 
         <p id="ghostRecordHint"></p>
         <small class="map-credit">Геометрия © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · ODbL</small>

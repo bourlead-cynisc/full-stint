@@ -1,7 +1,7 @@
-# FIA Motorsport Sim — 2D Racing Club
+# Full Stint
 
-Браузерные гонки Formula 1 и WEC / GT3: вид сверху, квалификация, гонка,
-пит-лейн, сохраняемый сезон и отдельная гонка с призраком.
+Браузерный гоночный симулятор Formula 1 и WEC / GT3: вид сверху, квалификация,
+гонка, пит-лейн, сохраняемый сезон и отдельная гонка с призраком.
 Сборка и внешние библиотеки не нужны.
 
 ## Запуск
@@ -10,7 +10,7 @@
 python3 -m http.server 8000
 ```
 
-Откройте http://localhost:8000 или опубликованную GitHub Pages.
+Откройте http://localhost:8000 или [Full Stint на GitHub Pages](https://bourlead-cynisc.github.io/full-stint/).
 
 ## Управление
 
