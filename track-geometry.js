@@ -12,6 +12,24 @@ for(const track of TRACKS_DB) {
     // Keep their shape and aspect ratio while bringing them into the same visual scale.
     const layoutScale=source.outline?0.78:1;
     const project=p=>{const q=baseProject(p);return {x:q.x*scale*layoutScale,y:q.y*scale*layoutScale};};
+    const simplifyClosedPolyline=(points,tolerance=18)=>{
+        let current=points.slice(),changed=true;
+        const distanceToSegment=(p,a,b)=>{
+            const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
+            const t=len2?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/len2)):0;
+            return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);
+        };
+        while(changed&&current.length>24){
+            changed=false;const keep=[];
+            for(let i=0;i<current.length;i++){
+                const a=current[(i-1+current.length)%current.length],p=current[i],b=current[(i+1)%current.length];
+                if(distanceToSegment(p,a,b)<=tolerance&&current.length-keep.length>24){changed=true;continue;}
+                keep.push(p);
+            }
+            current=keep;
+        }
+        return current;
+    };
     const smoothClosedPolyline=(points,passes=2)=>{
         let current=points;
         for(let pass=0;pass<passes;pass++) current=current.map((p,i)=>{
@@ -21,12 +39,13 @@ for(const track of TRACKS_DB) {
         return current;
     };
     if(source.outline) {
-        track.rawPoints=smoothClosedPolyline(coords.slice(0,-1).map(project));track.scale=1;
+        const surveyed=simplifyClosedPolyline(coords.slice(0,-1).map(project),18);
+        track.rawPoints=smoothClosedPolyline(surveyed,3);track.scale=1;
         track.reportedLengthM=source.lengthM*layoutScale;
         const index=TRACKS_DB.indexOf(track);EST_LAP_SEC.GT3[index]=Math.round(({lemans:300,fuji:110,sebring:145})[track.id]*layoutScale);EST_LAP_SEC.F1[index]=Math.round(EST_LAP_SEC.GT3[index]*.8);
         track.desc=track.desc.replace(' · упрощённая схема','')+' · реальный контур';
     }
     track.realPitPoints=source.pit.map(project);
     track.pitSpeedLimit=source.pitLimit;
-    track.layoutVersion='osm-20261030-compact-smooth';
+    track.layoutVersion='osm-20261030-contour-cleanup';
 }
