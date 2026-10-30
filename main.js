@@ -408,7 +408,18 @@ function renderGarageUI() {
         card.tabIndex = 0; card.setAttribute('role','button');
         card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
         card.innerHTML = `<div><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
-        card.addEventListener('click', () => { selectedTrackIndex = tIdx; buildActiveTrackGeometry(); renderGarageUI(); });
+        const selectTrack=()=>{
+            if(selectedTrackIndex===tIdx)return;
+            selectedTrackIndex=tIdx;buildActiveTrackGeometry();renderGarageUI();
+        };
+        let pointerStart=null;
+        card.addEventListener('pointerdown',e=>{if(e.button===0)pointerStart={x:e.clientX,y:e.clientY,id:e.pointerId};});
+        card.addEventListener('pointerup',e=>{
+            const start=pointerStart;pointerStart=null;
+            if(start&&start.id===e.pointerId&&Math.hypot(e.clientX-start.x,e.clientY-start.y)<8)selectTrack();
+        });
+        card.addEventListener('pointercancel',()=>{pointerStart=null;});
+        card.addEventListener('click',selectTrack);
         trkGrid.appendChild(card);
     });
 
