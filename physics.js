@@ -81,8 +81,8 @@ class Car {
         this.brakeAero = this.cfg.brakeAero;
         this.idle01 = this.cfg.idle / this.cfg.redline;
         this.launch01 = this.spec.carClass === 'F1' ? 0.62 : 0.55;
-        this.engineProfile = ({ lambo_gt3: 'V10', audi_gt3: 'V10', porsche_gt3: 'F6', bmw_gt3: 'I6', ferrari_gt3: 'V6', mclaren_gt3: 'V8T', mercedes_gt3: 'V8', corvette_gt3: 'V8F' })[this.spec.id] ||
-                              (this.spec.carClass === 'F1' ? 'F1' : 'V8');
+        this.engineProfile = CAR_ENGINE_FAMILIES[this.spec.id] ? this.spec.id :
+                              (this.spec.carClass === 'F1' ? 'f1_redbull' : 'aston_gt3');
     }
 
     getTeamPitBox() {
