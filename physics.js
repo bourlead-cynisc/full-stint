@@ -268,7 +268,7 @@ class Car {
         const d = sTarget - this.smoothSteer;
         this.smoothSteer += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
 
-        return { thr: this.smoothThrottle, brake: this.smoothBrake, steer: this.smoothSteer * (1 - hc.steerSpLoss * sp), manual: window.transmissionMode === 'MANUAL' };
+        return { thr: this.smoothThrottle, brake: this.smoothBrake, handbrake: input.handbrake ? 1 : 0, steer: this.smoothSteer * (1 - hc.steerSpLoss * sp), manual: window.transmissionMode === 'MANUAL' };
     }
 
     // ИИ: ведёт по гоночной линии, считает тормозные точки и скорость в поворотах
@@ -529,17 +529,18 @@ class Car {
             }
         }
 
+        const handbrake = Math.max(0, Math.min(1, ctl.handbrake || 0));
         this.dbgDist = frontInfo.dist;
         this.latOff = (frontPt.x - frontInfo.center.x) * (frontInfo.center.nx || 0) + (frontPt.y - frontInfo.center.y) * (frontInfo.center.ny || 0);
         this.updateGearbox(dt, ctl.thr, ctl.brake, ctl.manual);
-        this.braking = ctl.brake > 0.05 || this.pitPhase === 'service';
+        this.braking = ctl.brake > 0.05 || handbrake > 0.05 || this.pitPhase === 'service';
 
         // ---------- сцепление: механика + прижимная сила ----------
         const q = Math.min(1.4, (vms * vms) / (this.vmaxMs * this.vmaxMs));
         const wingLoss = this.aeroCondition;
         const surf = (offTrack ? 0.55 : 1.0) * (1 - 0.25 * this.suspensionDamage);
         const hc = HC();
-        const gripG = (this.perf.grip * comp.gripMult * tireGrip + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse) * surf * hc.hb;
+        const gripG = (this.perf.grip * comp.gripMult * tireGrip * (1 - 0.28 * handbrake) + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse) * surf * hc.hb;
         const gripMax = Math.max(0.3, gripG) * G;                    // м/с²
 
         // ---------- продольная динамика ----------
@@ -557,6 +558,8 @@ class Car {
             const bMax = (this.brake0 + this.brakeAero * q) * tireGrip * comp.gripMult * surf * G * Math.sqrt(hc.hb);
             aBrk = ctl.brake * Math.min(bMax, gripMax * 1.15) * circle;
         }
+        // Rear-axle lock gives the car a short, controlled rotation under steering.
+        if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (2.2 + 1.8 * q) * circle;
         const dragMul = this.drsActive ? 0.80 : 1.0;
         let aDrag = this.dragK * dragMul * (1 + 0.12 * this.bodyDamage) * vms * vms + 0.12;
         if(Math.abs(this.impactSpin)>.1)aDrag+=Math.min(gripMax*.6,Math.abs(this.dx*Math.cos(this.angle)+this.dy*Math.sin(this.angle))*MS*.8);
@@ -584,9 +587,10 @@ class Car {
         const omegaLock = Math.min(hc.lock, av / 5.0);
         const omegaGrip = aLatMax / Math.max(av, 2.5);
         const omegaMax = Math.min(omegaLock, omegaGrip);
-        const steering=ctl.steer*this.character.rotation*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7) + this.suspensionPull*this.suspensionDamage;
-        const yawTarget = Math.max(-1,Math.min(1,steering)) * omegaMax * (newV >= 0 ? 1 : -1);
-        this.dbgSteer = ctl.steer; this.dbgOmega = omegaMax; this.dbgGripMax = gripMax; this.dbgBrake = ctl.brake;
+        const steering=ctl.steer*this.character.rotation*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7)*(1+handbrake*0.25) + this.suspensionPull*this.suspensionDamage;
+        const handbrakeYaw = ctl.steer * handbrake * Math.min(1, av / 8) * 0.28;
+        const yawTarget = (Math.max(-1,Math.min(1,steering)) * omegaMax + handbrakeYaw) * (newV >= 0 ? 1 : -1);
+        this.dbgSteer = ctl.steer; this.dbgOmega = omegaMax; this.dbgGripMax = gripMax; this.dbgBrake = Math.max(ctl.brake,handbrake);
         // кузов набирает скорость вращения с инерцией (≈0,08–0,1 с) — машина «живая», а не на рельсах
         this.yawRate += (yawTarget - this.yawRate) * Math.min(1, dt * (this.isPlayer ? hc.yawK : Math.max(14, hc.yawK)) * this.character.rotation * (1-.3*this.suspensionDamage));
         if (av < 0.3) this.yawRate *= 0.8;
@@ -598,7 +602,7 @@ class Car {
         this.bodyPitch += (-(this.aLong / (G * 3)) - this.bodyPitch) * Math.min(1, dt * 10);
 
         // ---------- скольжение: вектор скорости догоняет направление кузова ----------
-        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
+        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * (1 - 0.42 * handbrake) * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
         const targetDx = Math.sin(this.angle) * this.velocity;
         const targetDy = -Math.cos(this.angle) * this.velocity;
         this.slip = Math.hypot(targetDx - this.dx, targetDy - this.dy);
