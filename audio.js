@@ -27,6 +27,27 @@ const ENGINE_PROFILES = {
     F6:  { cyl: 6,  redline: 8400,  f1: 150, tau1: 0.008, f2: 700,  tau2: 0.0025, noise: 0.50, uneven: 0.00, lp: 0.40, turbo: false, bright: 1.15 },
     F1:  { cyl: 6,  redline: 15000, f1: 210, tau1: 0.0045, f2: 1250, tau2: 0.0016, noise: 0.40, uneven: 0.00, lp: 0.50, turbo: true,  bright: 1.3 }
 };
+// Distinct synthesized fingerprints for each model, based on engine family.
+const CAR_ENGINE_FAMILIES = {
+    aston_gt3: 'V8', audi_gt3: 'V10', bmw_gt3: 'I6', corvette_gt3: 'V8F',
+    ferrari_gt3: 'V6', mustang_gt3: 'V8F', lambo_gt3: 'V10', lexus_gt3: 'V8T',
+    mclaren_gt3: 'V8T', mercedes_gt3: 'V8', porsche_gt3: 'F6', bentley_gt3: 'V8',
+    f1_redbull: 'F1', f1_mercedes: 'F1', f1_ferrari: 'F1', f1_mclaren: 'F1',
+    f1_aston: 'F1', f1_alpine: 'F1', f1_sauber: 'F1', f1_rb: 'F1',
+    f1_williams: 'F1', f1_haas: 'F1', f1_cadillac: 'F1'
+};
+Object.entries(CAR_ENGINE_FAMILIES).forEach(([id, family], i) => {
+    const base = ENGINE_PROFILES[family];
+    ENGINE_PROFILES[id] = {
+        ...base,
+        redline: base.redline * (0.96 + ((i * 7) % 9) * 0.01),
+        f1: base.f1 * (0.88 + (i % 8) * 0.035),
+        f2: base.f2 * (0.90 + ((i * 3) % 7) * 0.04),
+        tau1: base.tau1 * (0.9 + (i % 5) * 0.05),
+        uneven: Math.min(0.24, base.uneven + (i % 4) * 0.025),
+        bright: base.bright * (0.9 + (i % 5) * 0.05)
+    };
+});
 const ANCHORS = [0.16, 0.32, 0.52, 0.74, 0.96];
 
 function synthEngineLoop(sr, prof, rpm) {
@@ -232,6 +253,14 @@ function isAudioSession() {
     return ['QUALI', 'RACE', 'TIME_TRIAL'].includes(currentSession);
 }
 
+function pitAudioState(car) {
+    if (!car || car.pitPhase === 'none') return car;
+    const idle = Math.max(0.05, car.idle01 || 0.15);
+    const limit = TRACKS_DB[selectedTrackIndex].pitSpeedLimit / 3.6;
+    const speedRatio = car.pitPhase === 'service' ? 0 : Math.max(0, Math.min(1, (car.pitSpeed || 0) / limit));
+    return { ...car, rpm: idle + speedRatio * 0.18, smoothThrottle: speedRatio * 0.22, shiftCut: 0 };
+}
+
 function updateAudio(frameDt) {
     if (!audioCtx || !masterGain) return;
     if (!engineVoices.length && playerCar && isAudioSession()) rebuildEngineVoices();
@@ -240,7 +269,7 @@ function updateAudio(frameDt) {
     masterGain.gain.setTargetAtTime(active ? 0.9 : 0, t, 0.08);
     if (!active) return;
 
-    engineVoices[0].update(playerCar, 1.0, 0, 1.0);
+    engineVoices[0].update(pitAudioState(playerCar), 1.0, 0, 1.0);
 
     // три ближайших соперника: панорама + допплер
     const near = [];
@@ -259,7 +288,11 @@ function updateAudio(frameDt) {
         const ux = n.dx / (n.d || 1), uy = n.dy / (n.d || 1);
         const radial = (n.c.dx - playerCar.dx) * ux + (n.c.dy - playerCar.dy) * uy;
         const pitch = Math.max(0.92, Math.min(1.08, 1 - radial * 0.005)) * carPitchTweak(n.c);
-        engineVoices[i].update(n.c, vol, pan, pitch);
+        if (engineVoices[i].profName !== n.c.engineProfile) {
+            engineVoices[i].dispose();
+            engineVoices[i] = new EngineVoice(audioCtx, masterGain, n.c.engineProfile);
+        }
+        engineVoices[i].update(pitAudioState(n.c), vol, pan, pitch);
     }
 
     // шины / ветер / трава
@@ -273,7 +306,7 @@ function updateAudio(frameDt) {
     rumbleGain.gain.setTargetAtTime(off * 0.22, t, 0.08);
 
     // хлопки в выхлопе при сбросе газа на высоких оборотах
-    if (playerCar.smoothThrottle < 0.05 && playerCar.rpm > 0.55 && playerCar.gear >= 2 && Math.random() < 0.05) sfxPop();
+    if (playerCar.pitPhase === 'none' && playerCar.smoothThrottle < 0.05 && playerCar.rpm > 0.55 && playerCar.gear >= 2 && Math.random() < 0.05) sfxPop();
 }
 
 function sfxNoiseBurst(freq, type, vol, dur, q = 0.8) {
