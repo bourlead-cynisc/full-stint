@@ -135,7 +135,7 @@
             <span id="driverHint" style="color:#95a5a6; font-size:10.5px;"></span>
         </div>
 
-        <div class="section-label">СОПЕРНИКИ</div><div class="ai-settings"><label>Темп соперников <output>100%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="100" aria-label="Темп соперников"></label><label>Агрессивность <output>55%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="55" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
+        <div class="section-label">СОПЕРНИКИ</div><div class="ai-settings"><label>Темп соперников <output>106%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="106" aria-label="Темп соперников"></label><label>Агрессивность <output>65%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="65" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div>
         <div class="section-label">4. ДИСТАНЦИЯ И ТАКТИКА НА ШИНЫ</div>
         <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">
             <div id="lapSection" style="display:flex; gap:10px; align-items:center;">
@@ -207,7 +207,7 @@
         <p id="bindingMessage" role="status"></p>
         <div id="bindingGrid"></div>
         <button id="btnResetBindings" class="secondary-btn">Сбросить клавиши</button>
-<h3>Соперники</h3><div class="ai-settings"><label>Темп соперников <output>100%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="100" aria-label="Темп соперников"></label><label>Агрессивность <output>55%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="55" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div><h3>Коробка, камера и поведение машины</h3><p class="settings-note">В режиме с призраком физика и коробка фиксируются на старте. Клавиши и камеру можно менять.</p>
+<h3>Соперники</h3><div class="ai-settings"><label>Темп соперников <output>106%</output><input data-ai-setting="pace" type="range" min="80" max="110" value="106" aria-label="Темп соперников"></label><label>Агрессивность <output>65%</output><input data-ai-setting="aggression" type="range" min="0" max="100" value="65" aria-label="Агрессивность соперников"></label><small>Агрессивность: 0 — осторожно, 100 — жёсткая борьба. В гонке с призраком соперников нет.</small></div><h3>Коробка, камера и поведение машины</h3><p class="settings-note">В режиме с призраком физика и коробка фиксируются на старте. Клавиши и камеру можно менять.</p>
 <div class="config-bar">
             <div style="display:flex; gap:18px; flex-wrap:wrap;">
                 <div>
@@ -240,19 +240,19 @@
     </div>
 </div>
 
-<script src="data.js?v=20261030-tire-wear2"></script>
+<script src="data.js"></script>
 <script src="circuits.js"></script>
-<script src="track-geometry.js"></script>
+<script src="track-geometry.js?v=20261030-contour-cleanup"></script>
 <script src="vehicle-character.js"></script>
 <script src="sprites.js"></script>
 <script src="models.js"></script>
-<script src="track.js?v=20261030-smooth-curvature"></script>
+<script src="track.js?v=20261030-smooth-layouts"></script>
 <script src="render2d.js"></script>
 
 <script src="topview.js?v=20261030-race"></script>
-<script src="audio.js?v=20261030-pit-idle-voices"></script>
-<script src="race-ai.js?v=20261030-experienced-ai"></script>
-<script src="physics.js?v=20261030-engine-profiles"></script>
+<script src="audio.js"></script>
+<script src="race-ai.js?v=20261030-ai-skill"></script>
+<script src="physics.js?v=20261030-collision-fix"></script>
 <script src="season.js"></script>
 <script src="controls.js?v=20261030-race"></script>
 <script src="ghost.js"></script>
