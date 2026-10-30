@@ -54,11 +54,11 @@ function planRaceTraffic(car,dt) {
  }
  const pressure=behind?Math.max(0,1+behind.fwd/600):0;
  if(simTimeMs>(car.aiNextMistake||0)) {
-  car.aiNextMistake=simTimeMs+4000+(car.botSlot%5)*350;
+  car.aiNextMistake=simTimeMs+6500+(car.botSlot%5)*500;
   const noise=(Math.sin((car.botSlot+1)*12.9898+Math.floor(simTimeMs/4000)*78.233)*43758.5453)%1;
-  if(pressure>.3&&Math.abs(noise)>.98-pressure*.06) {car.aiErrorTime=.7;car.aiErrorSide=(car.botSlot%2?1:-1)*8;}
+  if(pressure>.3&&Math.abs(noise)>.997-pressure*.01) {car.aiErrorTime=.35;car.aiErrorSide=(car.botSlot%2?1:-1)*4;}
  }
- if(car.aiErrorTime>0) {car.aiErrorTime-=dt;target+=car.aiErrorSide;pace*=.91;car.aiMode='PRESSURE';}
+ if(car.aiErrorTime>0) {car.aiErrorTime-=dt;target+=car.aiErrorSide;pace*=.97;car.aiMode='PRESSURE';}
  car.aiLane=(car.aiLane||0)+(target-(car.aiLane||0))*(1-Math.exp(-dt*(1.6+attack)));
  return {lane:Math.max(-43,Math.min(43,car.aiLane)),followV,pace,pressure};
 }
