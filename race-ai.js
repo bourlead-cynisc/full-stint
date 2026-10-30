@@ -1,7 +1,7 @@
-const AI_SETTINGS_KEY='fiaSim.ai.v1';
+const AI_SETTINGS_KEY='fiaSim.ai.v2';
 function readAiSettings() {
- try {const s=JSON.parse(localStorage.getItem(AI_SETTINGS_KEY));return {pace:Number.isFinite(s?.pace)?Math.max(80,Math.min(110,s.pace)):100,aggression:Number.isFinite(s?.aggression)?Math.max(0,Math.min(100,s.aggression)):55};}
- catch{return {pace:100,aggression:55};}
+ try {const s=JSON.parse(localStorage.getItem(AI_SETTINGS_KEY));return {pace:Number.isFinite(s?.pace)?Math.max(80,Math.min(110,s.pace)):106,aggression:Number.isFinite(s?.aggression)?Math.max(0,Math.min(100,s.aggression)):65};}
+ catch{return {pace:106,aggression:65};}
 }
 let aiSettings=readAiSettings();
 function setAiSetting(name,value) {
