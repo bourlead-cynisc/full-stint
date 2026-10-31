@@ -528,7 +528,7 @@ class Car {
             const scheduled = this.strategy?.stops[this.pitStopsDone];
             const due = scheduled && this.lap >= scheduled.lap;
             const needsTires = !this.isPlayer && this.tireHealth < 28;
-            const needsRepair = !this.isPlayer && this.damageLevel > 0.50;
+            const needsRepair = !this.isPlayer && this.damageLevel > 0.60;
             const wantsPit = (this.pitRequested || due || needsTires || needsRepair) &&
                 this.lap < (raceMode === 'LAPS' ? totalRaceLaps : Infinity);
             const toEntryPx = ((TRACKS_DB[selectedTrackIndex].pitEntryNorm-frontInfo.normProgress+1)%1)*trackLengthPx;
