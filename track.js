@@ -403,7 +403,7 @@ function drawGrandstands(ctx, camCenterX, camCenterY) {
     const N = trackSamples.length;
 
     for (let stand = 0; stand < count; stand++) {
-        const index = Math.floor((stand + 0.16) * N / count) % N;
+        const index = stand === 0 ? Math.min(14, N - 1) : Math.floor((stand + 0.16) * N / count) % N;
         const before = trackSamples[(index - 5 + N) % N];
         const after = trackSamples[(index + 5) % N];
         const point = trackSamples[index];
@@ -412,15 +412,16 @@ function drawGrandstands(ctx, camCenterX, camCenterY) {
         const tx = dx / length, ty = dy / length;
         const nx = -ty, ny = tx;
         const side = (stand % 2 ? -1 : 1) * (TRACKS_DB[selectedTrackIndex].pitSideSign || 1);
-        const x = point.x + nx * side * 390;
-        const y = point.y + ny * side * 390;
+        const x = point.x + nx * side * 420;
+        const y = point.y + ny * side * 420;
         if (Math.hypot(x - camCenterX, y - camCenterY) > 2450) continue;
 
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(Math.atan2(ty, tx));
+        ctx.scale(stand === 0 ? 2.2 : 1.35, stand === 0 ? 2.2 : 1.35);
 
-        // A tiny, deliberately toy-like grandstand: concrete deck, canopy and crowd.
+        // A compact, deliberately toy-like grandstand: concrete deck, canopy and crowd.
         ctx.fillStyle = 'rgba(0,0,0,0.22)';
         ctx.beginPath(); ctx.roundRect(-112, -35, 224, 78, 8); ctx.fill();
         ctx.fillStyle = '#68665f';
