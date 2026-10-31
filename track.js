@@ -372,14 +372,84 @@ function getTrackInfo(px, py, hintIdx = -1) {
 }
 
 function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
-    const trk = TRACKS_DB[selectedTrackIndex];
-    const theme = trk.theme || { grassBase: '#163520', grassAlt: '#122b1a' };
-    const stripeW = 180;
-    const startX = Math.floor((camCenterX - 2400) / stripeW) * stripeW;
-    const startY = Math.floor((camCenterY - 2400) / stripeW) * stripeW;
-    for (let gx = startX; gx < camCenterX + 2400; gx += stripeW) {
-        ctx.fillStyle = Math.abs(Math.floor(gx / stripeW)) % 2 === 0 ? theme.grassBase : theme.grassAlt;
-        ctx.fillRect(gx, startY, stripeW, 4800);
+    const extent = 2500;
+    ctx.fillStyle = '#29382f';
+    ctx.fillRect(camCenterX - extent, camCenterY - extent, extent * 2, extent * 2);
+
+    // Soft, irregular turf patches keep the infield from reading as a striped grid.
+    const cell = 760;
+    const startX = Math.floor((camCenterX - extent) / cell) * cell;
+    const startY = Math.floor((camCenterY - extent) / cell) * cell;
+    for (let gx = startX; gx < camCenterX + extent; gx += cell) {
+        for (let gy = startY; gy < camCenterY + extent; gy += cell) {
+            const seed = Math.sin(gx * 0.013 + gy * 0.021) * 43758.5453;
+            const variation = seed - Math.floor(seed);
+            ctx.save();
+            ctx.translate(gx + 150 + variation * 420, gy + 130 + (1 - variation) * 450);
+            ctx.rotate(variation * Math.PI);
+            ctx.fillStyle = variation > 0.5 ? 'rgba(185,177,132,0.035)' : 'rgba(8,15,11,0.075)';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 150 + variation * 120, 70 + (1 - variation) * 90, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+}
+
+function drawGrandstands(ctx, camCenterX, camCenterY) {
+    if (trackSamples.length < 20 || !trackLengthPx) return;
+    const count = Math.max(5, Math.min(14, Math.round(trackLengthPx / 1350)));
+    const crowdColors = ['#f3a65a', '#d9674e', '#ded7c7', '#879c9b', '#c8d48a', '#ad6f88', '#607f96'];
+    const N = trackSamples.length;
+
+    for (let stand = 0; stand < count; stand++) {
+        const index = Math.floor((stand + 0.16) * N / count) % N;
+        const before = trackSamples[(index - 5 + N) % N];
+        const after = trackSamples[(index + 5) % N];
+        const point = trackSamples[index];
+        const dx = after.x - before.x, dy = after.y - before.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const tx = dx / length, ty = dy / length;
+        const nx = -ty, ny = tx;
+        const side = (stand % 2 ? -1 : 1) * (TRACKS_DB[selectedTrackIndex].pitSideSign || 1);
+        const x = point.x + nx * side * 390;
+        const y = point.y + ny * side * 390;
+        if (Math.hypot(x - camCenterX, y - camCenterY) > 2450) continue;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.atan2(ty, tx));
+
+        // A tiny, deliberately toy-like grandstand: concrete deck, canopy and crowd.
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath(); ctx.roundRect(-112, -35, 224, 78, 8); ctx.fill();
+        ctx.fillStyle = '#68665f';
+        ctx.beginPath(); ctx.roundRect(-108, -39, 216, 74, 7); ctx.fill();
+        ctx.fillStyle = '#373a39';
+        ctx.beginPath(); ctx.roundRect(-105, -36, 210, 67, 5); ctx.fill();
+
+        // Three rows of tiny heads and shirts, deterministically varied per seat.
+        for (let row = 0; row < 3; row++) {
+            for (let seat = 0; seat < 31; seat++) {
+                const sx = -94 + seat * 6.25;
+                const sy = -17 + row * 17;
+                const colorIndex = (seat * 3 + row * 5 + stand * 7) % crowdColors.length;
+                ctx.fillStyle = crowdColors[colorIndex];
+                ctx.fillRect(sx - 1.5, sy + 1.5, 3, 4.2);
+                ctx.beginPath(); ctx.arc(sx, sy, 1.9, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        ctx.fillStyle = '#24282a';
+        ctx.beginPath(); ctx.roundRect(-112, -43, 224, 10, 4); ctx.fill();
+        ctx.fillStyle = '#ef7645';
+        ctx.fillRect(-29, -41, 58, 6);
+        ctx.fillStyle = '#f2eee4';
+        ctx.font = 'bold 6px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('GO!  GO!', 0, -36);
+        ctx.strokeStyle = 'rgba(237,229,209,0.72)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-105, 27); ctx.lineTo(105, 27); ctx.stroke();
+        ctx.restore();
     }
 }
 
@@ -399,7 +469,9 @@ function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftSca
 
 function drawTrack(ctx) {
     const centerIdx = playerCar && playerCar.lastSampleIdx >= 0 ? playerCar.lastSampleIdx : 0;
-    drawBackgroundWorld(ctx, playerCar ? playerCar.x : 0, playerCar ? playerCar.y : 0);
+    const camX = playerCar ? playerCar.x : 0, camY = playerCar ? playerCar.y : 0;
+    drawBackgroundWorld(ctx, camX, camY);
+    drawGrandstands(ctx, camX, camY);
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     const upX = 0;
@@ -407,22 +479,22 @@ function drawTrack(ctx) {
     const elevScale = 0;
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
-    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = (WALL_HALF_W + 16) * 2; ctx.stroke();
+    ctx.strokeStyle = '#303436'; ctx.lineWidth = (WALL_HALF_W + 16) * 2; ctx.stroke();
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
-    ctx.strokeStyle = '#14532d'; ctx.lineWidth = WALL_HALF_W * 2; ctx.stroke();
+    ctx.strokeStyle = '#51503d'; ctx.lineWidth = WALL_HALF_W * 2; ctx.stroke();
 
     // Поребрики: красно-белые полосы. Фаза привязана к расстоянию вдоль трассы, поэтому не «ползёт».
     const curbFirst = traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
-    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
+    ctx.strokeStyle = '#d9654e'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.lineCap = 'butt';
     ctx.setLineDash([34, 34]); ctx.lineDashOffset = sampleCumDist[curbFirst] % 68;
-    ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
+    ctx.strokeStyle = '#e7e1d2'; ctx.lineWidth = CURB_OUTER_W * 2; ctx.stroke();
     ctx.setLineDash([]); ctx.lineDashOffset = 0;
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
-    ctx.strokeStyle = '#262c36'; ctx.lineWidth = ASPHALT_HALF_W * 2; ctx.stroke();
+    ctx.strokeStyle = '#292c2e'; ctx.lineWidth = ASPHALT_HALF_W * 2; ctx.stroke();
 
     drawPitLane(ctx);
     drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale);
