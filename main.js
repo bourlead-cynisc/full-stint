@@ -468,8 +468,8 @@ function renderGarageUI() {
 
     renderStrategyCards();
     updateStartButtons();
-    const best=loadGhost(trialKey());
-    document.getElementById("ghostRecordHint").textContent=best?"Личный рекорд: "+formatTime(best.time):"Гонка с призраком: первый чистый круг запишет рекорд";
+    const bestGhost=loadGhost(trialKey());
+    document.getElementById("ghostRecordHint").textContent=bestGhost?"Личный рекорд: "+formatTime(bestGhost.time):"Гонка с призраком: первый чистый круг запишет рекорд";
 }
 
 // ============================================================================
