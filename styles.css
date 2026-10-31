@@ -530,3 +530,113 @@ canvas#minimapCanvas {
     .garage-track-section .track-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
     .garage-car-section .car-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
+
+
+/* Full Stint: quiet graphite surfaces with warm marshal-flag accents. */
+:root {
+    --fs-bg: #101211;
+    --fs-panel: #171a18;
+    --fs-raised: #202320;
+    --fs-line: #343834;
+    --fs-text: #f0eee6;
+    --fs-muted: #aaa99f;
+    --fs-accent: #ef7645;
+    --fs-accent-soft: #39261f;
+    --fs-amber: #efb75f;
+}
+body {background:radial-gradient(ellipse at 50% 0%,#28332d 0%,#171b19 42%,var(--fs-bg) 78%);color:var(--fs-text);}
+.modal-overlay {background:radial-gradient(ellipse at 50% 22%,rgba(68,72,58,.16),transparent 55%),rgba(8,10,9,.9);backdrop-filter:blur(7px);}
+.modal-card {background:linear-gradient(145deg,#1a1d1a,#121513);border-color:#383c36;box-shadow:0 24px 70px #0009;color:var(--fs-text);}
+.garage-card {box-sizing:border-box;width:min(1260px,97vw);max-height:94vh;padding:17px 22px 11px;border-radius:18px;}
+.garage-card .modal-title {margin-bottom:9px;padding-bottom:9px;font-size:21px;letter-spacing:2px;border-bottom-color:var(--fs-line);}
+.garage-card .modal-title>span:last-child {color:var(--fs-muted)!important;font-size:10px!important;letter-spacing:1px;}
+.garage-card .section-label {margin:5px 0 7px;color:var(--fs-muted);font-size:9px;letter-spacing:1.4px;}
+.garage-card .class-switch-row {gap:8px;margin-bottom:9px;}
+.garage-card .class-btn {padding:8px 11px;background:#1b1e1b;border:1px solid #3a3e38;border-radius:9px;color:#d4d1c8;}
+.garage-card .class-btn small {color:#9b9b92;font-size:8.5px;}
+.garage-card .class-btn.active {border-color:var(--fs-accent);background:var(--fs-accent-soft);color:#fff8f2;box-shadow:inset 3px 0 var(--fs-accent);}
+.garage-layout {display:grid;grid-template-columns:minmax(300px,.88fr) minmax(0,1.12fr);gap:17px;align-items:start;}
+.garage-section,.garage-car-section {min-width:0;padding:4px 0;background:transparent;border:0;border-radius:0;}
+.garage-section>.section-label {min-height:18px;margin:0 1px 6px;color:#dad8cf;}
+.garage-track-section .track-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:252px;overflow-y:auto;margin:0;padding:2px;align-content:start;}
+.garage-track-section .track-card {min-width:0;min-height:38px;padding:5px 7px;background:#1c201d;border:1px solid #343a34;border-radius:7px;gap:5px;box-shadow:none;}
+.garage-track-section .track-card:hover {border-color:#888374;background:#242823;}
+.garage-track-section .track-card.active {border-color:var(--fs-accent);background:#30251f;box-shadow:inset 3px 0 var(--fs-accent);}
+.garage-track-section .track-info-title {font-size:9.5px;line-height:1.2;white-space:nowrap;}
+.garage-track-section .track-info-sub {margin-top:2px;color:#a19f94;font-size:7.5px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;}
+.garage-car-section .car-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;max-height:245px;overflow-y:auto;margin:0;padding:2px;align-content:start;}
+.garage-car-section .car-item {height:74px;min-width:0;padding:5px 6px;display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-rows:11px 9px 12px 10px 10px;row-gap:1px;column-gap:5px;align-content:center;justify-items:start;background:#1c201d;border:1px solid #343a34;border-radius:8px;box-shadow:none;}
+.garage-car-section .car-item:hover {border-color:#888374;background:#242823;}
+.garage-car-section .car-item.selected {border-color:var(--fs-accent);background:#30251f;box-shadow:inset 3px 0 var(--fs-accent);}
+.garage-car-section .car-thumb {grid-column:1;grid-row:1/6;width:28px;height:50px;margin:0;align-self:center;}
+.garage-car-section .car-item-title {grid-column:2;grid-row:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;text-align:left;font-size:9px;}
+.garage-car-section .car-item-sub {grid-column:2;grid-row:2;overflow:hidden;text-overflow:ellipsis;margin:1px 0 0;color:var(--fs-amber);text-align:left;font-size:7.5px;white-space:nowrap;}
+.garage-car-section .car-note {grid-column:2;grid-row:3;align-self:center;max-height:13px;overflow:hidden;margin:0;color:#aaa99f;text-align:left;font-size:6.6px;white-space:nowrap;}
+.garage-car-section .car-character {display:none;}
+.garage-car-section .car-stats-grid {grid-column:2;grid-row:4/6;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,10px);gap:1px 5px;width:100%;align-self:end;}
+.garage-car-section .car-stat-bar {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;min-width:0;margin:0;color:#aaa99f;font-size:6.5px;line-height:7px;column-gap:2px;}
+.garage-car-section .car-stat-bar>span:first-child {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.garage-car-section .car-stat-bar>b {color:var(--fs-amber);font-size:6.5px;font-variant-numeric:tabular-nums;}
+.garage-car-section .car-stat-bar .stat-track {display:block;grid-column:1/-1;width:100%;height:2px;margin-top:1px;background:#101310;}
+.garage-car-section .car-stat-bar .stat-fill {display:block;background:linear-gradient(90deg,#e6a04e,#f2c875);}
+.garage-car-section .car-score-legend {color:#918f86;font-size:7px;font-weight:500;letter-spacing:0;text-transform:none;white-space:nowrap;}
+.garage-car-section .teammate-bar {margin:6px 0 0;padding:5px 7px;gap:6px;flex-wrap:nowrap;background:#1c201d;border-color:#343a34;font-size:8.5px;}
+.garage-car-section .driver-pill {padding:4px 7px;background:#242823;border:1px solid #41453e;color:#e7e4dc;font-size:8px;}
+.garage-car-section .driver-pill.active {border-color:var(--fs-amber);background:#302a20;color:#fff;}
+.garage-car-section #driverHint {max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a5a39a!important;font-size:7.5px!important;}
+.garage-card .season-panel {padding:6px 8px;margin:0 0 7px;border-color:var(--fs-line);background:#1c201d;border-radius:8px;}
+.garage-card .season-cal {max-height:34px;overflow:auto;flex-wrap:nowrap;margin-top:4px;}
+.garage-card .cal-chip {flex:none;padding:3px 6px;background:#252823;border-color:#42463e;color:#d3d0c6;font-size:8px;}
+.garage-card .cal-chip.next {background:#30251f;border-color:var(--fs-accent);color:#fff;}
+.garage-advanced {margin-top:8px;border:1px solid var(--fs-line);border-radius:9px;background:#171a18;}
+.garage-advanced>summary {padding:8px 11px;color:#c2c0b6;font-size:9.5px;font-weight:650;cursor:pointer;list-style-position:inside;}
+.garage-advanced[open]>summary {border-bottom:1px solid var(--fs-line);}
+.garage-advanced-content {padding:2px 10px 10px;}
+.garage-advanced-content .section-label {margin-top:10px;}
+.garage-advanced-content .ai-settings {padding:9px 11px;border-color:var(--fs-line);background:#1c201d;}
+.garage-advanced-content .ai-settings label {font-size:10px;}
+.garage-advanced-content .ai-settings>small {color:#a4a197;font-size:8.5px;}
+.garage-strategy-options .strategy-intro {min-width:220px;flex:1;padding:6px 8px;border-color:var(--fs-line);background:#1c201d;font-size:9px;}
+.garage-advanced-content .strategy-card {padding:6px 8px;background:#1c201d;border-color:#343a34;}
+.garage-advanced-content .strategy-plan {color:var(--fs-amber);}
+.garage-card #ghostRecordHint {display:inline-block;margin:6px 0 0;color:#aaa99f;font-size:8.5px;}
+.garage-card .map-credit {display:block;margin-top:2px;color:#85847c;font-size:7.5px;}
+.garage-card .map-credit a {color:#e2aa61;}
+.garage-card .start-actions {position:sticky;bottom:-11px;z-index:3;justify-content:flex-end;gap:7px;margin:7px -22px -11px;padding:9px 22px 11px;background:linear-gradient(180deg,rgba(22,25,22,.88),#141714 38%);}
+.garage-card .start-actions button {padding:8px 11px;font-size:9.5px;}
+.garage-card .start-actions .primary-btn {padding:9px 16px;background:var(--fs-accent);color:#1d1713;box-shadow:0 4px 12px rgba(239,118,69,.2);}
+.garage-card .start-actions .secondary-btn,.garage-card .start-actions .ghost-btn {background:#252823;border-color:#44483f;color:#e7e3d9;}
+.garage-card .start-actions .ghost-btn {color:#f1bd73;}
+.primary-btn {background:var(--fs-accent);color:#1d1713;box-shadow:0 4px 14px rgba(239,118,69,.2);}
+.secondary-btn,.view-btn {background:#252823;border-color:#44483f;color:#e7e3d9;}
+.view-btn.active,.lap-btn.active {border-color:var(--fs-accent);background:#39261f;color:#fff;}
+button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:focus-visible {outline:2px solid var(--fs-amber);outline-offset:2px;}
+#hud-top-center {border-top-color:var(--fs-accent);}
+#steering-wheel-dash {border-top-color:var(--fs-accent);}
+#btnHudControls {border-color:#5a4a3d;background:#211c18;color:#f0e9dd;}
+#pit-assistant {background:linear-gradient(155deg,rgba(30,31,28,.97),rgba(17,19,18,.97));border-color:#51483d;}
+.pit-speed-badge {background:#342a20;border-color:#786044;color:#efc27f;}
+#btnPitRequest {background:linear-gradient(100deg,#efb75f,#ef7645);color:#241812;box-shadow:0 4px 12px rgba(239,118,69,.2);}
+#nextTireSummary,#race-plan-next {color:#efc27f;}
+#race-control {border-left-color:var(--fs-amber);}
+* {scrollbar-color:#585449 #171a18;}
+
+@media(max-width:980px) {
+    .garage-layout {grid-template-columns:minmax(245px,.82fr) minmax(0,1.18fr);gap:12px;}
+    .garage-track-section .track-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+    .garage-car-section .car-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:700px) {
+    .garage-card {width:96vw;max-height:96vh;padding:13px 14px 10px;border-radius:15px;}
+    .garage-card .modal-title {font-size:17px;letter-spacing:1.5px;}
+    .garage-card .modal-title>span:last-child {font-size:7px!important;letter-spacing:.4px;}
+    .garage-card .class-btn {padding:7px 8px;font-size:10px;}
+    .garage-card .class-btn small {font-size:7px;}
+    .garage-layout {grid-template-columns:1fr;gap:5px;}
+    .garage-track-section .track-grid {grid-template-columns:repeat(2,minmax(0,1fr));max-height:165px;}
+    .garage-car-section .car-grid {grid-template-columns:repeat(2,minmax(0,1fr));max-height:170px;}
+    .garage-card .start-actions {bottom:-10px;margin:6px -14px -10px;padding:8px 14px 10px;gap:5px;flex-wrap:wrap;}
+    .garage-card .start-actions button {flex:1 1 42%;padding:8px 7px;font-size:8.5px;}
+    .garage-card .start-actions .primary-btn {padding:8px 9px;}
+    .garage-strategy-options {align-items:stretch;}
+}
