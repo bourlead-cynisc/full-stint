@@ -411,20 +411,23 @@ function drawGrandstands(ctx, camCenterX, camCenterY) {
         const length = Math.hypot(dx, dy) || 1;
         const tx = dx / length, ty = dy / length;
         const nx = -ty, ny = tx;
-        const side = (stand % 2 ? -1 : 1) * (TRACKS_DB[selectedTrackIndex].pitSideSign || 1);
-        const x = point.x + nx * side * 420;
-        const y = point.y + ny * side * 420;
+        const pitSide = TRACKS_DB[selectedTrackIndex].pitSideSign || 1;
+        const side = stand === 0 ? -pitSide : (stand % 2 ? -1 : 1) * pitSide;
+        const standOffset = stand === 0 ? 350 : 420;
+        const x = point.x + nx * side * standOffset;
+        const y = point.y + ny * side * standOffset;
         if (Math.hypot(x - camCenterX, y - camCenterY) > 2450) continue;
 
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(Math.atan2(ty, tx));
-        ctx.scale(stand === 0 ? 2.2 : 1.35, stand === 0 ? 2.2 : 1.35);
+        const standScale = stand === 0 ? 2.7 : 1.35;
+        ctx.scale(standScale, standScale);
 
         // A compact, deliberately toy-like grandstand: concrete deck, canopy and crowd.
         ctx.fillStyle = 'rgba(0,0,0,0.22)';
         ctx.beginPath(); ctx.roundRect(-112, -35, 224, 78, 8); ctx.fill();
-        ctx.fillStyle = '#68665f';
+        ctx.fillStyle = '#8b877e';
         ctx.beginPath(); ctx.roundRect(-108, -39, 216, 74, 7); ctx.fill();
         ctx.fillStyle = '#373a39';
         ctx.beginPath(); ctx.roundRect(-105, -36, 210, 67, 5); ctx.fill();
