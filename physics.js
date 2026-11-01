@@ -86,7 +86,7 @@ class Car {
     }
 
     getTeamPitBox() {
-        return (teamPitBoxes && teamPitBoxes[this.specIndex]) ? teamPitBoxes[this.specIndex] : { x: controlPoints[0].x, y: controlPoints[0].y };
+        return (teamPitBoxes && teamPitBoxes[this.specIndex]) ? teamPitBoxes[this.specIndex] : { x: trackSamples[0].x, y: trackSamples[0].y };
     }
 
     getFrontPoint() {
@@ -122,8 +122,8 @@ class Car {
     placeOnGrid(gridPosIndex) {
         const gridBack = -90 - gridPosIndex * 66;
         const gridSide = (gridPosIndex % 2 === 0) ? -29 : 29;
-        this.x = controlPoints[0].x + sfDirX * gridBack + sfNormX * gridSide;
-        this.y = controlPoints[0].y + sfDirY * gridBack + sfNormY * gridSide;
+        this.x = trackSamples[0].x + sfDirX * gridBack + sfNormX * gridSide;
+        this.y = trackSamples[0].y + sfDirY * gridBack + sfNormY * gridSide;
         this.angle = START_ANGLE; this.resetSessionDynamicState();
         this.syncProgress();
     }

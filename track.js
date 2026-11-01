@@ -153,19 +153,77 @@ function buildActiveTrackGeometry() {
         trackSamples[i].kappa = sum / 25;
     }
 
-    const prevPt = trackSamples[(totalSamples - 8) % totalSamples];
+    const nearestTrackIndex=point=>{
+        let bestIndex=0,bestDistance=Infinity;
+        for(let i=0;i<totalSamples;i++) {
+            const p=trackSamples[i],distance=(p.x-point.x)**2+(p.y-point.y)**2;
+            if(distance<bestDistance){bestDistance=distance;bestIndex=i;}
+        }
+        return bestIndex;
+    };
+    let pitSection=findStraightPitSection(trk),surveyedPitWaypoints=null,oldStartIndex;
+    // On the three surveyed circuits the OSM pit-lane centerline shares the
+    // same projection as the real outline. Keep that route and anchor its
+    // ends to the racing line; simplified maps use the clear straight below.
+    if(trk.hasRealContour&&trk.realPitPoints?.length>=2) {
+        let routePoints=trk.realPitPoints;
+        let start=nearestTrackIndex(routePoints[0]),end=nearestTrackIndex(routePoints.at(-1));
+        let span=(end-start+totalSamples)%totalSamples;
+        if(span>totalSamples/2) {
+            routePoints=[...routePoints].reverse();
+            [start,end]=[end,start];
+            span=(end-start+totalSamples)%totalSamples;
+        }
+        if(span>=4&&span<totalSamples/3) {
+            const entry=trackSamples[start],exit=trackSamples[end];
+            surveyedPitWaypoints=sampleOpenPitPath([entry,...routePoints,exit],PIT_WAYPOINT_COUNT);
+            const midIndex=(start+Math.floor(span*.5))%totalSamples;
+            const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
+            const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
+            pitSection={start,end,span,side:sideDot>=0?1:-1};
+            oldStartIndex=nearestTrackIndex(laneMid);
+        }
+    }
+    if(oldStartIndex===undefined) {
+        // Put the lap line in the middle of the straight that hosts the pit lane.
+        // This keeps the grid, start lights, lap timing and pit boxes together
+        // instead of leaving the start at rawPoints[0].
+        oldStartIndex=(pitSection.start+Math.floor(pitSection.span*.5))%totalSamples;
+    }
+    const rotateFromStart=points=>points.slice(oldStartIndex).concat(points.slice(0,oldStartIndex));
+    trackSamples=rotateFromStart(trackSamples);
+    dynamicRacingLinePoints=rotateFromStart(dynamicRacingLinePoints);
+
+    const shiftedIndex=index=>(index-oldStartIndex+totalSamples)%totalSamples;
+    pitSection.start=shiftedIndex(pitSection.start);
+    pitSection.end=shiftedIndex(pitSection.end);
+    const startShift=oldStartIndex/totalSamples;
+    const shiftNorm=value=>((value-startShift)%1+1)%1;
+    if(!trk.baseDrsZones)trk.baseDrsZones=trk.drsZones.map(zone=>({...zone}));
+    trk.drsZones=trk.baseDrsZones.map(zone=>({...zone,
+        detect:shiftNorm(zone.detect),start:shiftNorm(zone.start),end:shiftNorm(zone.end)}));
+
+    // Rebuild cumulative distances from the new start line (index 0), so all
+    // progress, sectors, pits and lap timing use the same origin.
+    trackLengthPx=0;sampleCumDist=[];
+    for(let i=0;i<totalSamples;i++) {
+        sampleCumDist.push(trackLengthPx);
+        const a=trackSamples[i],b=trackSamples[(i+1)%totalSamples];
+        trackLengthPx+=Math.hypot(b.x-a.x,b.y-a.y);
+    }
+
+    const prevPt = trackSamples[totalSamples - 8];
     const nextPt = trackSamples[8];
     const vx = nextPt.x - prevPt.x; const vy = nextPt.y - prevPt.y;
     const vLen = Math.hypot(vx, vy) || 1;
     sfDirX = vx / vLen; sfDirY = vy / vLen;
-    sfNormX = (-sfDirY) * trk.pitSideSign; sfNormY = ( sfDirX) * trk.pitSideSign;
+    sfNormX = (-sfDirY) * pitSection.side; sfNormY = ( sfDirX) * pitSection.side;
     START_ANGLE = Math.atan2(sfDirX, -sfDirY);
 
-    const pitSection=findStraightPitSection(trk);
     const entry=trackSamples[pitSection.start],exit=trackSamples[pitSection.end];
     trk.pitEntryNorm=pitSection.start/totalSamples;trk.pitExitNorm=pitSection.end/totalSamples;
     trk.pitProgressSpan=pitSection.span/totalSamples;
-    pitWaypoints=sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,PIT_WAYPOINT_COUNT);
+    pitWaypoints=surveyedPitWaypoints||sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,PIT_WAYPOINT_COUNT);
     pitCumDist=[0];
     for(let i=1;i<pitWaypoints.length;i++)pitCumDist.push(pitCumDist[i-1]+Math.hypot(pitWaypoints[i].x-pitWaypoints[i-1].x,pitWaypoints[i].y-pitWaypoints[i-1].y));
     pitRouteLength=pitCumDist.at(-1);

@@ -65,6 +65,7 @@ for(const track of TRACKS_DB) {
         track.desc=track.desc.replace(' · упрощённая схема','')+' · реальный контур';
     }
     track.realPitPoints=source.pit.map(project);
+    track.hasRealContour=!!source.outline;
     // Use a consistent 80 km/h pit limiter on every circuit. Some source
     // geometries still carry the previous 60 km/h value.
     track.pitSpeedLimit=Math.max(80,source.pitLimit||80);
