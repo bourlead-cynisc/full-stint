@@ -1016,9 +1016,13 @@ function buildMinimapCache() {
     const c = minimapCache.getContext('2d');
     c.fillStyle = 'rgba(10,14,21,0.80)'; c.beginPath(); c.roundRect(0, 0, W, H, 10); c.fill();
     c.strokeStyle = 'rgba(255,255,255,0.14)'; c.lineWidth = 1; c.stroke();
-    minimapScale = Math.min((W - pad * 2) / (maxX - minX), (H - pad * 2) / (maxY - minY));
-    minimapOffX = (W - (maxX - minX) * minimapScale) / 2 - minX * minimapScale;
-    minimapOffY = (H - (maxY - minY) * minimapScale) / 2 - minY * minimapScale;
+    // Fit the entire lap including pit entrance and exit.
+    const allMapPoints=trackSamples.concat(pitWaypoints);
+    const mapMinX=Math.min(...allMapPoints.map(p=>p.x)),mapMaxX=Math.max(...allMapPoints.map(p=>p.x));
+    const mapMinY=Math.min(...allMapPoints.map(p=>p.y)),mapMaxY=Math.max(...allMapPoints.map(p=>p.y));
+    minimapScale = Math.min((W - pad * 2) / Math.max(1,mapMaxX-mapMinX), (H - pad * 2) / Math.max(1,mapMaxY-mapMinY));
+    minimapOffX = (W - (mapMaxX-mapMinX) * minimapScale) / 2 - mapMinX * minimapScale;
+    minimapOffY = (H - (mapMaxY-mapMinY) * minimapScale) / 2 - mapMinY * minimapScale;
     c.lineJoin = 'round'; c.lineCap = 'round';
     const path = () => {
         c.beginPath();
@@ -1035,6 +1039,11 @@ function buildMinimapCache() {
         // Garage location markers.
         c.fillStyle='#f8fafc';
         for(const p of teamPitBoxes)c.fillRect(p.x*minimapScale+minimapOffX-1.5,p.y*minimapScale+minimapOffY-1.5,3,3);
+    }
+    for(let i=0;i<3;i++){
+        const p=trackSamples[Math.floor(i*trackSamples.length/3)];
+        c.fillStyle=['#f3a45b','#6edbbc','#88b7f6'][i];
+        c.beginPath();c.arc(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY,2.8,0,Math.PI*2);c.fill();
     }
     const s0 = trackSamples[0];
     c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 3, s0.y * minimapScale + minimapOffY - 3, 6, 6);
