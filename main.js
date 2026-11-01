@@ -277,34 +277,117 @@ function handleOrientation(e) {
     mobileSteer = Math.max(-1, Math.min(1, gyroGamma / 32));
 }
 
-// Геймпад: учитывается, только если им реально пользуются (иначе «призрачный» геймпад
-// — например, гарнитура или мышь — перебивал бы клавиатуру)
-function pollGamepad() {
-    const out = { throttle: 0, brake: 0, steer: 0 };
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (let i = 0; i < pads.length; i++) {
-        const gp = pads[i];
-        if (!gp || !gp.connected) continue;
-        let steer = gp.axes[0] || 0;
-        if (Math.abs(steer) < 0.12) steer = 0;
-        const thr = gp.buttons[7]?.value || 0, brk = gp.buttons[6]?.value || 0;
-        if (gp.buttons[5] && gp.buttons[5].pressed && !pollGamepad._rb) window.shiftUpPressed = true;
-        if (gp.buttons[4] && gp.buttons[4].pressed && !pollGamepad._lb) window.shiftDownPressed = true;
-        pollGamepad._rb = gp.buttons[5] && gp.buttons[5].pressed;
-        pollGamepad._lb = gp.buttons[4] && gp.buttons[4].pressed;
-        if (Math.abs(steer) > 0 || thr > 0.04 || brk > 0.04) { out.throttle = thr; out.brake = brk; out.steer = steer; break; }
+// Геймпад опрашивается каждый кадр, в том числе в паузе и меню: так работают настройки и навигация.
+let lastGamepadButtons=[], gamepadNavPrev={up:false,down:false,left:false,right:false};
+function gamepadButtonValue(gp,index) {
+    const button=gp.buttons[index];
+    return button ? Math.max(0,Math.min(1,Number.isFinite(button.value)?button.value:(button.pressed?1:0))) : 0;
+}
+function gamepadBindingValue(gp,action) {
+    const binding=gamepadBindings[action];
+    if(!binding)return 0;
+    if(binding.type==='axis')return gp.axes[binding.axis]||0;
+    return gamepadButtonValue(gp,binding.button);
+}
+function gamepadBindingDown(gp,action) {return gamepadBindingValue(gp,action)>0.55;}
+function visibleGamepadModal() {
+    for(const id of ['controlsModal','pauseModal','finishModal','garageModal']) {
+        const element=document.getElementById(id);
+        if(element && element.getClientRects().length && getComputedStyle(element).display!=='none')return element;
     }
-    return out;
+    return null;
+}
+function moveGamepadFocus(modal,direction) {
+    const candidates=[...modal.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href],[tabindex="0"]')]
+        .filter(el=>el.getClientRects().length && !el.closest('[hidden]'));
+    if(!candidates.length)return;
+    const current=candidates.indexOf(document.activeElement);
+    const step=(direction==='up'||direction==='left')?-1:1;
+    const next=current<0?(step>0?0:candidates.length-1):(current+step+candidates.length)%candidates.length;
+    candidates[next].focus();
+}
+function activateGamepadFocus(modal) {
+    const active=document.activeElement;
+    if(active && modal.contains(active) && typeof active.click==='function')active.click();
+}
+function handleGamepadNavigation(gp,justPressed) {
+    const modal=visibleGamepadModal();
+    if(!modal)return false;
+    if(modal.id==='controlsModal' && gamepadTabActive() && isGamepadBindingCaptureActive()) {
+        captureGamepadBinding(gp,justPressed);
+        return true;
+    }
+    const axisX=gp.axes[0]||0,axisY=gp.axes[1]||0;
+    const dirs={
+        up:!!justPressed[12]||axisY<-.55,
+        down:!!justPressed[13]||axisY>.55,
+        left:!!justPressed[14]||axisX<-.55,
+        right:!!justPressed[15]||axisX>.55
+    };
+    for(const dir of ['up','down','left','right']) {
+        if(dirs[dir]&&!gamepadNavPrev[dir])moveGamepadFocus(modal,dir);
+        gamepadNavPrev[dir]=dirs[dir];
+    }
+    if(justPressed[0])activateGamepadFocus(modal);
+    if(justPressed[1]) {
+        if(modal.id==='controlsModal')closeControls();
+        else if(modal.id==='pauseModal')document.getElementById('btnResumeGame').click();
+    }
+    return true;
+}
+function dispatchGamepadAction(action) {
+    if(action==='settings') {openControls();return;}
+    if(action==='pause') {
+        if(['QUALI','RACE','TIME_TRIAL'].includes(currentSession))togglePauseMenu();
+        return;
+    }
+    if(isPaused || !['QUALI','RACE','TIME_TRIAL'].includes(currentSession))return;
+    if(action==='shiftUp')window.shiftUpPressed=true;
+    if(action==='shiftDown')window.shiftDownPressed=true;
+    if(action==='camera'){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();}
+    if(action==='zoomIn')topZoom=Math.min(2.2,topZoom*1.15);
+    if(action==='zoomOut')topZoom=Math.max(0.45,topZoom/1.15);
+    if(action==='line')window.showRacingLine=!window.showRacingLine;
+    if(action==='sound')toggleSound();
+    if(action==='pit')requestPitStop();
+    if(['soft','medium','hard'].includes(action))selectNextTire(action);
+}
+function pollGamepad() {
+    const pads=navigator.getGamepads?navigator.getGamepads():[];
+    const gp=Array.from(pads).find(p=>p&&p.connected);
+    if(!gp) {
+        lastGamepadButtons=[];gamepadNavPrev={up:false,down:false,left:false,right:false};
+        updateGamepadStatus(null);
+        return {throttle:0,brake:0,handbrake:0,steer:0};
+    }
+    updateGamepadStatus(gp);
+    const down=Array.from(gp.buttons,button=>!!button && (button.pressed || (button.value||0)>0.55));
+    const justPressed=down.map((pressed,index)=>pressed&&!lastGamepadButtons[index]);
+    lastGamepadButtons=down;
+    if(document.getElementById('controlsModal').style.display==='flex') {
+        if(gamepadTabActive() && isGamepadBindingCaptureActive())captureGamepadBinding(gp,justPressed);
+        else handleGamepadNavigation(gp,justPressed);
+    } else if(visibleGamepadModal()) {
+        handleGamepadNavigation(gp,justPressed);
+    } else {
+        for(const action of GAMEPAD_ACTIONS) {
+            if(action==='steer'||action==='throttle'||action==='brake'||action==='handbrake')continue;
+            if(justPressed[gamepadBindings[action].button])dispatchGamepadAction(action);
+        }
+    }
+    let steer=gamepadBindingValue(gp,'steer');
+    if(Math.abs(steer)<0.12)steer=0;
+    const throttle=gamepadBindingValue(gp,'throttle'),brake=gamepadBindingValue(gp,'brake');
+    return {throttle,brake,handbrake:gamepadBindingDown(gp,'handbrake')?1:0,steer};
 }
 
 // Единый ввод: клавиатура, геймпад и сенсорные кнопки складываются (берётся максимум)
-function collectInput() {
-    const gp = pollGamepad();
+function collectInput(gp) {
     const kSteer = (keys.a ? -1 : 0) + (keys.d ? 1 : 0);
     return {
         throttle: Math.max(keys.w ? 1 : 0, gp.throttle, mobileThrottle),
         brake: Math.max(keys.s ? 1 : 0, gp.brake, mobileBrake),
-        handbrake: keys.space ? 1 : 0,
+        handbrake: Math.max(keys.space ? 1 : 0,gp.handbrake),
         steer: kSteer !== 0 ? kSteer : (gp.steer !== 0 ? gp.steer : mobileSteer)
     };
 }
@@ -888,7 +971,7 @@ function updateHUD() {
     }
     const pitButton=document.getElementById('btnPitRequest');
     pitButton.disabled=p.pitPhase!=='none';
-    pitButton.textContent=(p.pitRequested?'Отменить заезд':'Запросить заезд')+' · '+bindingLabel('pit');
+    pitButton.textContent=(p.pitRequested?'Отменить заезд':'Запросить заезд')+' · '+combinedBindingLabel('pit');
 
 
     let html = '';
@@ -1003,10 +1086,11 @@ let accumulator = 0;
 function gameLoop(now) {
     const frameDt = Math.min(0.1, (now - lastFrameTime) / 1000);
     lastFrameTime = now;
+    const gpInput=pollGamepad();
 
     if (currentSession !== 'MENU' && playerCar) {
         if (!isPaused && currentSession !== 'FINISHED') {
-            const input = collectInput();
+            const input = collectInput(gpInput);
             accumulator += frameDt;
             let steps = 0;
             while (accumulator >= STEP && steps < 5) { stepSimulation(input); accumulator -= STEP; steps++; }
@@ -1067,8 +1151,10 @@ document.addEventListener('keydown',e=>{if((e.code==='Enter'||e.code==='Space') 
 for(const button of document.querySelectorAll('[data-next-tire]')) button.addEventListener('click',()=>{selectNextTire(button.dataset.nextTire);updateHUD();releaseFocus();});
 document.getElementById('btnPitRequest').addEventListener('click',()=>{requestPitStop();updateHUD();releaseFocus();});
 for(const button of document.querySelectorAll('[data-open-controls]'))button.addEventListener('click',openControls);
+for(const button of document.querySelectorAll('[data-controls-tab]'))button.addEventListener('click',()=>setControlsTab(button.dataset.controlsTab));
 document.getElementById('btnCloseControls').addEventListener('click',closeControls);
 document.getElementById('btnResetBindings').addEventListener('click',()=>{keyBindings=JSON.parse(JSON.stringify(DEFAULT_BINDINGS));capturingBinding=null;clearInputs();saveBindings();renderBindings();document.getElementById('bindingMessage').textContent='Стандартные клавиши восстановлены.';});
+document.getElementById('btnResetGamepadBindings').addEventListener('click',()=>{gamepadBindings=JSON.parse(JSON.stringify(DEFAULT_GAMEPAD_BINDINGS));capturingGamepadBinding=null;gamepadCaptureArmed=false;clearInputs();saveGamepadBindings();renderGamepadBindings();document.getElementById('bindingMessage').textContent='Стандартные назначения геймпада восстановлены.';});
 updateControlHints();
 
 function prepareSeasonSelection() {

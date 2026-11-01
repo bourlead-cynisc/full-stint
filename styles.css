@@ -320,12 +320,21 @@ body.is-mobile #control-hint {display:none;}
 #bindingMessage {min-height:40px;color:#8cf3dc;font-size:13px;line-height:1.5;margin:20px 0 10px;}
 #bindingGrid {display:grid;grid-template-columns:minmax(150px,1fr) minmax(150px,1fr);align-items:center;gap:0 18px;margin-bottom:18px;}
 #bindingGrid>span {font-size:13px;color:#d7e4ee;padding:12px 0;border-bottom:1px solid #2d4151;}
+.controls-tabs {display:flex;gap:8px;border-bottom:1px solid #2d4151;margin:6px 0 14px;}
+.controls-tab {border:1px solid transparent;border-bottom:0;background:transparent;color:#a8bfce;padding:10px 15px;border-radius:9px 9px 0 0;cursor:pointer;font-weight:700;}
+.controls-tab.active {background:#1a2e3f;border-color:#456277;color:#e7f7f4;box-shadow:inset 0 -2px #5eead4;}
+.gamepad-status {margin:10px 0 6px;padding:10px 12px;border-radius:9px;background:#202b35;color:#f2c680;font-size:12px;}
+.gamepad-status.connected {background:#183429;color:#a5e8ba;}
+.gamepad-note {margin:6px 0 12px;color:#a8bfce;font-size:11px;line-height:1.5;}
+#gamepadBindingGrid {display:grid;grid-template-columns:minmax(150px,1fr) minmax(150px,1fr);align-items:center;gap:0 18px;margin-bottom:14px;}
+#gamepadBindingGrid>span {font-size:13px;color:#d7e4ee;padding:9px 0;border-bottom:1px solid #2d4151;}
+#control-hint {white-space:pre-line;}
 .binding-button {font:600 12px system-ui;color:#dcecf8;background:#1a2e3f;border:1px solid #456277;border-radius:8px;margin:4px 0;padding:9px 12px;cursor:pointer;min-height:36px;}
 .binding-button:hover {background:#244657;border-color:#5eead4;}
 .controls-card h3 {font-size:15px;color:#dcebf7;margin-top:25px;}
 .controls-card .config-bar {margin:0;}
 #control-hint {max-width:290px;font-size:10px;line-height:1.6;}
-@media(max-width:600px) {#bindingGrid{gap:0 8px;}#bindingGrid>span{font-size:11px;}.controls-card{padding:18px;}.controls-heading h2{font-size:21px;}}
+@media(max-width:600px) {#bindingGrid,#gamepadBindingGrid{gap:0 8px;}#bindingGrid>span,#gamepadBindingGrid>span{font-size:11px;}.controls-card{padding:18px;}.controls-heading h2{font-size:21px;}.controls-tab{padding:9px 10px;font-size:11px;}}
 
 .controls-heading {position:sticky;top:-28px;background:#111a25;z-index:2;padding:10px 0;border-bottom:1px solid #2d4151;}
 
