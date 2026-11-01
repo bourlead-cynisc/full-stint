@@ -257,6 +257,7 @@ function buildActiveTrackGeometry() {
     trk.pitEntryNorm=pitSection.start/totalSamples;trk.pitExitNorm=pitSection.end/totalSamples;
     trk.pitProgressSpan=pitSection.span/totalSamples;
     pitWaypoints=surveyedPitWaypoints||sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,PIT_WAYPOINT_COUNT);
+    pitWaypoints=alignPitLaneTangents(pitWaypoints,pitSection.start,pitSection.end);
     pitCumDist=[0];
     for(let i=1;i<pitWaypoints.length;i++)pitCumDist.push(pitCumDist[i-1]+Math.hypot(pitWaypoints[i].x-pitWaypoints[i-1].x,pitWaypoints[i].y-pitWaypoints[i-1].y));
     pitRouteLength=pitCumDist.at(-1);
@@ -384,6 +385,42 @@ function sampleStraightPitPath(entry,exit,dirX,dirY,normX,normY,side,offset,coun
     });
 }
 
+function alignPitLaneTangents(route,entryIndex,exitIndex){
+    // The pit lane must diverge from, and merge back into, the racing line
+    // with the track's forward heading, even when survey endpoints are offset.
+    const N=trackSamples.length,last=route.length-1,count=Math.min(26,Math.floor(last*.16));
+    if(last<count*2+5)return route;
+    const tangentTrack=index=>{
+        const a=trackSamples[(index-4+N)%N],b=trackSamples[(index+4)%N];
+        const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+        return {x:dx/len,y:dy/len};
+    };
+    const tangentRoute=(a,b)=>{
+        const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+        return {x:dx/len,y:dy/len};
+    };
+    const bezier=(a,b,c,d,t)=>{
+        const q=1-t;
+        return {x:q*q*q*a.x+3*q*q*t*b.x+3*q*t*t*c.x+t*t*t*d.x,
+            y:q*q*q*a.y+3*q*q*t*b.y+3*q*t*t*c.y+t*t*t*d.y};
+    };
+    const output=route.map(p=>({...p}));
+    const entry=route[0],entryEnd=route[count];
+    const launch=tangentTrack(entryIndex),arrive=tangentRoute(route[count-2],route[count+2]);
+    const inChord=Math.hypot(entryEnd.x-entry.x,entryEnd.y-entry.y);
+    const inHandle=Math.min(inChord*.36,Math.max(40,inChord*.45));
+    const firstP1={x:entry.x+launch.x*inHandle,y:entry.y+launch.y*inHandle};
+    const firstP2={x:entryEnd.x-arrive.x*inHandle,y:entryEnd.y-arrive.y*inHandle};
+    for(let i=1;i<count;i++)output[i]=bezier(entry,firstP1,firstP2,entryEnd,i/count);
+    const exitStart=route[last-count],exit=route[last];
+    const exitApproach=tangentRoute(route[last-count-2],route[last-count+2]);
+    const exitHeading=tangentTrack(exitIndex),outChord=Math.hypot(exit.x-exitStart.x,exit.y-exitStart.y);
+    const outHandle=outChord*.36;
+    const lastP1={x:exitStart.x+exitApproach.x*outHandle,y:exitStart.y+exitApproach.y*outHandle};
+    const lastP2={x:exit.x-exitHeading.x*outHandle,y:exit.y-exitHeading.y*outHandle};
+    for(let i=1;i<count;i++)output[last-count+i]=bezier(exitStart,lastP1,lastP2,exit,i/count);
+    return output;
+}
 function buildTeamPitBoxes() {
     const catalog = (typeof getActiveCatalog === 'function') ? getActiveCatalog() : F1_CATALOG;
     teamPitBoxes = [];
