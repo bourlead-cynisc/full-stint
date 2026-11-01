@@ -11,6 +11,7 @@
 
 <div id="viewportContainer">
     <div id="hud-top-center">
+        <span class="hud-build-mark">FULL STINT · 2.1</span>
         <div class="top-metric">
             <div class="top-label" id="sessionLabel">КВАЛИФИКАЦИЯ</div>
             <div class="top-value" id="topLapCounter">КРУГ 1</div>
@@ -38,6 +39,13 @@
     <div id="hud-left" class="hud-panel">
         <h1 id="hudCarTitle">—</h1>
         <div class="sub" id="hudDriverName"></div>
+        <div class="hud-powertrain" aria-label="Данные привода и управления">
+            <div class="hud-powertrain-label">ПРИВОД / КОМПОНОВКА</div>
+            <div class="hud-powertrain-drive" id="hudDriveType">—</div>
+            <div class="hud-powertrain-engine" id="hudEngineLayout">—</div>
+            <div class="hud-powertrain-label">РУЧНИК · ПРОБЕЛ</div>
+            <div class="hud-handbrake" id="hudHandbrake">ОТПУЩЕН</div>
+        </div>
         <div class="timer-row">Сектор <span id="cpStatus" class="timer-val">1 / 4</span></div>
         <div class="timer-row">Последний круг <span id="lastTime" class="timer-val">--:--.---</span></div>
         <div class="standings-mini" id="liveTower"></div>
@@ -110,7 +118,7 @@
 <div id="garageModal" class="modal-overlay">
     <div class="modal-card garage-card">
         <div class="modal-title">
-            <span>FULL STINT</span>
+            <span>FULL STINT · ОБНОВЛЕНИЕ 2.1</span>
             <span style="font-size:12px; color:#5eead4;">F1 · GT3 · RACING SIMULATOR</span>
         </div>
 
@@ -118,6 +126,7 @@
         <div class="class-switch-row">
             <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small>Гонка на выживание 20 минут после квалификации · 6 передач</small></button>
             <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Большой календарь гонок · очки, кубок гонщиков и конструкторов · DRS</small></button>
+            <button class="class-btn" id="classBtnRoad" onclick="selectCarClass('ROAD')">🚘 ТРЕК-ДЕНЬ<small>FWD / AWD / RWD · Golf GTI, Audi RS 3, Porsche 911 · разные повадки</small></button>
         </div>
 
         <div class="garage-layout">
