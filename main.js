@@ -1017,6 +1017,15 @@ function buildMinimapCache() {
     };
     path(); c.strokeStyle = '#475569'; c.lineWidth = 6; c.stroke();
     path(); c.strokeStyle = '#94a3b8'; c.lineWidth = 2.2; c.stroke();
+    // Complete pit route (including ingress and exit), separate from the racing line.
+    if(pitWaypoints.length){
+        c.beginPath();
+        pitWaypoints.forEach((p,i)=>i?c.lineTo(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY):c.moveTo(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY));
+        c.strokeStyle='#fbbf24';c.lineWidth=2.2;c.stroke();
+        // Garage location markers.
+        c.fillStyle='#f8fafc';
+        for(const p of teamPitBoxes)c.fillRect(p.x*minimapScale+minimapOffX-1.5,p.y*minimapScale+minimapOffY-1.5,3,3);
+    }
     const s0 = trackSamples[0];
     c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 3, s0.y * minimapScale + minimapOffY - 3, 6, 6);
 }
