@@ -176,12 +176,27 @@ function buildActiveTrackGeometry() {
         }
         if(span>=4&&span<totalSamples/3) {
             const entry=trackSamples[start],exit=trackSamples[end];
-            surveyedPitWaypoints=sampleOpenPitPath([entry,...routePoints,exit],PIT_WAYPOINT_COUNT);
+            // OSM pit routes occasionally double back and form a kink or loop.
+            // Validate their direction before accepting them for driving.
+            const laneRaw=[entry,...routePoints,exit];
+            const axisX=exit.x-entry.x,axisY=exit.y-entry.y,axisLen=Math.hypot(axisX,axisY)||1;
+            const project=p=>((p.x-entry.x)*axisX+(p.y-entry.y)*axisY)/axisLen;
+            let backward=0,previous=project(laneRaw[0]),rawLength=0;
+            for(let i=1;i<laneRaw.length;i++){
+                const along=project(laneRaw[i]);
+                backward+=Math.max(0,previous-along);
+                rawLength+=Math.hypot(laneRaw[i].x-laneRaw[i-1].x,laneRaw[i].y-laneRaw[i-1].y);
+                previous=along;
+            }
+            const candidate=sampleOpenPitPath(laneRaw,PIT_WAYPOINT_COUNT);
+            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=candidate;
             const midIndex=(start+Math.floor(span*.5))%totalSamples;
             const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
             const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
-            pitSection={start,end,span,side:sideDot>=0?1:-1};
-            oldStartIndex=nearestTrackIndex(laneMid);
+            if(surveyedPitWaypoints){
+                pitSection={start,end,span,side:sideDot>=0?1:-1};
+                oldStartIndex=nearestTrackIndex(laneMid);
+            }
         }
     }
     if(oldStartIndex===undefined) {
@@ -621,11 +636,19 @@ function drawPitLane(ctx) {
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 65; ctx.stroke();
     ctx.strokeStyle = '#3b4654'; ctx.lineWidth = 58; ctx.stroke();
-    ctx.setLineDash([12,12]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.setLineDash([22,18]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
     ctx.setLineDash([]);
     for (const box of teamPitBoxes) {
         ctx.fillStyle = box.color; ctx.fillRect(box.x - 10,box.y - 10,20,20);
         ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.fillText(String(box.teamIndex+1),box.x+14,box.y);
+    }
+    // Individual garage bays are aligned with the pit direction.
+    for(const box of teamPitBoxes){
+        const before=pitWaypoints[Math.max(0,box.node-2)],after=pitWaypoints[Math.min(pitWaypoints.length-1,box.node+2)];
+        const a=Math.atan2(after.y-before.y,after.x-before.x);
+        ctx.save();ctx.translate(box.x,box.y);ctx.rotate(a);
+        ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;
+        ctx.strokeRect(-24,-27,48,54);ctx.restore();
     }
     ctx.fillStyle = '#facc15'; ctx.font = 'bold 15px sans-serif';
     ctx.fillText(`${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} KM/H`,pitSpeedLinePt.x+18,pitSpeedLinePt.y-18);
