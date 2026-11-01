@@ -113,7 +113,7 @@ class Car {
         this.width = this.spec.width; this.height = this.spec.height;
         this.cfg = CLASS_CFG[this.spec.carClass] || CLASS_CFG.GT3;
         this.perf = this.spec.perf || { power: 300, vmax: 255, grip: 1.55, aero: 0.9, brake: 1.7, tire: 1.0 };
-        this.gearFrac = this.cfg.gearFrac;
+        this.gearFrac = this.spec.gearFrac || this.cfg.gearFrac;
         this.maxGears = this.gearFrac.length;
         // Класс пилота влияет на мощность и порог сцепления, который использует ИИ
         const sk = this.isPlayer ? 1.0 : this.botSkill;
@@ -314,7 +314,7 @@ class Car {
         const d = sTarget - this.smoothSteer;
         this.smoothSteer += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
 
-        return { thr: this.smoothThrottle, brake: this.smoothBrake, handbrake: input.handbrake ? 1 : 0, steer: this.smoothSteer * (1 - hc.steerSpLoss * sp), manual: window.transmissionMode === 'MANUAL' };
+        return { thr: this.smoothThrottle, brake: this.smoothBrake, handbrake: Math.max(0,Math.min(1,Number(input.handbrake)||0)), steer: this.smoothSteer * (1 - hc.steerSpLoss * sp), manual: window.transmissionMode === 'MANUAL' };
     }
 
     // ИИ: ведёт по гоночной линии, считает тормозные точки и скорость в поворотах
@@ -614,7 +614,9 @@ class Car {
             }
         }
 
+        // Handbrake is independent of the service brake and holds the rear axle.
         const handbrake = Math.max(0, Math.min(1, ctl.handbrake || 0));
+        this.handbrakeActive = handbrake > 0.05;
         this.dbgDist = frontInfo.dist;
         this.latOff = (frontPt.x - frontInfo.center.x) * (frontInfo.center.nx || 0) + (frontPt.y - frontInfo.center.y) * (frontInfo.center.ny || 0);
         this.updateGearbox(dt, ctl.thr, ctl.brake, ctl.manual);
@@ -634,10 +636,20 @@ class Car {
         const lat = Math.min(1, this.latUse);
         const circle = Math.sqrt(Math.max(0.04, 1 - lat * lat));
         let aEng = 0, aBrk = 0, aEB = 0;
+        const drive = this.drivetrain === 'AWD'
+            ? {grip:1.23,slip:1.20,understeer:.045,powerYaw:.035}
+            : this.drivetrain === 'FWD'
+            ? {grip:.89,slip:1.08,understeer:.24,powerYaw:0}
+            : {grip:1,slip:1,understeer:.025,powerYaw:.18};
+        // Front drive loses traction when accelerating and unloading its drive axle.
+        const weightTransfer=this.drivetrain==='FWD'
+            ? Math.max(.74,1-Math.max(0,this.aLong||0)*.027)
+            : this.drivetrain==='RWD'
+            ? Math.min(1.12,1+Math.max(0,this.aLong||0)*.014):1;
         const redline = this.rpm >= 1.0;
         if (!ctl.hold && handbrake < 0.15 && ctl.thr > 0.01 && this.gear >= 1 && this.shiftCut <= 0 && vmsSigned >= -0.3 && !redline) {
             const P = this.powerWkg * this.engineCondition * powerCurve(this.rpm) * ctl.thr;     // Вт/кг
-            aEng = Math.min(P / Math.max(vms, 5), 0.60 * gripMax * circle * this.character.traction * this.driveTraction);
+            aEng = Math.min(P / Math.max(vms, 5), 0.60 * gripMax * circle * this.character.traction * this.driveTraction * drive.grip * weightTransfer);
         }
         if (this.gear >= 1 && ctl.thr < 0.05 && vms > 2) aEB = (1.2 + 3.6 * Math.min(1.1, this.rpm)) * (this.spec.carClass === 'F1' ? 0.9 : 1.0);
         if (redline && vms > 2) aEB = Math.max(aEB, 5);
@@ -645,7 +657,8 @@ class Car {
             const bMax = (this.brake0 + this.brakeAero * q * aeroWakeFactor) * tireGrip * comp.gripMult * surf * G * Math.sqrt(hc.hb);
             aBrk = ctl.brake * Math.min(bMax, gripMax * 1.15) * circle;
         }
-        // Rear-axle lock gives the car a short, controlled rotation under steering.
+        // Simulated rear-axle parking brake. Deliberately strong at low speed.
+        // It also prevents the engine from pulling through a fully engaged brake.
         if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (6.8 + 1.8 * q) * Math.max(.32,circle);
         const towDragMul=1-(this.slipstream||0)*(this.spec.carClass==='F1'?0.15:0.095);
         const dragMul = (this.drsActive ? 0.80 : 1.0) * towDragMul;
@@ -676,9 +689,12 @@ class Car {
         const omegaLock = Math.min(hc.lock, av / 5.0);
         const omegaGrip = aLatMax / Math.max(av, 2.5);
         const omegaMax = Math.min(omegaLock, omegaGrip);
-        const steering=ctl.steer*this.character.rotation*this.driveRotation*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7)*(1+handbrake*0.25) + this.suspensionPull*this.suspensionDamage;
-        const handbrakeYaw = ctl.steer * handbrake * Math.min(1, av / 8) * 0.8 * this.driveRotation;
-        const yawTarget = (Math.max(-1,Math.min(1,steering)) * omegaMax + handbrakeYaw) * (newV >= 0 ? 1 : -1);
+        const drivenUndersteer=1-drive.understeer*ctl.thr*Math.min(1.15,.45+av/25);
+        const steering=ctl.steer*this.character.rotation*this.driveRotation*drivenUndersteer*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7)*(1+handbrake*0.25) + this.suspensionPull*this.suspensionDamage;
+        const handbrakeYaw = ctl.steer * handbrake * Math.min(1, av / 8) * 1.12 * this.driveRotation;
+        // RWD turns under power; AWD exits smoothly; FWD pushes wide under throttle.
+        const powerYaw=ctl.steer*ctl.thr*drive.powerYaw*Math.min(1,av/18);
+        const yawTarget = (Math.max(-1,Math.min(1,steering)) * omegaMax + handbrakeYaw + powerYaw) * (newV >= 0 ? 1 : -1);
         this.dbgSteer = ctl.steer; this.dbgOmega = omegaMax; this.dbgGripMax = gripMax; this.dbgBrake = Math.max(ctl.brake,handbrake);
         // кузов набирает скорость вращения с инерцией (≈0,08–0,1 с) — машина «живая», а не на рельсах
         this.yawRate += (yawTarget - this.yawRate) * Math.min(1, dt * (this.isPlayer ? hc.yawK : Math.max(14, hc.yawK)) * this.character.rotation * (1-.3*this.suspensionDamage));
@@ -691,7 +707,7 @@ class Car {
         this.bodyPitch += (-(this.aLong / (G * 3)) - this.bodyPitch) * Math.min(1, dt * 10);
 
         // ---------- скольжение: вектор скорости догоняет направление кузова ----------
-        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * (1 - 0.78 * handbrake) * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
+        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * (1 - 0.78 * handbrake) * drive.slip * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
         const targetDx = Math.sin(this.angle) * this.velocity;
         const targetDy = -Math.cos(this.angle) * this.velocity;
         this.slip = Math.hypot(targetDx - this.dx, targetDy - this.dy);

@@ -173,7 +173,7 @@ function buildActiveTrackGeometry() {
         const span=(end-start+totalSamples)%totalSamples;
         if(span>=4&&span<totalSamples/3){
             const startRoad=trackSamples[start],endRoad=trackSamples[end];
-            surveyedPitWaypoints=sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT);
+            surveyedPitWaypoints=smoothPitWaypoints(sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT),5);
             const midIndex=(start+Math.floor(span*.5))%totalSamples;
             const midRoad=trackSamples[midIndex],midLane=surveyedPitWaypoints[Math.floor(PIT_WAYPOINT_COUNT*.5)];
             const dot=(midLane.x-midRoad.x)*midRoad.nx+(midLane.y-midRoad.y)*midRoad.ny;
@@ -205,11 +205,13 @@ function buildActiveTrackGeometry() {
                 previous=along;
             }
             const candidate=sampleOpenPitPath(laneRaw,PIT_WAYPOINT_COUNT);
-            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=candidate;
-            const midIndex=(start+Math.floor(span*.5))%totalSamples;
-            const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
-            const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
+            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=smoothPitWaypoints(candidate,5);
+            // Invalid surveyed paths must never be dereferenced. The automatically
+            // selected clean pit section remains the fallback for this circuit.
             if(surveyedPitWaypoints){
+                const midIndex=(start+Math.floor(span*.5))%totalSamples;
+                const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
+                const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
                 pitSection={start,end,span,side:sideDot>=0?1:-1};
                 oldStartIndex=nearestTrackIndex(laneMid);
             }
@@ -255,6 +257,7 @@ function buildActiveTrackGeometry() {
     trk.pitEntryNorm=pitSection.start/totalSamples;trk.pitExitNorm=pitSection.end/totalSamples;
     trk.pitProgressSpan=pitSection.span/totalSamples;
     pitWaypoints=surveyedPitWaypoints||sampleStraightPitPath(entry,exit,pitSection.dx,pitSection.dy,pitSection.nx,pitSection.ny,pitSection.side,pitSection.offset,PIT_WAYPOINT_COUNT);
+    pitWaypoints=alignPitLaneTangents(pitWaypoints,pitSection.start,pitSection.end);
     pitCumDist=[0];
     for(let i=1;i<pitWaypoints.length;i++)pitCumDist.push(pitCumDist[i-1]+Math.hypot(pitWaypoints[i].x-pitWaypoints[i-1].x,pitWaypoints[i].y-pitWaypoints[i-1].y));
     pitRouteLength=pitCumDist.at(-1);
@@ -382,6 +385,42 @@ function sampleStraightPitPath(entry,exit,dirX,dirY,normX,normY,side,offset,coun
     });
 }
 
+function alignPitLaneTangents(route,entryIndex,exitIndex){
+    // The pit lane must diverge from, and merge back into, the racing line
+    // with the track's forward heading, even when survey endpoints are offset.
+    const N=trackSamples.length,last=route.length-1,count=Math.min(26,Math.floor(last*.16));
+    if(last<count*2+5)return route;
+    const tangentTrack=index=>{
+        const a=trackSamples[(index-4+N)%N],b=trackSamples[(index+4)%N];
+        const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+        return {x:dx/len,y:dy/len};
+    };
+    const tangentRoute=(a,b)=>{
+        const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+        return {x:dx/len,y:dy/len};
+    };
+    const bezier=(a,b,c,d,t)=>{
+        const q=1-t;
+        return {x:q*q*q*a.x+3*q*q*t*b.x+3*q*t*t*c.x+t*t*t*d.x,
+            y:q*q*q*a.y+3*q*q*t*b.y+3*q*t*t*c.y+t*t*t*d.y};
+    };
+    const output=route.map(p=>({...p}));
+    const entry=route[0],entryEnd=route[count];
+    const launch=tangentTrack(entryIndex),arrive=tangentRoute(route[count-2],route[count+2]);
+    const inChord=Math.hypot(entryEnd.x-entry.x,entryEnd.y-entry.y);
+    const inHandle=Math.min(inChord*.36,Math.max(40,inChord*.45));
+    const firstP1={x:entry.x+launch.x*inHandle,y:entry.y+launch.y*inHandle};
+    const firstP2={x:entryEnd.x-arrive.x*inHandle,y:entryEnd.y-arrive.y*inHandle};
+    for(let i=1;i<count;i++)output[i]=bezier(entry,firstP1,firstP2,entryEnd,i/count);
+    const exitStart=route[last-count],exit=route[last];
+    const exitApproach=tangentRoute(route[last-count-2],route[last-count+2]);
+    const exitHeading=tangentTrack(exitIndex),outChord=Math.hypot(exit.x-exitStart.x,exit.y-exitStart.y);
+    const outHandle=outChord*.36;
+    const lastP1={x:exitStart.x+exitApproach.x*outHandle,y:exitStart.y+exitApproach.y*outHandle};
+    const lastP2={x:exit.x-exitHeading.x*outHandle,y:exit.y-exitHeading.y*outHandle};
+    for(let i=1;i<count;i++)output[last-count+i]=bezier(exitStart,lastP1,lastP2,exit,i/count);
+    return output;
+}
 function buildTeamPitBoxes() {
     const catalog = (typeof getActiveCatalog === 'function') ? getActiveCatalog() : F1_CATALOG;
     teamPitBoxes = [];
@@ -710,6 +749,17 @@ function resampleCenterline(points, spacing) {
     });
 }
 
+function smoothPitWaypoints(points,passes=5) {
+    // Preserve the exact entry/exit road joins; soften micro-kinks in
+    // independently surveyed pit coordinates and unevenly spaced OSM nodes.
+    let result=points.map(p=>({...p}));
+    for(let pass=0;pass<passes;pass++)result=result.map((p,i)=>{
+        if(i===0||i===result.length-1)return p;
+        const prev=result[i-1],next=result[i+1];
+        return {x:(prev.x+2*p.x+next.x)/4,y:(prev.y+2*p.y+next.y)/4};
+    });
+    return result;
+}
 function sampleOpenPitPath(points,count) {
     points=simplifyOpenPitPolyline(points,18);
     const dense=[];
@@ -757,7 +807,7 @@ function isPitEntryProgress(norm,previousNorm) {
 function drawMonacoScenery(ctx,camX,camY){
     const trk=TRACKS_DB[selectedTrackIndex],ref=trk.rawPoints[0],s=trk.scale;
     const X=x=>(x-ref.x)*s,Y=y=>(y-ref.y)*s;
-    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<3200;
+    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<5000 || (typeof topFollow!=='undefined'&&topFollow==='TRACK');
     ctx.save();
     // Mediterranean harbour basin south of the tunnel and Piscine complex.
     const water=[[160,285],[290,280],[390,250],[480,210],[520,210],[520,520],[160,520]];

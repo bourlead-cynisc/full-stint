@@ -10,7 +10,7 @@ for(const track of TRACKS_DB) {
     const scale=source.outline?source.lengthM/mappedLength:1;
     // Real surveyed outlines dwarf the hand-drawn layouts in the game world.
     // Keep their shape and aspect ratio while bringing them into the same visual scale.
-    const layoutScale=source.outline?0.78:1;
+    const layoutScale=1; // Preserve surveyed race-course scale instead of shrinking 22%.
     const project=p=>{const q=baseProject(p);return {x:q.x*scale*layoutScale,y:q.y*scale*layoutScale};};
     const simplifyOpenPolyline=(points,tolerance)=>{
         if(points.length<=2)return points;
@@ -57,17 +57,17 @@ for(const track of TRACKS_DB) {
         });
         return current;
     };
-    if(source.outline) {
+    const customMonaco=track.id==='monaco'&&Array.isArray(track.pitRoutePoints);
+    if(source.outline&&!customMonaco) {
         const surveyed=simplifyClosedPolyline(coords.slice(0,-1).map(project),18);
         track.rawPoints=smoothClosedPolyline(surveyed,3);track.scale=1;
         track.reportedLengthM=source.lengthM*layoutScale;
         const index=TRACKS_DB.indexOf(track);EST_LAP_SEC.GT3[index]=Math.round(({lemans:300,fuji:110,sebring:145})[track.id]*layoutScale);EST_LAP_SEC.F1[index]=Math.round(EST_LAP_SEC.GT3[index]*.8);
         track.desc=track.desc.replace(' · упрощённая схема','')+' · реальный контур';
     }
-    track.realPitPoints=source.pit.map(project);
-    track.hasRealContour=!!source.outline;
-    // Use a consistent 80 km/h pit limiter on every circuit. Some source
-    // geometries still carry the previous 60 km/h value.
-    track.pitSpeedLimit=Math.max(80,source.pitLimit||80);
-    track.layoutVersion='osm-20261030-contour-cleanup';
+    track.realPitPoints=customMonaco?null:source.pit.map(project);
+    track.hasRealContour=!!source.outline&&!customMonaco;
+    // Monaco runs a 60 km/h pit speed limit (2026 F1 event notes).
+    track.pitSpeedLimit=track.id==='monaco'?60:Math.max(80,source.pitLimit||80);
+    track.layoutVersion=customMonaco?'monaco-custom-20261102':'osm-20261030-contour-cleanup';
 }

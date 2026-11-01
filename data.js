@@ -132,6 +132,36 @@ const GT3_CATALOG = [
     }
 ];
 
+
+// Track-day vehicles are production road cars, not GT3/F1 homologations.
+// Drivetrain layout is manufacturer-specified; tuning values below are gameplay balance.
+const ROAD_CATALOG = [
+    {
+        id:'vw_golf_gti',carClass:'ROAD',drivetrain:'FWD',engineLayout:'FR',driveTraction:0.92,driveRotation:0.92,
+        name:'Volkswagen Golf GTI',shortName:'Golf GTI',teamName:'Track Day · Volkswagen',
+        width:22,height:41,topSpeedKmh:250,accelStat:0.87,handlingStat:1.01,tireSaveStat:1.04,
+        gearFrac:[.28,.39,.50,.63,.76,.88,1],
+        livery:{primary:'#ed243b',secondary:'#1b2430',accent:'#e6e6e6',wing:'#171b25'},
+        drivers:[{name:'Тест-пилот GTI',number:50,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    },
+    {
+        id:'audi_rs3_road',carClass:'ROAD',drivetrain:'AWD',engineLayout:'FR',driveTraction:1.12,driveRotation:0.98,
+        name:'Audi RS 3 Sportback',shortName:'Audi RS 3',teamName:'Track Day · Audi',
+        width:23,height:43,topSpeedKmh:250,accelStat:1.06,handlingStat:1.05,tireSaveStat:1,
+        gearFrac:[.27,.38,.49,.61,.74,.87,1],
+        livery:{primary:'#2f76e6',secondary:'#101720',accent:'#e9eef4',wing:'#101720'},
+        drivers:[{name:'Тест-пилот RS3',number:33,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    },
+    {
+        id:'porsche_911_road',carClass:'ROAD',drivetrain:'RWD',engineLayout:'RR',driveTraction:1.03,driveRotation:1.06,
+        name:'Porsche 911 Carrera',shortName:'911 Carrera',teamName:'Track Day · Porsche',
+        width:23,height:43,topSpeedKmh:295,accelStat:1.08,handlingStat:1.10,tireSaveStat:1.02,
+        gearFrac:[.24,.34,.44,.55,.65,.76,.88,1],
+        livery:{primary:'#e1e1de',secondary:'#22252a',accent:'#e7b968',wing:'#16171b'},
+        drivers:[{name:'Тест-пилот 911',number:11,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    }
+];
+
 const F1_CATALOG = [
     {
         id: 'f1_redbull', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
@@ -266,6 +296,10 @@ const F1_CATALOG = [
 //   tire   — бережность к шинам (больше = износ медленнее)
 // ============================================================================
 const CAR_PERF = {
+    // Track day: illustrative game physics values, not manufacturer telemetry.
+    vw_golf_gti:{power:145,vmax:250,grip:1.16,aero:.12,brake:1.11,tire:1.08,note:'FWD: тяговое подруливание и недостаточная поворачиваемость под газом'},
+    audi_rs3_road:{power:188,vmax:250,grip:1.23,aero:.18,brake:1.20,tire:1.00,note:'AWD: лучшая тяга со старта и на выходе'},
+    porsche_911_road:{power:198,vmax:295,grip:1.27,aero:.25,brake:1.25,tire:1.03,note:'RWD: заднемоторная тяга, поворот под газом'},
     // ---- GT3 / WEC: балансировка по принципу BoP — у каждой машины свой характер ----
     aston_gt3:    { power: 300, vmax: 255, grip: 1.58, aero: 0.95, brake: 1.70, tire: 1.08, note: 'Универсал, бережёт шины' },
     audi_gt3:     { power: 310, vmax: 256, grip: 1.60, aero: 0.95, brake: 1.72, tire: 0.99, note: 'Стабильная и предсказуемая' },
@@ -294,10 +328,11 @@ const CAR_PERF = {
 };
 // Настройки по классам: обороты, передаточные отношения (доля vmax на красной зоне), время переключения
 const CLASS_CFG = {
+    ROAD:{redline:7000,idle:900,gearFrac:[.27,.39,.51,.64,.76,.88,1],upRpm:.95,shiftTime:.12,brakeAero:.28,rampers:'V6'},
     GT3: { redline: 7800,  idle: 1100, gearFrac: [0.30, 0.43, 0.57, 0.71, 0.85, 1.00],                     upRpm: 0.965, shiftTime: 0.09, brakeAero: 0.80, rampers: 'V8' },
     F1:  { redline: 15000, idle: 4500, gearFrac: [0.26, 0.35, 0.45, 0.55, 0.66, 0.77, 0.88, 1.00],         upRpm: 0.970, shiftTime: 0.04, brakeAero: 3.00, rampers: 'V6' }
 };
-for (const cat of [GT3_CATALOG, F1_CATALOG]) {
+for (const cat of [GT3_CATALOG, F1_CATALOG, ROAD_CATALOG]) {
     for (const spec of cat) {
         const p = CAR_PERF[spec.id];
         if (p) { spec.perf = p; spec.topSpeedKmh = Math.round(p.vmax); }
@@ -324,7 +359,7 @@ const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 const ENDURANCE_MINUTES = 20;
 
 // Грубая оценка времени круга для планирования тактики в гонке на время (сек)
-const EST_LAP_SEC = { GT3: [142, 140, 120, 152], F1: [112, 110, 92, 120] };
+const EST_LAP_SEC = { GT3: [142, 140, 120, 152], F1: [112, 110, 92, 120], ROAD: [220, 215, 185, 235] };
 
 // Планирование пит-стопов. arch: 'aggr' | 'bal' | 'eco'
 function planStints(laps, arch) {
@@ -497,5 +532,5 @@ TRACKS_DB.push({"id": "hungaroring", "name": "🇭🇺 Хунгароринг", 
 EST_LAP_SEC.GT3.push(130); EST_LAP_SEC.F1.push(101);
 TRACKS_DB.push({"id": "redbullring", "name": "🇦🇹 Ред Булл Ринг", "shortName": "Ред Булл Ринг", "desc": "Разгоны и шпильки · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 180, "y": 160}, {"x": 195, "y": 125}, {"x": 210, "y": 60}, {"x": 190, "y": 30}, {"x": 135, "y": 40}, {"x": 90, "y": 65}, {"x": 55, "y": 95}, {"x": 40, "y": 135}, {"x": 65, "y": 150}, {"x": 95, "y": 145}, {"x": 120, "y": 160}]});
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
-TRACKS_DB.push({"id":"monaco","name":"🇲🇨 Монако","shortName":"Монако","desc":"Детализированный городской контур: Sainte Dévote, Casino, Fairmont, тоннель, Piscine и Rascasse","scale":42,"pitSideSign":-1,"theme":{"grassBase":"#173c2c","grassAlt":"#143425","runoffColor":"#334155"},"drsZones":[{"detect":0.82,"start":0.86,"end":0.98}],"rawPoints":[{"x":58,"y":333},{"x":56,"y":300},{"x":57,"y":266},{"x":77,"y":233},{"x":91,"y":226},{"x":113,"y":230},{"x":173,"y":230},{"x":230,"y":230},{"x":290,"y":225},{"x":316,"y":214},{"x":328,"y":189},{"x":320,"y":150},{"x":341,"y":127},{"x":373,"y":99},{"x":395,"y":80},{"x":404,"y":74},{"x":406,"y":110},{"x":401,"y":146},{"x":392,"y":161},{"x":386,"y":182},{"x":390,"y":194},{"x":400,"y":194},{"x":408,"y":179},{"x":416,"y":137},{"x":428,"y":129},{"x":445,"y":131},{"x":451,"y":145},{"x":448,"y":161},{"x":431,"y":182},{"x":407,"y":205},{"x":373,"y":226},{"x":329,"y":240},{"x":282,"y":248},{"x":247,"y":253},{"x":234,"y":258},{"x":225,"y":249},{"x":217,"y":260},{"x":207,"y":267},{"x":194,"y":258},{"x":181,"y":262},{"x":152,"y":265},{"x":116,"y":265},{"x":105,"y":276},{"x":99,"y":300},{"x":98,"y":324},{"x":93,"y":350},{"x":91,"y":371},{"x":96,"y":390},{"x":113,"y":399},{"x":128,"y":414},{"x":138,"y":431},{"x":134,"y":440},{"x":118,"y":443},{"x":105,"y":436},{"x":94,"y":425},{"x":84,"y":432},{"x":79,"y":447},{"x":67,"y":451},{"x":60,"y":435},{"x":59,"y":403},{"x":61,"y":373}],"pitRoutePoints":[{"x":94,"y":425},{"x":90,"y":402},{"x":83,"y":374},{"x":79,"y":338},{"x":80,"y":308},{"x":82,"y":285},{"x":85,"y":261},{"x":83,"y":242}],"layoutVersion":"monaco-city-2026"});
+TRACKS_DB.push({"id":"monaco","name":"🇲🇨 Монако","shortName":"Монако","desc":"Городская трасса · 19 поворотов · гавань и тоннель · детальная схема","scale":23,"pitSideSign":-1,"theme":{"grassBase":"#173c2c","grassAlt":"#143425","runoffColor":"#334155"},"drsZones":[{"detect":0.82,"start":0.86,"end":0.98}],"rawPoints":[{"x":58,"y":333},{"x":56,"y":300},{"x":57,"y":266},{"x":77,"y":233},{"x":91,"y":226},{"x":113,"y":230},{"x":173,"y":230},{"x":230,"y":230},{"x":290,"y":225},{"x":316,"y":214},{"x":328,"y":189},{"x":320,"y":150},{"x":341,"y":127},{"x":373,"y":99},{"x":395,"y":80},{"x":404,"y":74},{"x":406,"y":110},{"x":401,"y":146},{"x":392,"y":161},{"x":386,"y":182},{"x":390,"y":194},{"x":400,"y":194},{"x":408,"y":179},{"x":416,"y":137},{"x":428,"y":129},{"x":445,"y":131},{"x":451,"y":145},{"x":448,"y":161},{"x":431,"y":182},{"x":407,"y":205},{"x":373,"y":226},{"x":329,"y":240},{"x":282,"y":248},{"x":247,"y":253},{"x":234,"y":258},{"x":225,"y":249},{"x":217,"y":260},{"x":207,"y":267},{"x":194,"y":258},{"x":181,"y":262},{"x":152,"y":265},{"x":116,"y":265},{"x":105,"y":276},{"x":99,"y":300},{"x":98,"y":324},{"x":93,"y":350},{"x":91,"y":371},{"x":96,"y":390},{"x":113,"y":399},{"x":128,"y":414},{"x":138,"y":431},{"x":134,"y":440},{"x":118,"y":443},{"x":105,"y":436},{"x":94,"y":425},{"x":84,"y":432},{"x":79,"y":447},{"x":67,"y":451},{"x":60,"y":435},{"x":59,"y":403},{"x":61,"y":373}],"pitRoutePoints":[{"x":94,"y":425},{"x":90,"y":402},{"x":83,"y":374},{"x":79,"y":338},{"x":80,"y":308},{"x":82,"y":285},{"x":85,"y":261},{"x":83,"y":242}],"layoutVersion":"monaco-custom-v2"});
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
