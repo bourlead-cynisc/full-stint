@@ -165,7 +165,23 @@ function buildActiveTrackGeometry() {
     // On the three surveyed circuits the OSM pit-lane centerline shares the
     // same projection as the real outline. Keep that route and anchor its
     // ends to the racing line; simplified maps use the clear straight below.
-    if(trk.hasRealContour&&trk.realPitPoints?.length>=2) {
+    // Monaco uses a hand-mapped harbour-side pit road matching the detailed circuit.
+    // Convert its map coordinates using the very same transformation as the asphalt.
+    if(trk.pitRoutePoints?.length>=2){
+        const route=trk.pitRoutePoints.map(p=>({x:(p.x-trk.rawPoints[0].x)*trk.scale,y:(p.y-trk.rawPoints[0].y)*trk.scale}));
+        const start=nearestTrackIndex(route[0]),end=nearestTrackIndex(route.at(-1));
+        const span=(end-start+totalSamples)%totalSamples;
+        if(span>=4&&span<totalSamples/3){
+            const startRoad=trackSamples[start],endRoad=trackSamples[end];
+            surveyedPitWaypoints=sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT);
+            const midIndex=(start+Math.floor(span*.5))%totalSamples;
+            const midRoad=trackSamples[midIndex],midLane=surveyedPitWaypoints[Math.floor(PIT_WAYPOINT_COUNT*.5)];
+            const dot=(midLane.x-midRoad.x)*midRoad.nx+(midLane.y-midRoad.y)*midRoad.ny;
+            pitSection={start,end,span,side:dot>=0?1:-1};
+            oldStartIndex=nearestTrackIndex(midLane);
+        }
+    }
+    if(!surveyedPitWaypoints&&trk.hasRealContour&&trk.realPitPoints?.length>=2) {
         let routePoints=trk.realPitPoints;
         let start=nearestTrackIndex(routePoints[0]),end=nearestTrackIndex(routePoints.at(-1));
         let span=(end-start+totalSamples)%totalSamples;
@@ -550,6 +566,7 @@ function drawTrack(ctx) {
     const centerIdx = playerCar && playerCar.lastSampleIdx >= 0 ? playerCar.lastSampleIdx : 0;
     const camX = playerCar ? playerCar.x : 0, camY = playerCar ? playerCar.y : 0;
     drawBackgroundWorld(ctx, camX, camY);
+    if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,camX,camY);
     drawGrandstands(ctx, camX, camY);
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -733,4 +750,38 @@ function isPitEntryProgress(norm,previousNorm) {
     // Pit entry is a one-way crossing. The previous symmetric window could
     // start the lane 150 px early or after the car had already passed it.
     return (previous<0&&current>=0)||(current<0&&current>=-tolerance);
+}
+
+// Monaco scenery uses the local map-space coordinates from the circuit definition.
+// Draw behind asphalt so the harbour, buildings and roads cannot obstruct the race line.
+function drawMonacoScenery(ctx,camX,camY){
+    const trk=TRACKS_DB[selectedTrackIndex],ref=trk.rawPoints[0],s=trk.scale;
+    const X=x=>(x-ref.x)*s,Y=y=>(y-ref.y)*s;
+    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<3200;
+    ctx.save();
+    // Mediterranean harbour basin south of the tunnel and Piscine complex.
+    const water=[[160,285],[290,280],[390,250],[480,210],[520,210],[520,520],[160,520]];
+    ctx.beginPath();water.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.closePath();
+    ctx.fillStyle='#204c60';ctx.fill();
+    ctx.strokeStyle='#a9a89c';ctx.lineWidth=13;ctx.stroke();
+    // Marina piers and moored boats, deliberately static geometry.
+    for(let i=0;i<9;i++){
+        const x=X(190+i*29),y=Y(320+i%3*15);
+        if(!visible(x,y))continue;
+        ctx.strokeStyle='#96a5a4';ctx.lineWidth=7;
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,Y(387));ctx.stroke();
+        for(let j=0;j<4;j++){
+            ctx.save();ctx.translate(x+(j%2?15:-15),y+19+j*13);
+            ctx.fillStyle='#ecf0eb';ctx.beginPath();ctx.ellipse(0,0,6,11,0,0,Math.PI*2);ctx.fill();ctx.restore();
+        }
+    }
+    // Blocks above Casino and Beau Rivage.
+    for(let row=0;row<3;row++)for(let col=0;col<13;col++){
+        const x=X(100+col*24),y=Y(28+row*20);
+        if(!visible(x,y))continue;
+        ctx.fillStyle=(row+col)%3===0?'#a8a18f':'#797c72';
+        ctx.fillRect(x,y,18*s,13*s);
+        ctx.strokeStyle='#d0c2a5';ctx.lineWidth=2;ctx.strokeRect(x,y,18*s,13*s);
+    }
+    ctx.restore();
 }
