@@ -206,10 +206,12 @@ function buildActiveTrackGeometry() {
             }
             const candidate=sampleOpenPitPath(laneRaw,PIT_WAYPOINT_COUNT);
             if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=candidate;
-            const midIndex=(start+Math.floor(span*.5))%totalSamples;
-            const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
-            const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
+            // Invalid surveyed paths must never be dereferenced. The automatically
+            // selected clean pit section remains the fallback for this circuit.
             if(surveyedPitWaypoints){
+                const midIndex=(start+Math.floor(span*.5))%totalSamples;
+                const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
+                const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
                 pitSection={start,end,span,side:sideDot>=0?1:-1};
                 oldStartIndex=nearestTrackIndex(laneMid);
             }
@@ -757,7 +759,7 @@ function isPitEntryProgress(norm,previousNorm) {
 function drawMonacoScenery(ctx,camX,camY){
     const trk=TRACKS_DB[selectedTrackIndex],ref=trk.rawPoints[0],s=trk.scale;
     const X=x=>(x-ref.x)*s,Y=y=>(y-ref.y)*s;
-    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<3200;
+    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<5000 || (typeof topFollow!=='undefined'&&topFollow==='TRACK');
     ctx.save();
     // Mediterranean harbour basin south of the tunnel and Piscine complex.
     const water=[[160,285],[290,280],[390,250],[480,210],[520,210],[520,520],[160,520]];
