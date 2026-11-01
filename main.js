@@ -354,7 +354,8 @@ function dispatchGamepadAction(action) {
 }
 function pollGamepad() {
     const pads=navigator.getGamepads?navigator.getGamepads():[];
-    const gp=Array.from(pads).find(p=>p&&p.connected);
+    const connected=Array.from(pads).filter(p=>p&&p.connected);
+    const gp=connected.find(p=>Array.from(p.buttons).some(button=>button&&(button.pressed||(button.value||0)>0.2))||(p.axes||[]).some(axis=>Math.abs(axis)>0.2))||connected[0];
     if(!gp) {
         lastGamepadButtons=[];gamepadNavPrev={up:false,down:false,left:false,right:false};
         updateGamepadStatus(null);

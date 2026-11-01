@@ -127,7 +127,8 @@ function renderGamepadBindings() {
 function captureGamepadBinding(gp, justPressed) {
     if(capturingGamepadBinding===null || !gp)return false;
     if(!gamepadCaptureArmed) {
-        const neutral=(gp.buttons||[]).every(b=>(b?.value||0)<0.12) && (gp.axes||[]).every(v=>Math.abs(v)<0.28);
+        const axesForNeutral=capturingGamepadBinding==='steer'?(gp.axes||[]).slice(0,2):[];
+        const neutral=(gp.buttons||[]).every(b=>(b?.value||0)<0.12) && axesForNeutral.every(v=>Math.abs(v)<0.28);
         if(neutral)gamepadCaptureArmed=true;
         return true;
     }
