@@ -132,6 +132,36 @@ const GT3_CATALOG = [
     }
 ];
 
+
+// Track-day vehicles are production road cars, not GT3/F1 homologations.
+// Drivetrain layout is manufacturer-specified; tuning values below are gameplay balance.
+const ROAD_CATALOG = [
+    {
+        id:'vw_golf_gti',carClass:'ROAD',drivetrain:'FWD',engineLayout:'FR',driveTraction:0.92,driveRotation:0.92,
+        name:'Volkswagen Golf GTI',shortName:'Golf GTI',teamName:'Track Day · Volkswagen',
+        width:22,height:41,topSpeedKmh:250,accelStat:0.87,handlingStat:1.01,tireSaveStat:1.04,
+        gearFrac:[.28,.39,.50,.63,.76,.88,1],
+        livery:{primary:'#ed243b',secondary:'#1b2430',accent:'#e6e6e6',wing:'#171b25'},
+        drivers:[{name:'Тест-пилот GTI',number:50,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    },
+    {
+        id:'audi_rs3_road',carClass:'ROAD',drivetrain:'AWD',engineLayout:'FR',driveTraction:1.12,driveRotation:0.98,
+        name:'Audi RS 3 Sportback',shortName:'Audi RS 3',teamName:'Track Day · Audi',
+        width:23,height:43,topSpeedKmh:250,accelStat:1.06,handlingStat:1.05,tireSaveStat:1,
+        gearFrac:[.27,.38,.49,.61,.74,.87,1],
+        livery:{primary:'#2f76e6',secondary:'#101720',accent:'#e9eef4',wing:'#101720'},
+        drivers:[{name:'Тест-пилот RS3',number:33,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    },
+    {
+        id:'porsche_911_road',carClass:'ROAD',drivetrain:'RWD',engineLayout:'RR',driveTraction:1.03,driveRotation:1.06,
+        name:'Porsche 911 Carrera',shortName:'911 Carrera',teamName:'Track Day · Porsche',
+        width:23,height:43,topSpeedKmh:295,accelStat:1.08,handlingStat:1.10,tireSaveStat:1.02,
+        gearFrac:[.24,.34,.44,.55,.65,.76,.88,1],
+        livery:{primary:'#e1e1de',secondary:'#22252a',accent:'#e7b968',wing:'#16171b'},
+        drivers:[{name:'Тест-пилот 911',number:11,tier:'TEST',skill:1,cornerMult:1,aggression:.72}]
+    }
+];
+
 const F1_CATALOG = [
     {
         id: 'f1_redbull', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
@@ -266,6 +296,10 @@ const F1_CATALOG = [
 //   tire   — бережность к шинам (больше = износ медленнее)
 // ============================================================================
 const CAR_PERF = {
+    // Track day: illustrative game physics values, not manufacturer telemetry.
+    vw_golf_gti:{power:145,vmax:250,grip:1.16,aero:.12,brake:1.11,tire:1.08,note:'FWD: тяговое подруливание и недостаточная поворачиваемость под газом'},
+    audi_rs3_road:{power:188,vmax:250,grip:1.23,aero:.18,brake:1.20,tire:1.00,note:'AWD: лучшая тяга со старта и на выходе'},
+    porsche_911_road:{power:198,vmax:295,grip:1.27,aero:.25,brake:1.25,tire:1.03,note:'RWD: заднемоторная тяга, поворот под газом'},
     // ---- GT3 / WEC: балансировка по принципу BoP — у каждой машины свой характер ----
     aston_gt3:    { power: 300, vmax: 255, grip: 1.58, aero: 0.95, brake: 1.70, tire: 1.08, note: 'Универсал, бережёт шины' },
     audi_gt3:     { power: 310, vmax: 256, grip: 1.60, aero: 0.95, brake: 1.72, tire: 0.99, note: 'Стабильная и предсказуемая' },
@@ -294,10 +328,11 @@ const CAR_PERF = {
 };
 // Настройки по классам: обороты, передаточные отношения (доля vmax на красной зоне), время переключения
 const CLASS_CFG = {
+    ROAD:{redline:7000,idle:900,gearFrac:[.27,.39,.51,.64,.76,.88,1],upRpm:.95,shiftTime:.12,brakeAero:.28,rampers:'V6'},
     GT3: { redline: 7800,  idle: 1100, gearFrac: [0.30, 0.43, 0.57, 0.71, 0.85, 1.00],                     upRpm: 0.965, shiftTime: 0.09, brakeAero: 0.80, rampers: 'V8' },
     F1:  { redline: 15000, idle: 4500, gearFrac: [0.26, 0.35, 0.45, 0.55, 0.66, 0.77, 0.88, 1.00],         upRpm: 0.970, shiftTime: 0.04, brakeAero: 3.00, rampers: 'V6' }
 };
-for (const cat of [GT3_CATALOG, F1_CATALOG]) {
+for (const cat of [GT3_CATALOG, F1_CATALOG, ROAD_CATALOG]) {
     for (const spec of cat) {
         const p = CAR_PERF[spec.id];
         if (p) { spec.perf = p; spec.topSpeedKmh = Math.round(p.vmax); }
@@ -324,7 +359,7 @@ const F1_POINTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 const ENDURANCE_MINUTES = 20;
 
 // Грубая оценка времени круга для планирования тактики в гонке на время (сек)
-const EST_LAP_SEC = { GT3: [142, 140, 120, 152], F1: [112, 110, 92, 120] };
+const EST_LAP_SEC = { GT3: [142, 140, 120, 152], F1: [112, 110, 92, 120], ROAD: [220, 215, 185, 235] };
 
 // Планирование пит-стопов. arch: 'aggr' | 'bal' | 'eco'
 function planStints(laps, arch) {
