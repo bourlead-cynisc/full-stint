@@ -10,7 +10,7 @@ for(const track of TRACKS_DB) {
     const scale=source.outline?source.lengthM/mappedLength:1;
     // Real surveyed outlines dwarf the hand-drawn layouts in the game world.
     // Keep their shape and aspect ratio while bringing them into the same visual scale.
-    const layoutScale=source.outline?0.78:1;
+    const layoutScale=1; // Preserve surveyed race-course scale instead of shrinking 22%.
     const project=p=>{const q=baseProject(p);return {x:q.x*scale*layoutScale,y:q.y*scale*layoutScale};};
     const simplifyOpenPolyline=(points,tolerance)=>{
         if(points.length<=2)return points;
