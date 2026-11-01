@@ -437,9 +437,11 @@ function drawCarThumb(canvasEl, spec) {
     if (img) {
         const h = canvasEl.height - 4, w = h * img.width / img.height;
         c.drawImage(img, -w / 2, -h / 2, w, h);
+        drawCarModelDetails(c,spec,spec.livery,spec.drivers?.[0]?.number||1,w,h);
     } else {
         c.scale(1.05, 1.05);
         renderCarBody(c, spec, spec.livery, 'soft', false, false, 1);
+        drawCarModelDetails(c,spec,spec.livery,spec.drivers?.[0]?.number||1,spec.width,spec.height);
     }
     c.restore();
 }
@@ -523,7 +525,7 @@ function renderGarageUI() {
             const value = score(p[key], key);
             return `<div class="car-stat-bar" title="${lbl}: ${value}% от лучшего показателя класса"><span>${lbl}</span><b>${value}%</b><span class="stat-track"><span class="stat-fill" style="width:${value}%"></span></span></div>`;
         };
-        card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
+        card.innerHTML = `<canvas class="car-thumb" width="72" height="112"></canvas>
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
             <div class="car-note">${p.note}</div>
@@ -944,6 +946,16 @@ function updateHUD() {
     const drsEl = document.getElementById('dashDRS');
     if (p.spec.carClass === 'F1') { drsEl.textContent = p.drsActive ? 'ОТКР.' : 'ЗАКР.'; drsEl.style.color = p.drsActive ? '#00e676' : '#64748b'; }
     else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
+    const aeroEl=document.getElementById('dashAero');
+    const f1=p.spec.carClass==='F1';
+    const towPct=Math.round((p.slipstream||0)*(f1?3.5:2.2));
+    const dirtyPct=Math.round((p.dirtyAir||0)*(f1?20:12));
+    const aeroParts=[];
+    if(towPct>=1)aeroParts.push(`СЛИП +${towPct}%`);
+    if(dirtyPct>=1)aeroParts.push(`ПРИЖИМ −${dirtyPct}%`);
+    aeroEl.textContent=aeroParts.join(' · ')||'ЧИСТЫЙ';
+    aeroEl.style.color=dirtyPct>towPct?'#f0b76b':(towPct?'#75d7bc':'#9aa4b2');
+    aeroEl.title='Слипстрим снижает сопротивление и повышает максимальную скорость. Грязный воздух уменьшает прижим и сцепление в поворотах.';
 
     let plan = '—';
     if (currentSession === 'RACE') {

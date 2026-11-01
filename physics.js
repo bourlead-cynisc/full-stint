@@ -31,6 +31,47 @@ function getTireGripMultiplier(healthPct, tempC) {
     return wearGrip * tempGrip;
 }
 
+function wakeFalloff(offset, radius) {
+    const t=Math.max(0,Math.min(1,1-offset/Math.max(1,radius)));
+    return t*t*(3-2*t);
+}
+
+// Aerodynamic wake is measured from the leader's rear bumper and fades across
+// the lane. A tow helps straight-line speed; turbulent air reduces downforce.
+function getAerodynamicWake(car) {
+    if(!car||!allCars||allCars.length<2)return {slipstream:0,dirtyAir:0};
+    const forwardX=Math.sin(car.angle),forwardY=-Math.cos(car.angle);
+    const sideX=Math.cos(car.angle),sideY=Math.sin(car.angle);
+    const speedMs=Math.abs(car.velocity||0)*MS;
+    const speedFactor=Math.max(0,Math.min(1,(speedMs-24)/28));
+    if(speedFactor<=0)return {slipstream:0,dirtyAir:0};
+
+    let slipstream=0,dirtyAir=0;
+    for(const other of allCars) {
+        if(other===car||other.pitPhase!=='none')continue;
+        const dx=other.x-car.x,dy=other.y-car.y;
+        const along=dx*forwardX+dy*forwardY;
+        const gap=along-(car.height+other.height)*0.5;
+        if(gap<0||gap>480)continue;
+        const otherForwardX=Math.sin(other.angle),otherForwardY=-Math.cos(other.angle);
+        const direction=forwardX*otherForwardX+forwardY*otherForwardY;
+        const alignment=Math.max(0,Math.min(1,(direction-0.52)/0.42));
+        if(alignment<=0)continue;
+        const otherSpeed=Math.abs(other.velocity||0)*MS;
+        const leaderSpeedFactor=Math.max(0,Math.min(1,(otherSpeed-18)/27));
+        const pairSpeed=Math.min(speedFactor,leaderSpeedFactor);
+        if(pairSpeed<=0)continue;
+        const lateral=Math.abs(dx*sideX+dy*sideY);
+        const dirtyRange=Math.max(0,Math.min(1,(480-gap)/440));
+        const slipRange=Math.max(0,Math.min(1,(350-gap)/325));
+        const dirtyLane=wakeFalloff(lateral,car.width*0.62+other.width*0.62+gap*0.11);
+        const slipLane=wakeFalloff(lateral,car.width*0.52+other.width*0.52+gap*0.075);
+        dirtyAir=Math.max(dirtyAir,dirtyRange*dirtyLane*pairSpeed*alignment);
+        slipstream=Math.max(slipstream,Math.pow(slipRange,1.15)*slipLane*pairSpeed*alignment);
+    }
+    return {slipstream,dirtyAir};
+}
+
 // Нормированная мощность двигателя от оборотов r (1 = красная зона)
 const POWER_PTS = [[0, 0.10], [0.14, 0.20], [0.30, 0.46], [0.50, 0.73], [0.70, 0.92], [0.85, 1.00], [0.95, 0.96], [1.00, 0.90]];
 function powerCurve(r) {
@@ -164,6 +205,7 @@ class Car {
         this.aiBlockedTime = 0; this.aiRecoveryTime = 0;
         this.aiLane=0;this.aiMode="RACING";this.aiPassSide=0;this.aiDefenseUsed=false;this.aiDefenseLane=null;this.aiYieldUntil=0;this.aiNextMistake=0;this.aiErrorTime=0;
         this.hitCooldown = 0; this.slip = 0; this.braking = false; this.drsActive = false;
+        this.slipstream = 0; this.dirtyAir = 0;
         this.timingStarted = true; this.progressAcc = 0; this.prevNorm = undefined;
         this.lastSampleIdx = -1; this.wearScale = 1; this.aiConf = 1; this.yawRate = 0;
         this.form = this.isPlayer ? 1 : (0.987 + Math.random() * 0.026);     // «форма дня»: ±1,3 % к темпу ИИ в каждой гонке
@@ -317,7 +359,9 @@ class Car {
         const hb = HC().hb;
         const surfaceGrip = (offTrack ? 0.55 : 1) * (1 - 0.25 * this.suspensionDamage);
         const gA = G * this.perf.grip * surfaceGrip * hb * tg * skillUse * conf2 * (1 - 0.15 * this.wingDamage);
-        const gAero = G * this.perf.aero * 1.45 * this.character.aeroResponse * this.aeroCondition * surfaceGrip * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
+        const dirtyAirLoss=this.spec.carClass==='F1'?0.20:0.12;
+        const aeroWakeFactor=1-(this.dirtyAir||0)*dirtyAirLoss;
+        const gAero = G * this.perf.aero * 1.45 * this.character.aeroResponse * this.aeroCondition * aeroWakeFactor * surfaceGrip * hb * skillUse * conf2 * (this.spec.carClass === 'F1' ? 0.82 : 1);
         const vmax2 = this.vmaxMs * this.vmaxMs;
         const qNow = Math.min(1.2, vms * vms / vmax2);
         const lateralAuthority=(gA+gAero*qNow)/Math.max(vms,2.5);
@@ -343,11 +387,12 @@ class Car {
             const recoverySteer=Math.abs(lateral)>14?-Math.sign(lateral)*.7:-steer*.65;
             return {thr:0,brake:1,steer:recoverySteer,manual:false,reverse:true};
         }
-        const aBrCap = (this.brake0 + this.brakeAero * qNow) * tg * G * Math.sqrt(hb) * surfaceGrip;
+        const aBrCap = (this.brake0 + this.brakeAero * qNow * aeroWakeFactor) * tg * G * Math.sqrt(hb) * surfaceGrip;
         // Plan for only part of the available braking force. This leaves room
         // for steering, traffic, worn tires and the model's frame-by-frame delay.
         const aBr = (this.spec.carClass === 'F1' ? 0.42 : 0.48) * aBrCap;
-        const vTop = this.vmaxMs * comp.speedMult;
+        const towTopSpeedBonus=(this.slipstream||0)*(this.spec.carClass==='F1'?0.035:0.022);
+        const vTop = this.vmaxMs * comp.speedMult * (1+towTopSpeedBonus);
         let vAllow = vTop;
         let reqDecel = 0;
         for (let j = 0; j < Math.min(N, 360); j++) {
@@ -367,7 +412,7 @@ class Car {
         if(!Number.isFinite(followV))vAllow=Math.max(vAllow,2.0);
         if (this.tireHealth < TIRE_CLIFF_PCT * 0.6) vAllow *= 0.94;
 
-        vAllow=Math.min(vAllow,this.vmaxMs*Math.min(1,aiSettings.pace/100));
+        vAllow=Math.min(vAllow,this.vmaxMs*Math.min(1,aiSettings.pace/100)*(1+towTopSpeedBonus));
         this.dbgVAllow = vAllow;
         let thr = 0, brake = 0;
         if (reqDecel > 0.9 * aBr) brake = Math.min(1, 0.2 + reqDecel / (0.85 * aBrCap));
@@ -542,7 +587,10 @@ class Car {
                 this.startPit(this.isPlayer || this.pitRequested ? this.nextCompound : (scheduled?.tire || 'medium'));
             }
         }
-        if (this.pitPhase !== 'none') { this.updatePit(dt); return; }
+        if (this.pitPhase !== 'none') { this.slipstream=this.dirtyAir=0;this.updatePit(dt); return; }
+
+        const wake=getAerodynamicWake(this);
+        this.slipstream=wake.slipstream;this.dirtyAir=wake.dirtyAir;
 
         // ---------- выбор источника управления ----------
         let ctl;
@@ -573,7 +621,9 @@ class Car {
         const wingLoss = this.aeroCondition;
         const surf = (offTrack ? 0.55 : 1.0) * (1 - 0.25 * this.suspensionDamage);
         const hc = HC();
-        const gripG = (this.perf.grip * comp.gripMult * tireGrip * (1 - 0.28 * handbrake) + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse) * surf * hc.hb;
+        const dirtyAirLoss=this.spec.carClass==='F1'?0.20:0.12;
+        const aeroWakeFactor=1-this.dirtyAir*dirtyAirLoss;
+        const gripG = (this.perf.grip * comp.gripMult * tireGrip * (1 - 0.28 * handbrake) + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse * aeroWakeFactor) * surf * hc.hb;
         const gripMax = Math.max(0.3, gripG) * G;                    // м/с²
 
         // ---------- продольная динамика ----------
@@ -588,12 +638,13 @@ class Car {
         if (this.gear >= 1 && ctl.thr < 0.05 && vms > 2) aEB = (1.2 + 3.6 * Math.min(1.1, this.rpm)) * (this.spec.carClass === 'F1' ? 0.9 : 1.0);
         if (redline && vms > 2) aEB = Math.max(aEB, 5);
         if (ctl.brake > 0.01 && vmsSigned > 0.3) {
-            const bMax = (this.brake0 + this.brakeAero * q) * tireGrip * comp.gripMult * surf * G * Math.sqrt(hc.hb);
+            const bMax = (this.brake0 + this.brakeAero * q * aeroWakeFactor) * tireGrip * comp.gripMult * surf * G * Math.sqrt(hc.hb);
             aBrk = ctl.brake * Math.min(bMax, gripMax * 1.15) * circle;
         }
         // Rear-axle lock gives the car a short, controlled rotation under steering.
         if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (2.2 + 1.8 * q) * circle;
-        const dragMul = this.drsActive ? 0.80 : 1.0;
+        const towDragMul=1-(this.slipstream||0)*(this.spec.carClass==='F1'?0.15:0.095);
+        const dragMul = (this.drsActive ? 0.80 : 1.0) * towDragMul;
         let aDrag = this.dragK * dragMul * (1 + 0.12 * this.bodyDamage) * vms * vms + 0.12;
         if(Math.abs(this.impactSpin)>.1)aDrag+=Math.min(gripMax*.6,Math.abs(this.dx*Math.cos(this.angle)+this.dy*Math.sin(this.angle))*MS*.8);
         if (vms < 0.05) aDrag = 0;
@@ -610,7 +661,8 @@ class Car {
         }
         this.aLong = (newV - vmsSigned) / dt;
         // потолок скорости (DRS/шины слегка влияют)
-        const topMs = this.vmaxMs * comp.speedMult * (this.drsActive ? 1.03 : 1.0) * (1 - 0.06 * this.wingDamage);
+        const towTopSpeedBonus=(this.slipstream||0)*(this.spec.carClass==='F1'?0.035:0.022);
+        const topMs = this.vmaxMs * comp.speedMult * (this.drsActive ? 1.03 : 1.0) * (1+towTopSpeedBonus) * (1 - 0.06 * this.wingDamage);
         if (newV > topMs) newV = newV + (topMs - newV) * 0.2;
         this.velocity = newV / MS;
 
