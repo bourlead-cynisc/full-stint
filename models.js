@@ -169,51 +169,6 @@ function renderCarBody(ctx, spec, livery, compoundKey = 'soft', isBraking = fals
     ctx.fillRect(-w * 0.42, h * 0.455, w * 0.84, 2.4);
 }
 
-function drawCarModelDetails(ctx, spec, livery, driverNumber = 1, w = spec.width, h = spec.height, isBraking = false, drsActive = false) {
-    const line=Math.max(0.65,Math.min(1.15,w*0.04));
-    ctx.save();
-    ctx.lineCap='round';ctx.lineJoin='round';
-    if(spec.carClass==='F1') {
-        ctx.globalAlpha=0.62;ctx.strokeStyle=livery.secondary||'#fff';ctx.lineWidth=line*1.2;
-        ctx.beginPath();
-        ctx.moveTo(-w*0.27,-h*0.06);ctx.quadraticCurveTo(-w*0.24,h*0.08,-w*0.15,h*0.30);
-        ctx.moveTo(w*0.27,-h*0.06);ctx.quadraticCurveTo(w*0.24,h*0.08,w*0.15,h*0.30);
-        ctx.stroke();
-        ctx.globalAlpha=0.75;ctx.strokeStyle='rgba(235,244,250,.92)';ctx.lineWidth=line;
-        ctx.beginPath();ctx.moveTo(-w*0.10,-h*0.01);ctx.quadraticCurveTo(0,-h*0.17,w*0.10,-h*0.01);ctx.stroke();
-        ctx.globalAlpha=0.78;ctx.strokeStyle=drsActive?'#22e6a0':(livery.accent||'#fff');ctx.lineWidth=line;
-        ctx.beginPath();ctx.moveTo(-w*0.31,h*0.425);ctx.lineTo(w*0.31,h*0.425);ctx.stroke();
-        ctx.globalAlpha=0.65;ctx.fillStyle=livery.accent||'#fff';
-        ctx.fillRect(-w*0.035,-h*0.39,w*0.07,h*0.10);
-    } else {
-        ctx.globalAlpha=0.34;ctx.fillStyle='rgba(127,205,235,.55)';
-        roundedRectPath(ctx,-w*0.285,-h*0.205,w*0.57,h*0.30,w*0.12);ctx.fill();
-        ctx.globalAlpha=0.68;ctx.strokeStyle='rgba(226,243,250,.82)';ctx.lineWidth=line*0.8;
-        ctx.beginPath();ctx.moveTo(-w*0.18,-h*0.17);ctx.lineTo(w*0.17,-h*0.17);ctx.stroke();
-
-        ctx.globalAlpha=0.72;ctx.strokeStyle=livery.secondary||'#fff';ctx.lineWidth=line*1.15;
-        ctx.beginPath();
-        ctx.moveTo(-w*0.43,-h*0.12);ctx.lineTo(-w*0.43,h*0.31);
-        ctx.moveTo(w*0.43,-h*0.12);ctx.lineTo(w*0.43,h*0.31);
-        ctx.stroke();
-
-        ctx.globalAlpha=0.88;ctx.fillStyle='rgba(245,250,255,.92)';
-        roundedRectPath(ctx,-w*0.38,-h*0.445,w*0.17,Math.max(1.3,line*1.8),line*0.7);ctx.fill();
-        roundedRectPath(ctx,w*0.21,-h*0.445,w*0.17,Math.max(1.3,line*1.8),line*0.7);ctx.fill();
-        ctx.globalAlpha=isBraking?0.95:0.6;ctx.fillStyle='#ff4050';
-        roundedRectPath(ctx,-w*0.36,h*0.438,w*0.18,Math.max(1.3,line*1.5),line*0.6);ctx.fill();
-        roundedRectPath(ctx,w*0.18,h*0.438,w*0.18,Math.max(1.3,line*1.5),line*0.6);ctx.fill();
-
-        const number=String(driverNumber||'');
-        if(number) {
-            ctx.globalAlpha=0.82;ctx.font=`700 ${Math.max(4.5,Math.min(7,w*0.22))}px system-ui,sans-serif`;
-            ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=1.1;ctx.strokeStyle='rgba(8,12,18,.86)';ctx.fillStyle='#fff';
-            ctx.strokeText(number,0,h*0.105);ctx.fillText(number,0,h*0.105);
-        }
-    }
-    ctx.restore();
-}
-
 function renderSafetyCar(ctx) {
     const w = 22, h = 45;
     ctx.save();

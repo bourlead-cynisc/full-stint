@@ -437,11 +437,9 @@ function drawCarThumb(canvasEl, spec) {
     if (img) {
         const h = canvasEl.height - 4, w = h * img.width / img.height;
         c.drawImage(img, -w / 2, -h / 2, w, h);
-        drawCarModelDetails(c,spec,spec.livery,spec.drivers?.[0]?.number||1,w,h);
     } else {
         c.scale(1.05, 1.05);
         renderCarBody(c, spec, spec.livery, 'soft', false, false, 1);
-        drawCarModelDetails(c,spec,spec.livery,spec.drivers?.[0]?.number||1,spec.width,spec.height);
     }
     c.restore();
 }
@@ -525,7 +523,7 @@ function renderGarageUI() {
             const value = score(p[key], key);
             return `<div class="car-stat-bar" title="${lbl}: ${value}% от лучшего показателя класса"><span>${lbl}</span><b>${value}%</b><span class="stat-track"><span class="stat-fill" style="width:${value}%"></span></span></div>`;
         };
-        card.innerHTML = `<canvas class="car-thumb" width="72" height="112"></canvas>
+        card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
             <div class="car-note">${p.note}</div>

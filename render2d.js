@@ -13,7 +13,7 @@ function loadSprites() {
 
 function spriteDims(car) {
     const img = spriteImgs[car.spec.id];
-    const h = car.height * 1.20;
+    const h = car.height * 1.16;
     return { img, h, w: h * img.width / img.height };
 }
 
@@ -48,7 +48,6 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
     const img = spriteImgs[car.spec.id];
     if (!img) {
         renderCarBody(ctx, car.spec, car.livery, car.compound, car.braking, car.drsActive, car.driverNumber);
-        drawCarModelDetails(ctx,car.spec,car.livery,car.driverNumber,car.width,car.height,car.braking,car.drsActive);
         return;
     }
     const { h, w } = spriteDims(car);
@@ -67,7 +66,6 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
 
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(spr, -w / 2, -h / 2, w, h);
-    drawCarModelDetails(ctx,car.spec,car.livery,car.driverNumber,w,h,car.braking,car.drsActive);
 
     if (car.braking) {
         const gl = ctx.createRadialGradient(0, h / 2, 0, 0, h / 2, w * 0.9);

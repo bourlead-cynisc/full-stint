@@ -576,10 +576,10 @@ body {background:radial-gradient(ellipse at 50% 0%,#28332d 0%,#171b19 42%,var(--
 .garage-track-section .track-info-title {font-size:9.5px;line-height:1.2;white-space:nowrap;}
 .garage-track-section .track-info-sub {margin-top:2px;color:#a19f94;font-size:7.5px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;}
 .garage-car-section .car-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;max-height:245px;overflow-y:auto;margin:0;padding:2px;align-content:start;}
-.garage-car-section .car-item {height:74px;min-width:0;padding:5px 6px;display:grid;grid-template-columns:36px minmax(0,1fr);grid-template-rows:11px 9px 12px 10px 10px;row-gap:1px;column-gap:5px;align-content:center;justify-items:start;background:#1c201d;border:1px solid #343a34;border-radius:8px;box-shadow:none;}
+.garage-car-section .car-item {height:74px;min-width:0;padding:5px 6px;display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-rows:11px 9px 12px 10px 10px;row-gap:1px;column-gap:5px;align-content:center;justify-items:start;background:#1c201d;border:1px solid #343a34;border-radius:8px;box-shadow:none;}
 .garage-car-section .car-item:hover {border-color:#888374;background:#242823;}
 .garage-car-section .car-item.selected {border-color:var(--fs-accent);background:#30251f;box-shadow:inset 3px 0 var(--fs-accent);}
-.garage-car-section .car-thumb {grid-column:1;grid-row:1/6;width:32px;height:54px;margin:0;align-self:center;}
+.garage-car-section .car-thumb {grid-column:1;grid-row:1/6;width:28px;height:50px;margin:0;align-self:center;}
 .garage-car-section .car-item-title {grid-column:2;grid-row:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;text-align:left;font-size:9px;}
 .garage-car-section .car-item-sub {grid-column:2;grid-row:2;overflow:hidden;text-overflow:ellipsis;margin:1px 0 0;color:var(--fs-amber);text-align:left;font-size:7.5px;white-space:nowrap;}
 .garage-car-section .car-note {grid-column:2;grid-row:3;align-self:center;max-height:13px;overflow:hidden;margin:0;color:#aaa99f;text-align:left;font-size:6.6px;white-space:nowrap;}
