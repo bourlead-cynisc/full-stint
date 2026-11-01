@@ -1,0 +1,12 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Full Stint — Drive & Pit QA</title>
+<style>body{background:#0f181c;color:#e2edf0;font:15px/1.5 monospace;padding:22px}iframe{width:900px;max-width:95vw;height:490px;border:1px solid #7a8f96}pre{white-space:pre-wrap;background:#17262b;padding:16px;border-radius:10px}</style>
+<h1>Full Stint 2.1 — Проверка привода и ручника</h1><pre id="result">Проверка запускается…</pre>
+<iframe src="../index.html?qa=drive-20261102"></iframe>
+<script>
+document.querySelector('iframe').onload=async function(){
+try{const code=await(await fetch('drive-regression.js?v=20261102-v2')).text();
+const result=this.contentWindow.Function(code)();
+document.getElementById('result').textContent=JSON.stringify(result,null,2);}
+catch(e){document.getElementById('result').textContent='FAIL: '+e.stack;throw e;}
+};
+</script></html>
