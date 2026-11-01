@@ -173,7 +173,7 @@ function buildActiveTrackGeometry() {
         const span=(end-start+totalSamples)%totalSamples;
         if(span>=4&&span<totalSamples/3){
             const startRoad=trackSamples[start],endRoad=trackSamples[end];
-            surveyedPitWaypoints=sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT);
+            surveyedPitWaypoints=smoothPitWaypoints(sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT),5);
             const midIndex=(start+Math.floor(span*.5))%totalSamples;
             const midRoad=trackSamples[midIndex],midLane=surveyedPitWaypoints[Math.floor(PIT_WAYPOINT_COUNT*.5)];
             const dot=(midLane.x-midRoad.x)*midRoad.nx+(midLane.y-midRoad.y)*midRoad.ny;
@@ -205,7 +205,7 @@ function buildActiveTrackGeometry() {
                 previous=along;
             }
             const candidate=sampleOpenPitPath(laneRaw,PIT_WAYPOINT_COUNT);
-            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=candidate;
+            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=smoothPitWaypoints(candidate,5);
             // Invalid surveyed paths must never be dereferenced. The automatically
             // selected clean pit section remains the fallback for this circuit.
             if(surveyedPitWaypoints){
@@ -712,6 +712,17 @@ function resampleCenterline(points, spacing) {
     });
 }
 
+function smoothPitWaypoints(points,passes=5) {
+    // Preserve the exact entry/exit road joins; soften micro-kinks in
+    // independently surveyed pit coordinates and unevenly spaced OSM nodes.
+    let result=points.map(p=>({...p}));
+    for(let pass=0;pass<passes;pass++)result=result.map((p,i)=>{
+        if(i===0||i===result.length-1)return p;
+        const prev=result[i-1],next=result[i+1];
+        return {x:(prev.x+2*p.x+next.x)/4,y:(prev.y+2*p.y+next.y)/4};
+    });
+    return result;
+}
 function sampleOpenPitPath(points,count) {
     points=simplifyOpenPitPolyline(points,18);
     const dense=[];
