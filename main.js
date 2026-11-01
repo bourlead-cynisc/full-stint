@@ -474,6 +474,22 @@ function updateStartButtons() {
     document.getElementById('btnStartQuali').textContent = selectedCarClass === 'GT3' ? '⏱️ Квалификация → гонка 20 мин' : '⏱️ Квалификация';
 }
 
+function drawGarageTrackPreview(canvasEl,track) {
+    const points=track.rawPoints;
+    if(!points||points.length<3)return;
+    const c=canvasEl.getContext('2d'),W=canvasEl.width,H=canvasEl.height;
+    const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+    const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+    const scale=Math.min((W-20)/Math.max(1,maxx-minx),(H-16)/Math.max(1,maxy-miny));
+    const ox=(W-(maxx-minx)*scale)/2,oy=(H-(maxy-miny)*scale)/2;
+    c.clearRect(0,0,W,H);
+    c.lineJoin='round';c.lineCap='round';
+    c.beginPath();
+    points.forEach((p,i)=>{const x=(p.x-minx)*scale+ox,y=(p.y-miny)*scale+oy;i?c.lineTo(x,y):c.moveTo(x,y)});
+    c.closePath();c.strokeStyle='#4c5d64';c.lineWidth=6;c.stroke();
+    c.strokeStyle='#dce6e6';c.lineWidth=3;c.stroke();
+    c.strokeStyle='#f2b76b';c.lineWidth=1;c.stroke();
+}
 function renderGarageUI() {
     const f1 = selectedCarClass === 'F1';
     const locked = teamLocked();
@@ -487,7 +503,8 @@ function renderGarageUI() {
         const card = document.createElement('div');
         card.tabIndex = 0; card.setAttribute('role','button');
         card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
-        card.innerHTML = `<div><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
+        card.innerHTML = `<canvas class="track-card-preview" width="96" height="76" aria-hidden="true"></canvas><div class="track-card-copy"><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
+        drawGarageTrackPreview(card.querySelector('canvas'),tObj);
         const selectTrack=()=>{
             const previousTrackIndex=selectedTrackIndex;
             selectedTrackIndex=tIdx;
