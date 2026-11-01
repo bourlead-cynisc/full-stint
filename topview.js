@@ -59,6 +59,16 @@ function drawTrackOverview(ctx, fit) {
     trackPath(ctx); ctx.setLineDash([minW(9), minW(11)]); ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = minW(1.2); ctx.stroke(); ctx.setLineDash([]);
 
     drawPitLane(ctx);
+    // Sector posts on the complete circuit map, in world coordinates.
+    // They are placed by path progress and do not pretend to be surveyed turn markers.
+    for(let sector=0;sector<3;sector++){
+        const pt=trackSamples[Math.round((sector/3)*trackSamples.length)%trackSamples.length];
+        ctx.save();ctx.translate(pt.x,pt.y);
+        ctx.beginPath();ctx.arc(0,0,minW(5.5),0,Math.PI*2);
+        ctx.fillStyle=['#ff967a','#4bd4b6','#83a8f3'][sector];ctx.fill();
+        ctx.strokeStyle='#fff';ctx.lineWidth=minW(1);ctx.stroke();
+        ctx.restore();
+    }
 
     // зоны DRS (только Ф-1)
     if (selectedCarClass === 'F1') {
@@ -113,6 +123,9 @@ function renderTopTrack(ctx, W, H) {
     ctx.scale(fit.sc, fit.sc);
     ctx.translate(-fit.cx, -fit.cy);
     ctx.rotate(fit.a);
+    // Monaco harbour and trackside city should also exist in the full-circuit view,
+    // not only in the follow-camera view.
+    if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,0,0);
     drawTrackOverview(ctx, fit);
 
     // машины — значки покрупнее: ~30 px длиной на экране
