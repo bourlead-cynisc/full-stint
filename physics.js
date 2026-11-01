@@ -104,6 +104,10 @@ class Car {
         const catalog = getActiveCatalog();
         this.spec = catalog[specIndex % catalog.length];
         this.livery = this.spec.livery;
+        this.drivetrain=this.spec.drivetrain||'RWD';
+        this.engineLayout=this.spec.engineLayout||'MR';
+        this.driveTraction=this.spec.driveTraction||1;
+        this.driveRotation=this.spec.driveRotation||1;
         this.character = this.spec.character;
         this.mass = this.character.mass;
         this.width = this.spec.width; this.height = this.spec.height;
@@ -623,7 +627,7 @@ class Car {
         const hc = HC();
         const dirtyAirLoss=this.spec.carClass==='F1'?0.20:0.12;
         const aeroWakeFactor=1-this.dirtyAir*dirtyAirLoss;
-        const gripG = (this.perf.grip * comp.gripMult * tireGrip * (1 - 0.28 * handbrake) + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse * aeroWakeFactor) * surf * hc.hb;
+        const gripG = (this.perf.grip * comp.gripMult * tireGrip * (1 - 0.58 * handbrake) + this.perf.aero * q * wingLoss * 1.45 * this.character.aeroResponse * aeroWakeFactor) * surf * hc.hb;
         const gripMax = Math.max(0.3, gripG) * G;                    // м/с²
 
         // ---------- продольная динамика ----------
@@ -631,9 +635,9 @@ class Car {
         const circle = Math.sqrt(Math.max(0.04, 1 - lat * lat));
         let aEng = 0, aBrk = 0, aEB = 0;
         const redline = this.rpm >= 1.0;
-        if (!ctl.hold && ctl.thr > 0.01 && this.gear >= 1 && this.shiftCut <= 0 && vmsSigned >= -0.3 && !redline) {
+        if (!ctl.hold && handbrake < 0.15 && ctl.thr > 0.01 && this.gear >= 1 && this.shiftCut <= 0 && vmsSigned >= -0.3 && !redline) {
             const P = this.powerWkg * this.engineCondition * powerCurve(this.rpm) * ctl.thr;     // Вт/кг
-            aEng = Math.min(P / Math.max(vms, 5), 0.60 * gripMax * circle * this.character.traction);
+            aEng = Math.min(P / Math.max(vms, 5), 0.60 * gripMax * circle * this.character.traction * this.driveTraction);
         }
         if (this.gear >= 1 && ctl.thr < 0.05 && vms > 2) aEB = (1.2 + 3.6 * Math.min(1.1, this.rpm)) * (this.spec.carClass === 'F1' ? 0.9 : 1.0);
         if (redline && vms > 2) aEB = Math.max(aEB, 5);
@@ -642,7 +646,7 @@ class Car {
             aBrk = ctl.brake * Math.min(bMax, gripMax * 1.15) * circle;
         }
         // Rear-axle lock gives the car a short, controlled rotation under steering.
-        if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (2.2 + 1.8 * q) * circle;
+        if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (6.8 + 1.8 * q) * Math.max(.32,circle);
         const towDragMul=1-(this.slipstream||0)*(this.spec.carClass==='F1'?0.15:0.095);
         const dragMul = (this.drsActive ? 0.80 : 1.0) * towDragMul;
         let aDrag = this.dragK * dragMul * (1 + 0.12 * this.bodyDamage) * vms * vms + 0.12;
@@ -672,8 +676,8 @@ class Car {
         const omegaLock = Math.min(hc.lock, av / 5.0);
         const omegaGrip = aLatMax / Math.max(av, 2.5);
         const omegaMax = Math.min(omegaLock, omegaGrip);
-        const steering=ctl.steer*this.character.rotation*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7)*(1+handbrake*0.25) + this.suspensionPull*this.suspensionDamage;
-        const handbrakeYaw = ctl.steer * handbrake * Math.min(1, av / 8) * 0.28;
+        const steering=ctl.steer*this.character.rotation*this.driveRotation*(1-.18*this.frontWingDamage)*(1+.12*this.rearWingDamage*ctl.brake)*(1+ctl.brake*(1-this.character.brakeStability)*0.7)*(1+handbrake*0.25) + this.suspensionPull*this.suspensionDamage;
+        const handbrakeYaw = ctl.steer * handbrake * Math.min(1, av / 8) * 0.8 * this.driveRotation;
         const yawTarget = (Math.max(-1,Math.min(1,steering)) * omegaMax + handbrakeYaw) * (newV >= 0 ? 1 : -1);
         this.dbgSteer = ctl.steer; this.dbgOmega = omegaMax; this.dbgGripMax = gripMax; this.dbgBrake = Math.max(ctl.brake,handbrake);
         // кузов набирает скорость вращения с инерцией (≈0,08–0,1 с) — машина «живая», а не на рельсах
@@ -687,7 +691,7 @@ class Car {
         this.bodyPitch += (-(this.aLong / (G * 3)) - this.bodyPitch) * Math.min(1, dt * 10);
 
         // ---------- скольжение: вектор скорости догоняет направление кузова ----------
-        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * (1 - 0.42 * handbrake) * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
+        const slipK = 1 - Math.exp(-dt * (18 + 9 * q) * tireGrip * (1 - 0.78 * handbrake) * surf * (this.spec.carClass === 'F1' ? 1.35 : 1) / (1+Math.abs(this.impactSpin)*.3));
         const targetDx = Math.sin(this.angle) * this.velocity;
         const targetDy = -Math.cos(this.angle) * this.velocity;
         this.slip = Math.hypot(targetDx - this.dx, targetDy - this.dy);
