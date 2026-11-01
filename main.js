@@ -29,7 +29,7 @@ let topFollow = 'CAR';                    // вид сверху: CAR — на �
 let topZoom = 1.0;
 window.shiftUpPressed = false; window.shiftDownPressed = false;
 
-let mobileSteer = 0, mobileThrottle = 0, mobileBrake = 0;
+let mobileSteer = 0, mobileThrottle = 0, mobileBrake = 0, mobileHandbrake = 0;
 let useGyroscope = false, gyroGamma = 0;
 
 let playerCar = null, aiCars = [], allCars = [];
@@ -167,7 +167,7 @@ function requestPitStop() {
 // ============================================================================
 function clearInputs() {
     keys.w = keys.a = keys.s = keys.d = keys.space = false;
-    mobileSteer = mobileThrottle = mobileBrake = 0;
+    mobileSteer = mobileThrottle = mobileBrake = mobileHandbrake = 0;
     pressedCodes.clear();
     window.shiftUpPressed = window.shiftDownPressed = false;
 }
@@ -223,6 +223,7 @@ function initMobileTouchControls() {
         <div class="mob-btn" id="mobSteerLeft">◀</div>
         <div class="mob-btn" id="mobSteerRight">▶</div>
         <div class="mob-btn" id="mobBrake">ТОРМОЗ</div>
+        <div class="mob-btn" id="mobHandbrake">РУЧНИК</div>
         <div class="mob-btn" id="mobThrottle">ГАЗ</div>
         <div class="mob-btn" id="mobTireSoft">SOFT</div>
         <div class="mob-btn" id="mobTireMed">MED</div>
@@ -243,6 +244,7 @@ function initMobileTouchControls() {
     bindHold('mobSteerLeft',  () => { mobileSteer = -1; }, () => { if (mobileSteer < 0) mobileSteer = 0; });
     bindHold('mobSteerRight', () => { mobileSteer = 1; },  () => { if (mobileSteer > 0) mobileSteer = 0; });
     bindHold('mobBrake',      () => { mobileBrake = 1; },  () => { mobileBrake = 0; });
+    bindHold('mobHandbrake',  () => { mobileHandbrake = 1; }, () => { mobileHandbrake = 0; });
     bindHold('mobThrottle',   () => { mobileThrottle = 1; }, () => { mobileThrottle = 0; });
     document.getElementById('mobPit').addEventListener('click', requestPitStop);
     document.getElementById('mobPause').addEventListener('click', togglePauseMenu);
@@ -388,7 +390,7 @@ function collectInput(gp) {
     return {
         throttle: Math.max(keys.w ? 1 : 0, gp.throttle, mobileThrottle),
         brake: Math.max(keys.s ? 1 : 0, gp.brake, mobileBrake),
-        handbrake: Math.max(keys.space ? 1 : 0,gp.handbrake),
+        handbrake: Math.max(keys.space ? 1 : 0,gp.handbrake,mobileHandbrake),
         steer: kSteer !== 0 ? kSteer : (gp.steer !== 0 ? gp.steer : mobileSteer)
     };
 }
@@ -526,7 +528,7 @@ function renderGarageUI() {
         card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
-            <div class="car-note">${p.note}</div>
+            <div class="car-note">${car.drivetrain||'RWD'} · ${({FR:'Передний мотор',MR:'Средний мотор',RR:'Задний мотор'})[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
             <div class="car-character">${characterSummary(car)}</div>
             <div class="car-stats-grid" aria-label="Характеристики в процентах от лучшего значения в классе">${bar('Сцепление', 'grip')}${bar('Прижим', 'aero')}${bar('Тормоза', 'brake')}${bar('Ресурс шин', 'tire')}</div>`;
         drawCarThumb(card.querySelector('canvas'), car);
@@ -1015,6 +1017,15 @@ function buildMinimapCache() {
     };
     path(); c.strokeStyle = '#475569'; c.lineWidth = 6; c.stroke();
     path(); c.strokeStyle = '#94a3b8'; c.lineWidth = 2.2; c.stroke();
+    // Complete pit route (including ingress and exit), separate from the racing line.
+    if(pitWaypoints.length){
+        c.beginPath();
+        pitWaypoints.forEach((p,i)=>i?c.lineTo(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY):c.moveTo(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY));
+        c.strokeStyle='#fbbf24';c.lineWidth=2.2;c.stroke();
+        // Garage location markers.
+        c.fillStyle='#f8fafc';
+        for(const p of teamPitBoxes)c.fillRect(p.x*minimapScale+minimapOffX-1.5,p.y*minimapScale+minimapOffY-1.5,3,3);
+    }
     const s0 = trackSamples[0];
     c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 3, s0.y * minimapScale + minimapOffY - 3, 6, 6);
 }

@@ -165,7 +165,23 @@ function buildActiveTrackGeometry() {
     // On the three surveyed circuits the OSM pit-lane centerline shares the
     // same projection as the real outline. Keep that route and anchor its
     // ends to the racing line; simplified maps use the clear straight below.
-    if(trk.hasRealContour&&trk.realPitPoints?.length>=2) {
+    // Monaco uses a hand-mapped harbour-side pit road matching the detailed circuit.
+    // Convert its map coordinates using the very same transformation as the asphalt.
+    if(trk.pitRoutePoints?.length>=2){
+        const route=trk.pitRoutePoints.map(p=>({x:(p.x-trk.rawPoints[0].x)*trk.scale,y:(p.y-trk.rawPoints[0].y)*trk.scale}));
+        const start=nearestTrackIndex(route[0]),end=nearestTrackIndex(route.at(-1));
+        const span=(end-start+totalSamples)%totalSamples;
+        if(span>=4&&span<totalSamples/3){
+            const startRoad=trackSamples[start],endRoad=trackSamples[end];
+            surveyedPitWaypoints=sampleOpenPitPath([startRoad,...route,endRoad],PIT_WAYPOINT_COUNT);
+            const midIndex=(start+Math.floor(span*.5))%totalSamples;
+            const midRoad=trackSamples[midIndex],midLane=surveyedPitWaypoints[Math.floor(PIT_WAYPOINT_COUNT*.5)];
+            const dot=(midLane.x-midRoad.x)*midRoad.nx+(midLane.y-midRoad.y)*midRoad.ny;
+            pitSection={start,end,span,side:dot>=0?1:-1};
+            oldStartIndex=nearestTrackIndex(midLane);
+        }
+    }
+    if(!surveyedPitWaypoints&&trk.hasRealContour&&trk.realPitPoints?.length>=2) {
         let routePoints=trk.realPitPoints;
         let start=nearestTrackIndex(routePoints[0]),end=nearestTrackIndex(routePoints.at(-1));
         let span=(end-start+totalSamples)%totalSamples;
@@ -176,12 +192,27 @@ function buildActiveTrackGeometry() {
         }
         if(span>=4&&span<totalSamples/3) {
             const entry=trackSamples[start],exit=trackSamples[end];
-            surveyedPitWaypoints=sampleOpenPitPath([entry,...routePoints,exit],PIT_WAYPOINT_COUNT);
+            // OSM pit routes occasionally double back and form a kink or loop.
+            // Validate their direction before accepting them for driving.
+            const laneRaw=[entry,...routePoints,exit];
+            const axisX=exit.x-entry.x,axisY=exit.y-entry.y,axisLen=Math.hypot(axisX,axisY)||1;
+            const project=p=>((p.x-entry.x)*axisX+(p.y-entry.y)*axisY)/axisLen;
+            let backward=0,previous=project(laneRaw[0]),rawLength=0;
+            for(let i=1;i<laneRaw.length;i++){
+                const along=project(laneRaw[i]);
+                backward+=Math.max(0,previous-along);
+                rawLength+=Math.hypot(laneRaw[i].x-laneRaw[i-1].x,laneRaw[i].y-laneRaw[i-1].y);
+                previous=along;
+            }
+            const candidate=sampleOpenPitPath(laneRaw,PIT_WAYPOINT_COUNT);
+            if(backward<axisLen*.12&&rawLength<axisLen*1.8)surveyedPitWaypoints=candidate;
             const midIndex=(start+Math.floor(span*.5))%totalSamples;
             const roadMid=trackSamples[midIndex],laneMid=surveyedPitWaypoints[Math.floor(surveyedPitWaypoints.length*.5)];
             const sideDot=(laneMid.x-roadMid.x)*roadMid.nx+(laneMid.y-roadMid.y)*roadMid.ny;
-            pitSection={start,end,span,side:sideDot>=0?1:-1};
-            oldStartIndex=nearestTrackIndex(laneMid);
+            if(surveyedPitWaypoints){
+                pitSection={start,end,span,side:sideDot>=0?1:-1};
+                oldStartIndex=nearestTrackIndex(laneMid);
+            }
         }
     }
     if(oldStartIndex===undefined) {
@@ -517,7 +548,9 @@ function drawGrandstands(ctx, camCenterX, camCenterY) {
 
 function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftScale = 0, upX = 0, upY = 0) {
     const N = trackSamples.length;
-    const span = Math.min(Math.floor((N-1)/2), 180);
+    // Full circuit geometry in the track overview, local segment while following a car.
+    const fullCircuit = typeof topFollow !== 'undefined' && topFollow === 'TRACK';
+    const span = fullCircuit ? Math.floor((N-1)/2) : Math.min(Math.floor((N-1)/2), 180);
     ctx.beginPath();
     const firstIdx = (centerIdx - span + N) % N;
     const first = trackSamples[firstIdx], prev = trackSamples[(firstIdx-1+N)%N];
@@ -533,6 +566,7 @@ function drawTrack(ctx) {
     const centerIdx = playerCar && playerCar.lastSampleIdx >= 0 ? playerCar.lastSampleIdx : 0;
     const camX = playerCar ? playerCar.x : 0, camY = playerCar ? playerCar.y : 0;
     drawBackgroundWorld(ctx, camX, camY);
+    if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,camX,camY);
     drawGrandstands(ctx, camX, camY);
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -557,6 +591,9 @@ function drawTrack(ctx) {
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.strokeStyle = '#292c2e'; ctx.lineWidth = ASPHALT_HALF_W * 2; ctx.stroke();
+    // Thin asphalt edge gives the road a consistent readable contour.
+    traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
+    ctx.strokeStyle='rgba(241,245,249,.32)';ctx.lineWidth=2;ctx.stroke();
 
     drawPitLane(ctx);
     drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale);
@@ -621,11 +658,19 @@ function drawPitLane(ctx) {
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 65; ctx.stroke();
     ctx.strokeStyle = '#3b4654'; ctx.lineWidth = 58; ctx.stroke();
-    ctx.setLineDash([12,12]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.setLineDash([22,18]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
     ctx.setLineDash([]);
     for (const box of teamPitBoxes) {
         ctx.fillStyle = box.color; ctx.fillRect(box.x - 10,box.y - 10,20,20);
         ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.fillText(String(box.teamIndex+1),box.x+14,box.y);
+    }
+    // Individual garage bays are aligned with the pit direction.
+    for(const box of teamPitBoxes){
+        const before=pitWaypoints[Math.max(0,box.node-2)],after=pitWaypoints[Math.min(pitWaypoints.length-1,box.node+2)];
+        const a=Math.atan2(after.y-before.y,after.x-before.x);
+        ctx.save();ctx.translate(box.x,box.y);ctx.rotate(a);
+        ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;
+        ctx.strokeRect(-24,-27,48,54);ctx.restore();
     }
     ctx.fillStyle = '#facc15'; ctx.font = 'bold 15px sans-serif';
     ctx.fillText(`${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} KM/H`,pitSpeedLinePt.x+18,pitSpeedLinePt.y-18);
@@ -705,4 +750,38 @@ function isPitEntryProgress(norm,previousNorm) {
     // Pit entry is a one-way crossing. The previous symmetric window could
     // start the lane 150 px early or after the car had already passed it.
     return (previous<0&&current>=0)||(current<0&&current>=-tolerance);
+}
+
+// Monaco scenery uses the local map-space coordinates from the circuit definition.
+// Draw behind asphalt so the harbour, buildings and roads cannot obstruct the race line.
+function drawMonacoScenery(ctx,camX,camY){
+    const trk=TRACKS_DB[selectedTrackIndex],ref=trk.rawPoints[0],s=trk.scale;
+    const X=x=>(x-ref.x)*s,Y=y=>(y-ref.y)*s;
+    const visible=(x,y)=>Math.hypot(x-camX,y-camY)<3200;
+    ctx.save();
+    // Mediterranean harbour basin south of the tunnel and Piscine complex.
+    const water=[[160,285],[290,280],[390,250],[480,210],[520,210],[520,520],[160,520]];
+    ctx.beginPath();water.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.closePath();
+    ctx.fillStyle='#204c60';ctx.fill();
+    ctx.strokeStyle='#a9a89c';ctx.lineWidth=13;ctx.stroke();
+    // Marina piers and moored boats, deliberately static geometry.
+    for(let i=0;i<9;i++){
+        const x=X(190+i*29),y=Y(320+i%3*15);
+        if(!visible(x,y))continue;
+        ctx.strokeStyle='#96a5a4';ctx.lineWidth=7;
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,Y(387));ctx.stroke();
+        for(let j=0;j<4;j++){
+            ctx.save();ctx.translate(x+(j%2?15:-15),y+19+j*13);
+            ctx.fillStyle='#ecf0eb';ctx.beginPath();ctx.ellipse(0,0,6,11,0,0,Math.PI*2);ctx.fill();ctx.restore();
+        }
+    }
+    // Blocks above Casino and Beau Rivage.
+    for(let row=0;row<3;row++)for(let col=0;col<13;col++){
+        const x=X(100+col*24),y=Y(28+row*20);
+        if(!visible(x,y))continue;
+        ctx.fillStyle=(row+col)%3===0?'#a8a18f':'#797c72';
+        ctx.fillRect(x,y,18*s,13*s);
+        ctx.strokeStyle='#d0c2a5';ctx.lineWidth=2;ctx.strokeRect(x,y,18*s,13*s);
+    }
+    ctx.restore();
 }

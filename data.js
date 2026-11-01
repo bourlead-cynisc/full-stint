@@ -2,7 +2,7 @@ const KMH_FACTOR = 20;
 
 const GT3_CATALOG = [
     {
-        id: 'aston_gt3', carClass: 'GT3',
+        id: 'aston_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.98, driveRotation: 0.97,
         name: 'Aston Martin Vantage GT3', shortName: 'Aston Vantage',
         teamName: 'Heart of Racing / AMR',
         width: 22, height: 45, topSpeedKmh: 252, accelStat: 1.01, handlingStat: 1.06, tireSaveStat: 1.08,
@@ -13,7 +13,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'audi_gt3', carClass: 'GT3',
+        id: 'audi_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.08, driveRotation: 1.06,
         name: 'Audi R8 LMS GT3 Evo II', shortName: 'Audi R8 LMS',
         teamName: 'Audi Sport Team WRT',
         width: 22, height: 44, topSpeedKmh: 254, accelStat: 1.04, handlingStat: 1.05, tireSaveStat: 0.99,
@@ -24,7 +24,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'bmw_gt3', carClass: 'GT3',
+        id: 'bmw_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 1, driveRotation: 0.98,
         name: 'BMW M4 GT3', shortName: 'BMW M4 GT3',
         teamName: 'Team WRT BMW M',
         width: 22, height: 46, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 1.01, tireSaveStat: 1.05,
@@ -35,7 +35,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'corvette_gt3', carClass: 'GT3',
+        id: 'corvette_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.07, driveRotation: 1.04,
         name: 'Corvette Z06 GT3.R', shortName: 'Corvette Z06',
         teamName: 'TF Sport Corvette Racing',
         width: 22.5, height: 45, topSpeedKmh: 255, accelStat: 1.05, handlingStat: 1.02, tireSaveStat: 0.97,
@@ -46,7 +46,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'ferrari_gt3', carClass: 'GT3',
+        id: 'ferrari_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.09, driveRotation: 1.07,
         name: 'Ferrari 296 GT3', shortName: 'Ferrari 296',
         teamName: 'Vista AF Corse Ferrari',
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.08, tireSaveStat: 1.02,
@@ -57,7 +57,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'mustang_gt3', carClass: 'GT3',
+        id: 'mustang_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.98, driveRotation: 0.95,
         name: 'Ford Mustang GT3', shortName: 'Mustang GT3',
         teamName: 'Proton Competition Ford',
         width: 22.5, height: 46, topSpeedKmh: 256, accelStat: 1.04, handlingStat: 0.98, tireSaveStat: 1.01,
@@ -68,7 +68,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'lambo_gt3', carClass: 'GT3',
+        id: 'lambo_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.07, driveRotation: 1.05,
         name: 'Lamborghini Huracán GT3', shortName: 'Huracán GT3',
         teamName: 'Iron Lynx Lamborghini',
         width: 22, height: 44.5, topSpeedKmh: 255, accelStat: 1.06, handlingStat: 1.03, tireSaveStat: 0.95,
@@ -79,7 +79,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'lexus_gt3', carClass: 'GT3',
+        id: 'lexus_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.99, driveRotation: 0.97,
         name: 'Lexus RC F GT3', shortName: 'Lexus RC F',
         teamName: 'Akkodis ASP Team Lexus',
         width: 22, height: 46, topSpeedKmh: 253, accelStat: 1.00, handlingStat: 1.00, tireSaveStat: 1.06,
@@ -90,7 +90,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'mclaren_gt3', carClass: 'GT3',
+        id: 'mclaren_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.08, driveRotation: 1.06,
         name: 'McLaren 720S GT3', shortName: 'McLaren 720S',
         teamName: 'United Autosports McLaren',
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.07, tireSaveStat: 0.98,
@@ -101,7 +101,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'mercedes_gt3', carClass: 'GT3',
+        id: 'mercedes_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 1, driveRotation: 0.98,
         name: 'Mercedes-AMG GT3', shortName: 'AMG GT3',
         teamName: 'Mercedes-AMG Team Mann-Filter',
         width: 22.5, height: 45.5, topSpeedKmh: 253, accelStat: 1.01, handlingStat: 1.04, tireSaveStat: 1.07,
@@ -111,7 +111,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'porsche_gt3', carClass: 'GT3',
+        id: 'porsche_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'RR', driveTraction: 1.1, driveRotation: 1.02,
         name: 'Porsche 911 GT3 R (992)', shortName: 'Porsche 911',
         teamName: 'Manthey PureRxcing Porsche',
         width: 22, height: 44, topSpeedKmh: 251, accelStat: 1.03, handlingStat: 1.10, tireSaveStat: 1.11,
@@ -121,7 +121,7 @@ const GT3_CATALOG = [
         ]
     },
     {
-        id: 'bentley_gt3', carClass: 'GT3',
+        id: 'bentley_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.99, driveRotation: 0.96,
         name: 'Bentley Continental GT3', shortName: 'Bentley GT3',
         teamName: 'M-Sport Bentley Team',
         width: 23, height: 46.5, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 0.99, tireSaveStat: 1.05,
@@ -134,7 +134,7 @@ const GT3_CATALOG = [
 
 const F1_CATALOG = [
     {
-        id: 'f1_redbull', carClass: 'F1',
+        id: 'f1_redbull', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Red Bull Racing', shortName: 'Red Bull RB',
         teamName: 'Oracle Red Bull Racing',
         width: 21, height: 50, topSpeedKmh: 353, accelStat: 1.40, handlingStat: 1.38, tireSaveStat: 1.05,
@@ -145,7 +145,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_mercedes', carClass: 'F1',
+        id: 'f1_mercedes', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Mercedes-AMG', shortName: 'Mercedes W16',
         teamName: 'Mercedes-AMG Petronas F1',
         width: 21, height: 50, topSpeedKmh: 350, accelStat: 1.38, handlingStat: 1.36, tireSaveStat: 1.04,
@@ -156,7 +156,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_ferrari', carClass: 'F1',
+        id: 'f1_ferrari', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Scuderia Ferrari', shortName: 'Ferrari SF',
         teamName: 'Scuderia Ferrari HP',
         width: 21, height: 50, topSpeedKmh: 352, accelStat: 1.40, handlingStat: 1.38, tireSaveStat: 1.03,
@@ -167,7 +167,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_mclaren', carClass: 'F1',
+        id: 'f1_mclaren', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'McLaren Formula 1', shortName: 'McLaren MCL',
         teamName: 'McLaren Mastercard F1 Team',
         width: 21, height: 50, topSpeedKmh: 352, accelStat: 1.40, handlingStat: 1.39, tireSaveStat: 1.08,
@@ -178,7 +178,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_aston', carClass: 'F1',
+        id: 'f1_aston', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Aston Martin', shortName: 'Aston AMR',
         teamName: 'Aston Martin Aramco F1',
         width: 21, height: 50, topSpeedKmh: 348, accelStat: 1.36, handlingStat: 1.34, tireSaveStat: 1.06,
@@ -189,7 +189,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_alpine', carClass: 'F1',
+        id: 'f1_alpine', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Alpine F1 Team', shortName: 'Alpine A526',
         teamName: 'BWT Alpine F1 Team',
         width: 21, height: 50, topSpeedKmh: 346, accelStat: 1.34, handlingStat: 1.32, tireSaveStat: 0.99,
@@ -200,7 +200,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_sauber', carClass: 'F1',
+        id: 'f1_sauber', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Sauber / Audi', shortName: 'Sauber / Audi',
         teamName: 'Stake F1 Team Kick Audi',
         width: 21, height: 50, topSpeedKmh: 346, accelStat: 1.34, handlingStat: 1.31, tireSaveStat: 0.98,
@@ -211,7 +211,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_rb', carClass: 'F1',
+        id: 'f1_rb', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Cash App RB', shortName: 'VCARB 02',
         teamName: 'Visa Cash App Racing Bulls',
         width: 21, height: 50, topSpeedKmh: 348, accelStat: 1.36, handlingStat: 1.33, tireSaveStat: 1.01,
@@ -222,7 +222,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_williams', carClass: 'F1',
+        id: 'f1_williams', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Williams Racing', shortName: 'Williams FW',
         teamName: 'Atlassian Williams Racing',
         width: 21, height: 50, topSpeedKmh: 351, accelStat: 1.37, handlingStat: 1.33, tireSaveStat: 1.00,
@@ -233,7 +233,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_haas', carClass: 'F1',
+        id: 'f1_haas', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Haas F1 Team', shortName: 'Haas VF',
         teamName: 'MoneyGram Haas F1 Team',
         width: 21, height: 50, topSpeedKmh: 347, accelStat: 1.35, handlingStat: 1.31, tireSaveStat: 0.98,
@@ -244,7 +244,7 @@ const F1_CATALOG = [
         ]
     },
     {
-        id: 'f1_cadillac', carClass: 'F1',
+        id: 'f1_cadillac', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
         name: 'Cadillac F1 Team', shortName: 'Cadillac F1',
         teamName: 'TWG Cadillac Formula 1 Team',
         width: 21, height: 50, topSpeedKmh: 347, accelStat: 1.35, handlingStat: 1.32, tireSaveStat: 0.99,
@@ -497,5 +497,5 @@ TRACKS_DB.push({"id": "hungaroring", "name": "🇭🇺 Хунгароринг", 
 EST_LAP_SEC.GT3.push(130); EST_LAP_SEC.F1.push(101);
 TRACKS_DB.push({"id": "redbullring", "name": "🇦🇹 Ред Булл Ринг", "shortName": "Ред Булл Ринг", "desc": "Разгоны и шпильки · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 180, "y": 160}, {"x": 195, "y": 125}, {"x": 210, "y": 60}, {"x": 190, "y": 30}, {"x": 135, "y": 40}, {"x": 90, "y": 65}, {"x": 55, "y": 95}, {"x": 40, "y": 135}, {"x": 65, "y": 150}, {"x": 95, "y": 145}, {"x": 120, "y": 160}]});
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
-TRACKS_DB.push({"id": "monaco", "name": "🇲🇨 Монако", "shortName": "Монако", "desc": "Точность между стенами · упрощённая схема", "scale": 75, "pitSideSign": 1, "theme": {"grassBase": "#173c2c", "grassAlt": "#143425", "runoffColor": "#334155"}, "drsZones": [{"detect": 0.82, "start": 0.86, "end": 0.98}], "rawPoints": [{"x": 100, "y": 190}, {"x": 80, "y": 160}, {"x": 75, "y": 110}, {"x": 100, "y": 65}, {"x": 140, "y": 45}, {"x": 155, "y": 60}, {"x": 145, "y": 90}, {"x": 170, "y": 100}, {"x": 175, "y": 120}, {"x": 155, "y": 125}, {"x": 150, "y": 145}, {"x": 200, "y": 160}, {"x": 210, "y": 175}, {"x": 185, "y": 180}, {"x": 150, "y": 175}, {"x": 130, "y": 195}]});
+TRACKS_DB.push({"id":"monaco","name":"🇲🇨 Монако","shortName":"Монако","desc":"Детализированный городской контур: Sainte Dévote, Casino, Fairmont, тоннель, Piscine и Rascasse","scale":42,"pitSideSign":-1,"theme":{"grassBase":"#173c2c","grassAlt":"#143425","runoffColor":"#334155"},"drsZones":[{"detect":0.82,"start":0.86,"end":0.98}],"rawPoints":[{"x":58,"y":333},{"x":56,"y":300},{"x":57,"y":266},{"x":77,"y":233},{"x":91,"y":226},{"x":113,"y":230},{"x":173,"y":230},{"x":230,"y":230},{"x":290,"y":225},{"x":316,"y":214},{"x":328,"y":189},{"x":320,"y":150},{"x":341,"y":127},{"x":373,"y":99},{"x":395,"y":80},{"x":404,"y":74},{"x":406,"y":110},{"x":401,"y":146},{"x":392,"y":161},{"x":386,"y":182},{"x":390,"y":194},{"x":400,"y":194},{"x":408,"y":179},{"x":416,"y":137},{"x":428,"y":129},{"x":445,"y":131},{"x":451,"y":145},{"x":448,"y":161},{"x":431,"y":182},{"x":407,"y":205},{"x":373,"y":226},{"x":329,"y":240},{"x":282,"y":248},{"x":247,"y":253},{"x":234,"y":258},{"x":225,"y":249},{"x":217,"y":260},{"x":207,"y":267},{"x":194,"y":258},{"x":181,"y":262},{"x":152,"y":265},{"x":116,"y":265},{"x":105,"y":276},{"x":99,"y":300},{"x":98,"y":324},{"x":93,"y":350},{"x":91,"y":371},{"x":96,"y":390},{"x":113,"y":399},{"x":128,"y":414},{"x":138,"y":431},{"x":134,"y":440},{"x":118,"y":443},{"x":105,"y":436},{"x":94,"y":425},{"x":84,"y":432},{"x":79,"y":447},{"x":67,"y":451},{"x":60,"y":435},{"x":59,"y":403},{"x":61,"y":373}],"pitRoutePoints":[{"x":94,"y":425},{"x":90,"y":402},{"x":83,"y":374},{"x":79,"y":338},{"x":80,"y":308},{"x":82,"y":285},{"x":85,"y":261},{"x":83,"y":242}],"layoutVersion":"monaco-city-2026"});
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);

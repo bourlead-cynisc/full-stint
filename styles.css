@@ -651,3 +651,31 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
     .garage-card .start-actions .primary-btn {padding:8px 9px;}
     .garage-strategy-options {align-items:stretch;}
 }
+
+/* 2026 pit lane / garage usability refresh: full-size legible selection */
+.garage-card{width:min(1580px,98vw);max-height:96vh;padding:24px 30px;}
+.garage-card .modal-title{font-size:clamp(24px,2vw,34px);}
+.garage-card .section-label{font-size:13px;letter-spacing:1.1px;margin:13px 0 12px;}
+.garage-card .class-btn{font-size:17px;padding:16px 19px;min-height:78px;}
+.garage-card .class-btn small{font-size:12px;line-height:1.45;}
+.garage-layout{grid-template-columns:minmax(320px,0.9fr) minmax(0,1.1fr);gap:26px;}
+.garage-track-section .track-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:440px;gap:10px;}
+.garage-track-section .track-card{min-height:72px;padding:13px 14px;border-radius:12px;}
+.garage-track-section .track-info-title{font-size:16px;white-space:normal;}
+.garage-track-section .track-info-sub{font-size:11.5px;line-height:1.45;display:block;}
+.garage-car-section .car-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:440px;gap:10px;}
+.garage-car-section .car-item{height:auto;min-height:146px;padding:13px 14px;grid-template-columns:60px minmax(0,1fr);grid-template-rows:repeat(3,auto) 1fr;row-gap:5px;column-gap:12px;}
+.garage-car-section .car-thumb{grid-row:1/5;width:52px;height:86px;}
+.garage-car-section .car-item-title{font-size:16px;white-space:normal;line-height:1.25;}
+.garage-car-section .car-item-sub{font-size:12px;}
+.garage-car-section .car-note{font-size:11px;max-height:none;white-space:normal;line-height:1.35;}
+.garage-car-section .car-stats-grid{grid-row:4;grid-template-rows:repeat(2,minmax(19px,auto));gap:5px 9px;}
+.garage-car-section .car-stat-bar,.garage-car-section .car-stat-bar>b{font-size:10px;line-height:1.2;}
+.garage-car-section .car-stat-bar .stat-track{height:4px;}
+.garage-car-section .teammate-bar{font-size:13px;flex-wrap:wrap;padding:12px;}
+.garage-car-section .driver-pill{font-size:12px;padding:8px 12px;}
+.garage-card .start-actions button{font-size:14px;padding:13px 18px;}
+.garage-card .start-actions .primary-btn{padding:14px 24px;}
+#mobHandbrake{bottom:116px;right:120px;width:84px;height:50px;font-size:11px;border-color:#eabf55;background:rgba(99,58,20,.9);}
+@media(max-width:980px){.garage-layout{grid-template-columns:1fr;}.garage-track-section .track-grid,.garage-car-section .car-grid{max-height:300px;}}
+@media(max-width:700px){.garage-card{padding:15px;}.garage-track-section .track-grid,.garage-car-section .car-grid{grid-template-columns:1fr;max-height:240px;}.garage-car-section .car-item{min-height:130px;}.garage-card .class-btn{font-size:14px;min-height:65px;}.garage-card .class-btn small{font-size:10px;}.garage-card .start-actions button{font-size:12px;}}
