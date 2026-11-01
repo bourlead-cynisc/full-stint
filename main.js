@@ -46,7 +46,9 @@ const keys = { w: false, a: false, s: false, d: false, space: false };
 
 const STEP = 1 / 60;
 
-function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : GT3_CATALOG; }
+function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : (selectedCarClass === 'ROAD' ? ROAD_CATALOG : GT3_CATALOG); }
+const DRIVETRAIN_LABELS={FWD:'Передний · FWD',RWD:'Задний · RWD',AWD:'Полный · AWD'};
+const ENGINE_LAYOUT_LABELS={FR:'Передний мотор',MR:'Средний мотор',RR:'Задний мотор'};
 
 // Число кругов, под которое строятся тактики
 function getPlannedLaps() {
@@ -122,13 +124,14 @@ window.setLaps = function (laps) {
 function teamLocked() { return selectedCarClass === 'F1' && season && seasonStarted() && !seasonDone(); }
 
 function applyClassMode() {
-    const f1 = selectedCarClass === 'F1';
-    raceMode = f1 ? 'LAPS' : 'TIMED';
-    document.getElementById('classBtnGT3').classList.toggle('active', !f1);
+    const f1 = selectedCarClass === 'F1',road=selectedCarClass==='ROAD',gt3=selectedCarClass==='GT3';
+    raceMode = gt3 ? 'TIMED' : 'LAPS';
+    document.getElementById('classBtnGT3').classList.toggle('active', gt3);
     document.getElementById('classBtnF1').classList.toggle('active', f1);
-    document.getElementById('lapSection').style.display = f1 ? 'flex' : 'none';
+    document.getElementById('classBtnRoad').classList.toggle('active', road);
+    document.getElementById('lapSection').style.display = gt3 ? 'none' : 'flex';
     const note = document.getElementById('enduranceNote');
-    note.style.display = f1 ? 'none' : 'block';
+    note.style.display = gt3 ? 'block' : 'none';
     note.textContent = `⏱ Гонка на выживание: ${ENDURANCE_MINUTES} минут после квалификации. Финиш на первом круге после окончания времени.`;
     document.getElementById('seasonPanel').style.display = f1 ? 'block' : 'none';
     if (f1) {
@@ -528,7 +531,7 @@ function renderGarageUI() {
         card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
-            <div class="car-note">${car.drivetrain||'RWD'} · ${({FR:'Передний мотор',MR:'Средний мотор',RR:'Задний мотор'})[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
+            <div class="car-note">${DRIVETRAIN_LABELS[car.drivetrain]||'Задний · RWD'} · ${ENGINE_LAYOUT_LABELS[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
             <div class="car-character">${characterSummary(car)}</div>
             <div class="car-stats-grid" aria-label="Характеристики в процентах от лучшего значения в классе">${bar('Сцепление', 'grip')}${bar('Прижим', 'aero')}${bar('Тормоза', 'brake')}${bar('Ресурс шин', 'tire')}</div>`;
         drawCarThumb(card.querySelector('canvas'), car);
@@ -749,7 +752,8 @@ function openFinishModal() {
         document.getElementById('finishTitle').textContent = pos === 1 ? '🏆 ПОБЕДА!' : `🏁 ФИНИШ — P${pos}`;
         document.getElementById('finishSub').textContent = f1
             ? `${TRACKS_DB[selectedTrackIndex].shortName} · ${totalRaceLaps} кр. · раунд ${season.results.length} из ${season.order.length}`
-            : `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
+            : selectedCarClass==='ROAD' ? `${TRACKS_DB[selectedTrackIndex].shortName} · трек-день · ${totalRaceLaps} кр.` :
+              `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
     } else {
         document.getElementById('finishTitle').textContent = '📊 ТАБЛИЦЫ СЕЗОНА';
         document.getElementById('finishSub').textContent = `Сезон ${season.number} · гонок: ${season.results.length} из ${season.order.length}`;
@@ -948,6 +952,12 @@ function updateHUD() {
     else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
     const aeroEl=document.getElementById('dashAero');
     const f1=p.spec.carClass==='F1';
+    const driveName=DRIVETRAIN_LABELS[p.drivetrain]||'Задний · RWD';
+    document.getElementById('hudDriveType').textContent=driveName;
+    document.getElementById('hudEngineLayout').textContent=ENGINE_LAYOUT_LABELS[p.engineLayout]||'Средний мотор';
+    const hb=document.getElementById('hudHandbrake');
+    hb.textContent=p.handbrakeActive?'ЗАЖАТ':'ОТПУЩЕН';
+    hb.classList.toggle('active',!!p.handbrakeActive);
     const towPct=Math.round((p.slipstream||0)*(f1?3.5:2.2));
     const dirtyPct=Math.round((p.dirtyAir||0)*(f1?20:12));
     const aeroParts=[];
@@ -1196,7 +1206,7 @@ setAiSetting('pace',aiSettings.pace);setAiSetting('aggression',aiSettings.aggres
 
 function getPitStopLossEstimate() {
  const track=TRACKS_DB[selectedTrackIndex];
- const lapEstimate=EST_LAP_SEC[selectedCarClass][selectedTrackIndex]||140;
+ const lapEstimate=(EST_LAP_SEC[selectedCarClass]||EST_LAP_SEC.GT3)[selectedTrackIndex]||140;
  const laneSeconds=pitRouteLength*PX_M/(track.pitSpeedLimit/3.6);
  return Math.max(8,Math.round(laneSeconds+(selectedCarClass==='F1'?2.6:12)-track.pitProgressSpan*lapEstimate));
 }
