@@ -712,3 +712,13 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
  .garage-card .class-btn{min-height:55px;padding:9px 13px;font-size:14px;}
  .garage-card .class-btn small{font-size:11px;}
 }
+
+/* Visible track schematics in the enlarged selection cards */
+.garage-track-section .track-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:13px;min-height:92px;}
+.garage-track-section .track-card-preview{display:block;width:96px;height:76px;
+ border:1px solid rgba(172,193,195,.24);background:linear-gradient(160deg,#1c292d,#11191d);border-radius:9px;}
+.garage-track-section .track-card-copy{min-width:0;}
+.garage-track-section .track-info-title{font-size:16px;line-height:1.35;white-space:normal;}
+.garage-track-section .track-info-sub{font-size:11px;line-height:1.4;margin-top:5px;white-space:normal;}
+@media(max-width:700px){.garage-track-section .track-card{grid-template-columns:80px minmax(0,1fr);gap:10px;}
+.garage-track-section .track-card-preview{width:80px;height:64px;}}
