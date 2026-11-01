@@ -532,7 +532,9 @@ function drawGrandstands(ctx, camCenterX, camCenterY) {
 
 function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftScale = 0, upX = 0, upY = 0) {
     const N = trackSamples.length;
-    const span = Math.min(Math.floor((N-1)/2), 180);
+    // Full circuit geometry in the track overview, local segment while following a car.
+    const fullCircuit = typeof topFollow !== 'undefined' && topFollow === 'TRACK';
+    const span = fullCircuit ? Math.floor((N-1)/2) : Math.min(Math.floor((N-1)/2), 180);
     ctx.beginPath();
     const firstIdx = (centerIdx - span + N) % N;
     const first = trackSamples[firstIdx], prev = trackSamples[(firstIdx-1+N)%N];
@@ -572,6 +574,9 @@ function drawTrack(ctx) {
 
     traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
     ctx.strokeStyle = '#292c2e'; ctx.lineWidth = ASPHALT_HALF_W * 2; ctx.stroke();
+    // Thin asphalt edge gives the road a consistent readable contour.
+    traceVisibleTrack(ctx, centerIdx, 0, 0, elevScale, upX, upY);
+    ctx.strokeStyle='rgba(241,245,249,.32)';ctx.lineWidth=2;ctx.stroke();
 
     drawPitLane(ctx);
     drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale);
