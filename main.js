@@ -188,7 +188,8 @@ function onKeyDown(e) {
     if(bindingMatches('settings',c)) {e.preventDefault();if(!e.repeat)openControls();return;}
     if(bindingMatches('pause',c)) {if(playing){e.preventDefault();if(!e.repeat)togglePauseMenu();}return;}
     if(isPaused||!playing) return;
-    if(e.target instanceof Element && e.target.closest('button') && (c==='Space'||c==='Enter'))return;
+    // Space always controls the car while racing, even if a HUD button retained focus.
+    if(e.target instanceof Element && e.target.closest('button') && c==='Enter')return;
     if(Object.keys(keyBindings).some(action=>bindingMatches(action,c))) e.preventDefault();
     pressedCodes.add(c);syncKeyboardInputs();
     if(!e.repeat) {
@@ -612,6 +613,7 @@ function buildWeekendRoster() {
     document.getElementById('hudCarTitle').textContent = team.teamName.toUpperCase();
     document.getElementById('hudDriverName').textContent = `#${pd.number} ${pd.name} · ${team.name}`;
     document.getElementById('hudTrackName').textContent = TRACKS_DB[selectedTrackIndex].shortName;
+    document.getElementById('pitSpeedBadge').textContent = TRACKS_DB[selectedTrackIndex].pitSpeedLimit+' км/ч';
 }
 
 function resetEffects() { skidMarks.length = 0; sparks.length = 0; }
