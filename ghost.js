@@ -90,7 +90,7 @@ function startTimeTrialSession() {
  startGhostCaptureSession();
  playerCar.bestLapTime=trialState.best?.time||null;
  sessionBestLap={time:trialState.best?.time||null,driverName:playerCar.driverName,carName:playerCar.spec.shortName};
- rebuildEngineVoices();document.getElementById('sessionLabel').textContent='ТАЙМ АТТАК';
+ rebuildEngineVoices();document.getElementById('sessionLabel').textContent='TIME ATTACK';
  document.getElementById('start-lights').style.opacity=0;releaseFocus();
  showRaceControl(trialState.best?'Пересеките старт — общий призрак начнёт лучший круг вместе с вами.':'Первый чистый круг сохранит призрак этой машины.','#67e8f9');
 }
@@ -121,7 +121,7 @@ function updateTrialHUD() {
  document.getElementById('trialGhostStatus').textContent=trialState.reference?'Глобальный призрак активен'+(trialState.sessionOnly?' · сохранён только до закрытия страницы':' · общий для всех режимов'):'Призрак появится после первого чистого круга';
  if(trialState.lastLap&&!trialState.lastLap.valid)document.getElementById('lastTime').textContent='НЕ ЗАЧЁТ';
  document.getElementById('topPosCounter').textContent='СОЛО';
- document.getElementById('topClockLabel').textContent='РЕКОРД ТАЙМ АТТАК';
+ document.getElementById('topClockLabel').textContent='TIME ATTACK RECORD';
  document.getElementById('topRaceClock').textContent=formatTime(trialState.best?.time);
  if(!playerCar.timingStarted)document.getElementById('topCurTime').textContent='ВЫЕЗД';
 }
