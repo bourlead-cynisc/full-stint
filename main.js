@@ -499,6 +499,7 @@ function renderGarageUI() {
     const f1 = selectedCarClass === 'F1';
     const ta = selectedCarClass === 'TA';
     document.getElementById('classModeLabel').textContent = ta ? 'РЕЖИМ' : 'КЛАСС ГОНКИ';
+    document.getElementById('sessionLabel').textContent = ta ? 'TIME ATTACK' : 'КВАЛИФИКАЦИЯ';
     document.getElementById('garageAdvanced').hidden = ta;
     const locked = teamLocked();
     if (f1) renderSeasonPanel();
