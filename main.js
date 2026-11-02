@@ -34,7 +34,7 @@ let useGyroscope = false, gyroGamma = 0;
 
 let playerCar = null, aiCars = [], allCars = [];
 let isPaused = false;
-let currentSession = 'MENU';          // MENU | QUALI | RACE | FINISHED
+let currentSession = 'MENU';          // MENU | QUALI | RACE | TIME_TRIAL | FINISHED
 let raceState = 'RACING';             // LIGHTS | RACING
 let raceStartTimestamp = 0;
 let simTimeMs = 0;                    // игровое время (на паузе не идёт)
@@ -46,9 +46,9 @@ const keys = { w: false, a: false, s: false, d: false, space: false };
 
 const STEP = 1 / 60;
 
-function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : GT3_CATALOG; }
+function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : selectedCarClass === 'TA' ? TIME_ATTACK_CATALOG : GT3_CATALOG; }
 const DRIVETRAIN_LABELS={FWD:'Передний · FWD',RWD:'Задний · RWD',AWD:'Полный · AWD'};
-const ENGINE_LAYOUT_LABELS={FR:'Передний мотор',MR:'Средний мотор',RR:'Задний мотор'};
+const ENGINE_LAYOUT_LABELS={FF:'Поперечный передний мотор',FR:'Передний мотор',FB:'Передний оппозитный мотор',MR:'Средний мотор',RR:'Задний мотор'};
 
 // Число кругов, под которое строятся тактики
 function getPlannedLaps() {
@@ -124,15 +124,17 @@ window.setLaps = function (laps) {
 function teamLocked() { return selectedCarClass === 'F1' && season && seasonStarted() && !seasonDone(); }
 
 function applyClassMode() {
-    const f1 = selectedCarClass === 'F1',gt3=selectedCarClass==='GT3';
+    const f1 = selectedCarClass === 'F1', gt3 = selectedCarClass === 'GT3', ta = selectedCarClass === 'TA';
     raceMode = gt3 ? 'TIMED' : 'LAPS';
     document.getElementById('classBtnGT3').classList.toggle('active', gt3);
     document.getElementById('classBtnF1').classList.toggle('active', f1);
+    document.getElementById('classBtnTA').classList.toggle('active', ta);
     document.getElementById('lapSection').style.display = gt3 ? 'none' : 'flex';
     const note = document.getElementById('enduranceNote');
     note.style.display = gt3 ? 'block' : 'none';
     note.textContent = `⏱ Гонка на выживание: ${ENDURANCE_MINUTES} минут после квалификации. Финиш на первом круге после окончания времени.`;
     document.getElementById('seasonPanel').style.display = f1 ? 'block' : 'none';
+    document.getElementById('driverBar').style.display = ta ? 'none' : 'flex';
     if (f1) {
         ensureSeason();
         selectedTrackIndex = seasonNextTrack();
@@ -141,7 +143,7 @@ function applyClassMode() {
 }
 
 window.selectCarClass = function (cls) {
-    if (cls !== 'GT3' && cls !== 'F1') return;
+    if (cls !== 'GT3' && cls !== 'F1' && cls !== 'TA') return;
     selectedCarClass = cls;
     selectedCarIndex = 0; selectedTeammateSlot = 0; selectedStrategyIndex = 1;
     applyClassMode();
@@ -471,7 +473,7 @@ function updateStartButtons() {
         const b = document.getElementById(id);
         b.disabled = !!blocked; b.style.opacity = blocked ? 0.4 : 1;
     }
-    document.getElementById('btnDirectRace').textContent = selectedCarClass === 'GT3' ? 'Сразу в гонку 20 мин ▶' : 'Гонка со старта ▶';
+    document.getElementById('btnDirectRace').textContent = selectedCarClass === 'GT3' ? 'Сразу в гонку 20 мин ▶' : selectedCarClass === 'TA' ? 'Спринт Time Attack ▶' : 'Гонка со старта ▶';
     document.getElementById('btnStartQuali').textContent = selectedCarClass === 'GT3' ? '⏱️ Квалификация → гонка 20 мин' : '⏱️ Квалификация';
 }
 
@@ -576,7 +578,7 @@ function renderGarageUI() {
     renderStrategyCards();
     updateStartButtons();
     const bestGhost=loadGhost(trialKey());
-    document.getElementById("ghostRecordHint").textContent=bestGhost?"Личный рекорд: "+formatTime(bestGhost.time):"Гонка с призраком: первый чистый круг запишет рекорд";
+    document.getElementById("ghostRecordHint").textContent=bestGhost?"Общий рекорд этой машины на трассе: "+formatTime(bestGhost.time):"Time Attack: первый чистый круг сохранит общий призрак для этой машины";
 }
 
 // ============================================================================
@@ -629,6 +631,7 @@ function startQualifyingSession() {
     qualifyingTimeExpired = false; qualifyingFinishers = new Set();
     clearInputs(); resetEffects(); releaseFocus();
     sessionBestLap = { time: null, driverName: '---', carName: '' };
+    startGhostCaptureSession();
     allCars.forEach((car, idx) => {
         car.placeForQualifying(idx, allCars.length);
         car.compound = 'soft'; car.wearScale = 0.12;     // в квалификации шины почти не изнашиваются
@@ -667,6 +670,7 @@ function stepStartLights(dt) {
         raceState = 'RACING';
         raceStartTimestamp = simTimeMs;
         allCars.forEach(c => { c.lapStartTime = simTimeMs; });
+        if (playerCar && trialState) beginTrialLap(playerCar);
         setLights(5, true); sfxBeep(880, 0.5);
         showRaceControl('🟢 СТАРТ!', '#00e676');
         setTimeout(() => { document.getElementById('start-lights').style.opacity = 0; }, 1000);
@@ -692,6 +696,7 @@ function startRaceSessionFromGrid(order) {
         grid.splice(Math.min(5, grid.length), 0, playerCar);
     }
     grid.forEach((car, idx) => car.placeOnGrid(idx));
+    startGhostCaptureSession();
     rebuildEngineVoices();
 
     raceState = 'LIGHTS'; lightsPhase = 0; lightsT = 0; lightsHold = 0.5 + Math.random() * 1.3;
@@ -771,7 +776,9 @@ function openFinishModal() {
         document.getElementById('finishTitle').textContent = pos === 1 ? '🏆 ПОБЕДА!' : `🏁 ФИНИШ — P${pos}`;
         document.getElementById('finishSub').textContent = f1
             ? `${TRACKS_DB[selectedTrackIndex].shortName} · ${totalRaceLaps} кр. · раунд ${season.results.length} из ${season.order.length}`
-            : `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
+            : selectedCarClass === 'GT3'
+                ? `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`
+                : `${TRACKS_DB[selectedTrackIndex].shortName} · ${totalRaceLaps} кр. · Time Attack`;
     } else {
         document.getElementById('finishTitle').textContent = '📊 ТАБЛИЦЫ СЕЗОНА';
         document.getElementById('finishSub').textContent = `Сезон ${season.number} · гонок: ${season.results.length} из ${season.order.length}`;
@@ -946,7 +953,7 @@ function updateHUD() {
 
     document.getElementById('cpStatus').textContent = `${p.getCurrentSectorNumber()} / 4`;
     document.getElementById('lastTime').textContent = formatTime(p.lastLapTime);
-    document.getElementById('bestTime').textContent = formatTime(p.bestLapTime);
+    document.getElementById('bestTime').textContent = formatTime(trialState?.best?.time ?? p.bestLapTime);
     document.getElementById('sessionBestTime').textContent = formatTime(sessionBestLap.time);
 
     const kmh = Math.round(Math.hypot(p.dx, p.dy) * KMH_FACTOR);
