@@ -468,12 +468,14 @@ function renderSeasonPanel() {
 }
 
 function updateStartButtons() {
+    const ta = selectedCarClass === 'TA';
     const blocked = selectedCarClass === 'F1' && season && seasonDone();
     for (const id of ['btnStartQuali', 'btnDirectRace']) {
         const b = document.getElementById(id);
+        b.hidden = ta;
         b.disabled = !!blocked; b.style.opacity = blocked ? 0.4 : 1;
     }
-    document.getElementById('btnDirectRace').textContent = selectedCarClass === 'GT3' ? 'Сразу в гонку 20 мин ▶' : selectedCarClass === 'TA' ? 'Спринт Time Attack ▶' : 'Гонка со старта ▶';
+    document.getElementById('btnDirectRace').textContent = selectedCarClass === 'GT3' ? 'Сразу в гонку 20 мин ▶' : 'Гонка со старта ▶';
     document.getElementById('btnStartQuali').textContent = selectedCarClass === 'GT3' ? '⏱️ Квалификация → гонка 20 мин' : '⏱️ Квалификация';
 }
 
@@ -495,6 +497,9 @@ function drawGarageTrackPreview(canvasEl,track) {
 }
 function renderGarageUI() {
     const f1 = selectedCarClass === 'F1';
+    const ta = selectedCarClass === 'TA';
+    document.getElementById('classModeLabel').textContent = ta ? 'РЕЖИМ' : 'КЛАСС ГОНКИ';
+    document.getElementById('garageAdvanced').hidden = ta;
     const locked = teamLocked();
     if (f1) renderSeasonPanel();
 
@@ -599,16 +604,18 @@ function buildWeekendRoster() {
 
     aiCars = [];
     let slot = 1;
-    catalog.forEach((tm, ti) => {
-        tm.drivers.forEach((d, di) => {
-            if (ti === selectedCarIndex && di === seat) return;
-            const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
-            bot.baseName = d.name;
-            bot.assignStrategy(strategies[slot % strategies.length]);
-            aiCars.push(bot);
-            slot++;
+    if (selectedCarClass !== 'TA') {
+        catalog.forEach((tm, ti) => {
+            tm.drivers.forEach((d, di) => {
+                if (ti === selectedCarIndex && di === seat) return;
+                const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
+                bot.baseName = d.name;
+                bot.assignStrategy(strategies[slot % strategies.length]);
+                aiCars.push(bot);
+                slot++;
+            });
         });
-    });
+    }
     allCars = [playerCar, ...aiCars];
     gridOrder = null;
 
@@ -625,6 +632,7 @@ function hideAllModals() {
 }
 
 function startQualifyingSession() {
+    if (selectedCarClass === 'TA') return;
     initAudio();
     hideAllModals();
     currentSession = 'QUALI'; raceState = 'RACING'; isPaused = false; simTimeMs = 0;
@@ -678,6 +686,7 @@ function stepStartLights(dt) {
 }
 
 function startRaceSessionFromGrid(order) {
+    if (selectedCarClass === 'TA') return;
     initAudio();
     hideAllModals();
     currentSession = 'RACE'; isPaused = false; simTimeMs = 0; raceStartTimestamp = 0;
