@@ -46,7 +46,7 @@ const keys = { w: false, a: false, s: false, d: false, space: false };
 
 const STEP = 1 / 60;
 
-function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : (selectedCarClass === 'ROAD' ? ROAD_CATALOG : GT3_CATALOG); }
+function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : GT3_CATALOG; }
 const DRIVETRAIN_LABELS={FWD:'Передний · FWD',RWD:'Задний · RWD',AWD:'Полный · AWD'};
 const ENGINE_LAYOUT_LABELS={FR:'Передний мотор',MR:'Средний мотор',RR:'Задний мотор'};
 
@@ -124,11 +124,10 @@ window.setLaps = function (laps) {
 function teamLocked() { return selectedCarClass === 'F1' && season && seasonStarted() && !seasonDone(); }
 
 function applyClassMode() {
-    const f1 = selectedCarClass === 'F1',road=selectedCarClass==='ROAD',gt3=selectedCarClass==='GT3';
+    const f1 = selectedCarClass === 'F1',gt3=selectedCarClass==='GT3';
     raceMode = gt3 ? 'TIMED' : 'LAPS';
     document.getElementById('classBtnGT3').classList.toggle('active', gt3);
     document.getElementById('classBtnF1').classList.toggle('active', f1);
-    document.getElementById('classBtnRoad').classList.toggle('active', road);
     document.getElementById('lapSection').style.display = gt3 ? 'none' : 'flex';
     const note = document.getElementById('enduranceNote');
     note.style.display = gt3 ? 'block' : 'none';
@@ -142,6 +141,7 @@ function applyClassMode() {
 }
 
 window.selectCarClass = function (cls) {
+    if (cls !== 'GT3' && cls !== 'F1') return;
     selectedCarClass = cls;
     selectedCarIndex = 0; selectedTeammateSlot = 0; selectedStrategyIndex = 1;
     applyClassMode();
@@ -549,7 +549,7 @@ function renderGarageUI() {
         card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas>
             <div class="car-item-title">${car.shortName}</div>
             <div class="car-item-sub">Скорость ${score(p.vmax, 'vmax')}% · разгон ${score(p.power, 'power')}%</div>
-            <div class="car-note">${DRIVETRAIN_LABELS[car.drivetrain]||'Задний · RWD'} · ${ENGINE_LAYOUT_LABELS[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
+            <div class="car-note">${DRIVETRAIN_LABELS[car.drivetrain]||'Привод не указан'} · ${ENGINE_LAYOUT_LABELS[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
             <div class="car-character">${characterSummary(car)}</div>
             <div class="car-stats-grid" aria-label="Характеристики в процентах от лучшего значения в классе">${bar('Сцепление', 'grip')}${bar('Прижим', 'aero')}${bar('Тормоза', 'brake')}${bar('Ресурс шин', 'tire')}</div>`;
         drawCarThumb(card.querySelector('canvas'), car);
@@ -771,8 +771,7 @@ function openFinishModal() {
         document.getElementById('finishTitle').textContent = pos === 1 ? '🏆 ПОБЕДА!' : `🏁 ФИНИШ — P${pos}`;
         document.getElementById('finishSub').textContent = f1
             ? `${TRACKS_DB[selectedTrackIndex].shortName} · ${totalRaceLaps} кр. · раунд ${season.results.length} из ${season.order.length}`
-            : selectedCarClass==='ROAD' ? `${TRACKS_DB[selectedTrackIndex].shortName} · трек-день · ${totalRaceLaps} кр.` :
-              `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
+            : `${TRACKS_DB[selectedTrackIndex].shortName} · гонка на выживание ${ENDURANCE_MINUTES} мин`;
     } else {
         document.getElementById('finishTitle').textContent = '📊 ТАБЛИЦЫ СЕЗОНА';
         document.getElementById('finishSub').textContent = `Сезон ${season.number} · гонок: ${season.results.length} из ${season.order.length}`;
@@ -971,9 +970,9 @@ function updateHUD() {
     else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
     const aeroEl=document.getElementById('dashAero');
     const f1=p.spec.carClass==='F1';
-    const driveName=DRIVETRAIN_LABELS[p.drivetrain]||'Задний · RWD';
+    const driveName=DRIVETRAIN_LABELS[p.drivetrain]||'Привод не указан';
     document.getElementById('hudDriveType').textContent=driveName;
-    document.getElementById('hudEngineLayout').textContent=ENGINE_LAYOUT_LABELS[p.engineLayout]||'Средний мотор';
+    document.getElementById('hudEngineLayout').textContent=ENGINE_LAYOUT_LABELS[p.engineLayout]||'Компоновка не указана';
     const hb=document.getElementById('hudHandbrake');
     hb.textContent=p.handbrakeActive?'ЗАЖАТ':'ОТПУЩЕН';
     hb.classList.toggle('active',!!p.handbrakeActive);
@@ -1057,15 +1056,15 @@ function buildMinimapCache() {
         c.strokeStyle='#fbbf24';c.lineWidth=2.2;c.stroke();
         // Garage location markers.
         c.fillStyle='#f8fafc';
-        for(const p of teamPitBoxes)c.fillRect(p.x*minimapScale+minimapOffX-1.5,p.y*minimapScale+minimapOffY-1.5,3,3);
+        for(const p of teamPitBoxes)c.fillRect(p.x*minimapScale+minimapOffX-3,p.y*minimapScale+minimapOffY-3,6,6);
     }
     for(let i=0;i<3;i++){
         const p=trackSamples[Math.floor(i*trackSamples.length/3)];
         c.fillStyle=['#f3a45b','#6edbbc','#88b7f6'][i];
-        c.beginPath();c.arc(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY,2.8,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(p.x*minimapScale+minimapOffX,p.y*minimapScale+minimapOffY,5,0,Math.PI*2);c.fill();
     }
     const s0 = trackSamples[0];
-    c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 3, s0.y * minimapScale + minimapOffY - 3, 6, 6);
+    c.fillStyle = '#fff'; c.fillRect(s0.x * minimapScale + minimapOffX - 5, s0.y * minimapScale + minimapOffY - 5, 10, 10);
 }
 
 function drawMinimap() {
@@ -1076,12 +1075,12 @@ function drawMinimap() {
     for (const c of allCars) {
         if (c === playerCar) continue;
         mCtx.fillStyle = c.isTeammate ? '#38bdf8' : c.livery.primary;
-        mCtx.beginPath(); mCtx.arc(c.x * minimapScale + minimapOffX, c.y * minimapScale + minimapOffY, 3, 0, Math.PI * 2); mCtx.fill();
+        mCtx.beginPath(); mCtx.arc(c.x * minimapScale + minimapOffX, c.y * minimapScale + minimapOffY, 5, 0, Math.PI * 2); mCtx.fill();
     }
     if (playerCar) {
         const px = playerCar.x * minimapScale + minimapOffX, py = playerCar.y * minimapScale + minimapOffY;
-        mCtx.fillStyle = '#ff3b4e'; mCtx.strokeStyle = '#fff'; mCtx.lineWidth = 1.5;
-        mCtx.beginPath(); mCtx.arc(px, py, 5, 0, Math.PI * 2); mCtx.fill(); mCtx.stroke();
+        mCtx.fillStyle = '#ff3b4e'; mCtx.strokeStyle = '#fff'; mCtx.lineWidth = 3;
+        mCtx.beginPath(); mCtx.arc(px, py, 8, 0, Math.PI * 2); mCtx.fill(); mCtx.stroke();
     }
 }
 

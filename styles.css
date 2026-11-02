@@ -722,3 +722,30 @@ button:focus-visible,summary:focus-visible,.track-card:focus-visible,.car-card:f
 .garage-track-section .track-info-sub{font-size:11px;line-height:1.4;margin-top:5px;white-space:normal;}
 @media(max-width:700px){.garage-track-section .track-card{grid-template-columns:80px minmax(0,1fr);gap:10px;}
 .garage-track-section .track-card-preview{width:80px;height:64px;}}
+
+
+/* HUD panels share a vertical stack so machine status never covers driver data. */
+#hud-left-stack {
+    position:absolute;top:90px;left:14px;width:254px;max-height:calc(100% - 112px);
+    display:flex;flex-direction:column;gap:10px;overflow:hidden;z-index:6;pointer-events:none;
+}
+#hud-left-stack > #hud-left {
+    position:relative;top:auto;left:auto;width:100%;min-height:0;z-index:auto;
+}
+#hud-left-stack > #damage-panel {
+    position:relative;inset:auto;width:100%;z-index:auto;
+}
+#minimapFrame {width:320px;padding:9px;}
+#minimapFrame .minimap-heading {font-size:9px;margin-bottom:7px;}
+canvas#minimapCanvas {
+    position:static;display:block;width:100%;height:auto;aspect-ratio:10 / 7;
+    max-width:100%;border-radius:9px;
+}
+#pit-assistant {bottom:270px;max-height:calc(100% - 450px);}
+@media(max-width:700px) {
+    #hud-left-stack {top:56px;left:8px;width:205px;max-height:calc(100% - 72px);}
+    #hud-left-stack > #hud-left {padding:10px;}
+    #hud-left-stack > #damage-panel {padding:8px;}
+    #minimapFrame {bottom:160px;right:8px;width:min(320px,calc(100% - 16px));}
+    #pit-assistant {bottom:418px;max-height:calc(100% - 470px);}
+}
