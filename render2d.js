@@ -1,14 +1,57 @@
 const spriteImgs = {};
 
+// User-provided Time Attack models in the same left-to-right, top-to-bottom order
+// as the supplied 5x3 sprite sheet. Rectangles are tight alpha bounds in the atlas.
+const TIME_ATTACK_SPRITE_RECTS = {
+    ta_civic:       [127, 26, 167, 299],
+    ta_megane_rs:   [407, 25, 168, 297],
+    ta_kalina:      [684, 32, 163, 289],
+    ta_granta:      [961, 28, 165, 298],
+    ta_vesta:       [1234, 26, 170, 301],
+    ta_mx5:         [120, 366, 179, 294, true],
+    ta_gt86:        [404, 358, 176, 302],
+    ta_brz:         [679, 361, 179, 299],
+    ta_bmw_m3:      [956, 356, 179, 314],
+    ta_bmw_m4:      [1234, 358, 172, 308],
+    ta_s2000:       [120, 700, 182, 301, true],
+    ta_silvia:      [403, 699, 178, 307],
+    ta_porsche_911: [675, 695, 183, 310],
+    ta_lancer_evo:  [953, 696, 182, 301],
+    ta_wrx_sti:     [1230, 697, 181, 308]
+};
+
+function loadTimeAttackSprites() {
+    const atlas = new Image();
+    atlas.onload = () => {
+        for (const [id, [sx, sy, sw, sh, rotate180]] of Object.entries(TIME_ATTACK_SPRITE_RECTS)) {
+            const sprite = document.createElement('canvas');
+            sprite.width = sw;
+            sprite.height = sh;
+            const ctx = sprite.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            if (rotate180) {
+                ctx.translate(sw, sh);
+                ctx.rotate(Math.PI);
+            }
+            ctx.drawImage(atlas, sx, sy, sw, sh, 0, 0, sw, sh);
+            spriteImgs[id] = sprite;
+        }
+    };
+    atlas.src = 'assets/time-attack-cars.png?v=20261103-time-attack-models-v1';
+}
+
 function loadSprites() {
-    if (typeof SPRITE_DATA === 'undefined') return;
-    for (const id in SPRITE_DATA) {
-        const img = new Image();
-        img.onload = () => {
-            spriteImgs[id] = img;
-        };
-        img.src = SPRITE_DATA[id];
+    if (typeof SPRITE_DATA !== 'undefined') {
+        for (const id in SPRITE_DATA) {
+            const img = new Image();
+            img.onload = () => {
+                spriteImgs[id] = img;
+            };
+            img.src = SPRITE_DATA[id];
+        }
     }
+    loadTimeAttackSprites();
 }
 
 function spriteDims(car) {
