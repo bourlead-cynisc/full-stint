@@ -749,7 +749,7 @@ class Car {
         const extent = Math.abs(front) * this.height * 0.49 + Math.abs(side) * this.width * 0.48;
         const limit = WALL_HALF_W - extent;
         if (info.dist <= limit) return;
-        if(this.isPlayer && currentSession==='TIME_TRIAL') invalidateTrialLap('Контакт с ограждением');
+        if(this.isPlayer && ['QUALI','RACE','TIME_TRIAL'].includes(currentSession)) invalidateTrialLap('Контакт с ограждением');
         this.x -= nx * (info.dist - limit);
         this.y -= ny * (info.dist - limit);
         const impact = Math.max(0, this.dx * nx + this.dy * ny);
@@ -795,7 +795,7 @@ class Car {
                 this.timingStarted = true;
                 this.lapStartTime = simTimeMs;
                 this.sectorsPassed = [false, false, false];
-                if(currentSession==='TIME_TRIAL'&&this.isPlayer)beginTrialLap(this);
+                if(this.isPlayer)beginTrialLap(this);
             }
             return;
         }
@@ -803,7 +803,7 @@ class Car {
         const now = simTimeMs;
         const rawLap = now - this.lapStartTime;
         this.lastLapTime = rawLap;
-        const valid=currentSession==='TIME_TRIAL'&&this.isPlayer?finishTrialLap(this,rawLap):true;
+        const valid=this.isPlayer&&trialState&&['QUALI','RACE','TIME_TRIAL'].includes(currentSession)?finishTrialLap(this,rawLap):true;
         if(valid){if (this.bestLapTime === null || rawLap < this.bestLapTime) this.bestLapTime = rawLap;
         registerLapForGlobalBest(this, rawLap);}
 

@@ -23,6 +23,10 @@ const ENGINE_PROFILES = {
     V8T: { cyl: 8,  redline: 7600,  f1: 96,  tau1: 0.013, f2: 360,  tau2: 0.0040, noise: 0.50, uneven: 0.10, lp: 0.28, turbo: true,  bright: 0.8 },
     V10: { cyl: 10, redline: 8400,  f1: 118, tau1: 0.008, f2: 640,  tau2: 0.0028, noise: 0.35, uneven: 0.00, lp: 0.46, turbo: false, bright: 1.2 },
     V6:  { cyl: 6,  redline: 8000,  f1: 140, tau1: 0.009, f2: 520,  tau2: 0.0030, noise: 0.45, uneven: 0.05, lp: 0.32, turbo: true,  bright: 1.0 },
+    I4:  { cyl: 4,  redline: 7800,  f1: 138, tau1: 0.008, f2: 620, tau2: 0.0028, noise: 0.32, uneven: 0.025, lp: 0.42, turbo: false, bright: 1.12 },
+    H4:  { cyl: 4,  redline: 7200,  f1: 96,  tau1: 0.012, f2: 420, tau2: 0.0036, noise: 0.43, uneven: 0.09,  lp: 0.31, turbo: true,  bright: 0.92 },
+    I4:  { cyl: 4,  redline: 7800,  f1: 138, tau1: 0.008, f2: 620, tau2: 0.0028, noise: 0.32, uneven: 0.025, lp: 0.42, turbo: false, bright: 1.12 },
+    H4:  { cyl: 4,  redline: 7200,  f1: 96,  tau1: 0.012, f2: 420, tau2: 0.0036, noise: 0.43, uneven: 0.09,  lp: 0.31, turbo: true,  bright: 0.92 },
     I6:  { cyl: 6,  redline: 7600,  f1: 120, tau1: 0.011, f2: 460,  tau2: 0.0035, noise: 0.38, uneven: 0.00, lp: 0.30, turbo: true,  bright: 0.9 },
     F6:  { cyl: 6,  redline: 8400,  f1: 150, tau1: 0.008, f2: 700,  tau2: 0.0025, noise: 0.50, uneven: 0.00, lp: 0.40, turbo: false, bright: 1.15 },
     F1:  { cyl: 6,  redline: 15000, f1: 210, tau1: 0.0045, f2: 1250, tau2: 0.0016, noise: 0.40, uneven: 0.00, lp: 0.50, turbo: true,  bright: 1.3 }
@@ -32,6 +36,12 @@ const CAR_ENGINE_FAMILIES = {
     aston_gt3: 'V8', audi_gt3: 'V10', bmw_gt3: 'I6', corvette_gt3: 'V8F',
     ferrari_gt3: 'V6', mustang_gt3: 'V8F', lambo_gt3: 'V10', lexus_gt3: 'V8T',
     mclaren_gt3: 'V8T', mercedes_gt3: 'V8', porsche_gt3: 'F6', bentley_gt3: 'V8',
+    ta_civic: 'I4', ta_megane_rs: 'I4', ta_kalina: 'I4', ta_granta: 'I4', ta_vesta: 'I4',
+    ta_mx5: 'I4', ta_gt86: 'H4', ta_brz: 'H4', ta_bmw_m3: 'I6', ta_bmw_m4: 'V8F',
+    ta_s2000: 'I4', ta_silvia: 'I6', ta_porsche_911: 'F6', ta_lancer_evo: 'I4', ta_wrx_sti: 'H4',
+    ta_civic: 'I4', ta_megane_rs: 'I4', ta_kalina: 'I4', ta_granta: 'I4', ta_vesta: 'I4',
+    ta_mx5: 'I4', ta_gt86: 'H4', ta_brz: 'H4', ta_bmw_m3: 'I6', ta_bmw_m4: 'V8F',
+    ta_s2000: 'I4', ta_silvia: 'I6', ta_porsche_911: 'F6', ta_lancer_evo: 'I4', ta_wrx_sti: 'H4',
     f1_redbull: 'F1', f1_mercedes: 'F1', f1_ferrari: 'F1', f1_mclaren: 'F1',
     f1_aston: 'F1', f1_alpine: 'F1', f1_sauber: 'F1', f1_rb: 'F1',
     f1_williams: 'F1', f1_haas: 'F1', f1_cadillac: 'F1'

@@ -749,3 +749,7 @@ canvas#minimapCanvas {
     #minimapFrame {bottom:160px;right:8px;width:min(320px,calc(100% - 16px));}
     #pit-assistant {bottom:418px;max-height:calc(100% - 470px);}
 }
+
+/* Три класса в гараже: карточки остаются удобными на узких экранах. */
+.class-switch-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media(max-width:700px) { .class-switch-row { grid-template-columns:1fr; } }

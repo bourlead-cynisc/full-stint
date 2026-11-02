@@ -260,6 +260,70 @@ const F1_CATALOG = [
     }
 ];
 
+// Машины Time Attack — характеристики являются игровым балансом, а не заводской телеметрией.
+const TIME_ATTACK_CATALOG = [
+    { id:'ta_civic', carClass:'TA', drivetrain:'FWD', engineLayout:'FF', enginePosition:'front', bodyStyle:'hatchback', hasWing:true, driveTraction:1.02, driveRotation:1.02,
+      name:'Honda Civic EG / EK / EP3 / FK8', shortName:'Honda Civic Type R', teamName:'Honda Civic',
+      width:20, height:42, topSpeedKmh:230, livery:{primary:'#ef3039',secondary:'#f8fafc',accent:'#facc15',wing:'#111827'},
+      drivers:[{name:'Civic',number:1,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_megane_rs', carClass:'TA', drivetrain:'FWD', engineLayout:'FF', enginePosition:'front', bodyStyle:'hatchback', hasWing:true, driveTraction:1.08, driveRotation:1.05,
+      name:'Renault Megane RS', shortName:'Megane RS', teamName:'Renault Megane RS',
+      width:21, height:44, topSpeedKmh:255, livery:{primary:'#f5ad22',secondary:'#f5d334',accent:'#f8fafc',wing:'#17191d'},
+      drivers:[{name:'Megane',number:2,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_kalina', carClass:'TA', drivetrain:'FWD', engineLayout:'FF', enginePosition:'front', bodyStyle:'hatchback', driveTraction:.94, driveRotation:.94,
+      name:'LADA Kalina', shortName:'LADA Kalina', teamName:'LADA Kalina',
+      width:19, height:39, topSpeedKmh:180, livery:{primary:'#92bd43',secondary:'#e9f4e1',accent:'#ef4444',wing:'#26301e'},
+      drivers:[{name:'Kalina',number:3,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_granta', carClass:'TA', drivetrain:'FWD', engineLayout:'FF', enginePosition:'front', bodyStyle:'sedan', driveTraction:.96, driveRotation:.96,
+      name:'LADA Granta', shortName:'LADA Granta', teamName:'LADA Granta',
+      width:20, height:42, topSpeedKmh:190, livery:{primary:'#d8d9d4',secondary:'#aab3bc',accent:'#f1f5f9',wing:'#353b42'},
+      drivers:[{name:'Granta',number:4,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_vesta', carClass:'TA', drivetrain:'FWD', engineLayout:'FF', enginePosition:'front', bodyStyle:'sedan', driveTraction:1.00, driveRotation:1.00,
+      name:'LADA Vesta', shortName:'LADA Vesta', teamName:'LADA Vesta',
+      width:21, height:44, topSpeedKmh:205, livery:{primary:'#1765cf',secondary:'#0b254b',accent:'#f8fafc',wing:'#101d32'},
+      drivers:[{name:'Vesta',number:5,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_mx5', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'roadster', driveTraction:.96, driveRotation:1.12,
+      name:'Mazda MX-5 Miata', shortName:'Mazda MX-5', teamName:'Mazda MX-5 Miata',
+      width:20, height:40, topSpeedKmh:210, livery:{primary:'#df3034',secondary:'#f8fafc',accent:'#f8d84a',wing:'#262a2e'},
+      drivers:[{name:'MX-5',number:6,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_gt86', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'coupe', driveTraction:.98, driveRotation:1.07,
+      name:'Toyota GT86', shortName:'Toyota GT86', teamName:'Toyota GT86',
+      width:21, height:43, topSpeedKmh:225, livery:{primary:'#f3f4f6',secondary:'#cbd5e1',accent:'#2563eb',wing:'#17191d'},
+      drivers:[{name:'GT86',number:7,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_brz', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'coupe', driveTraction:1.00, driveRotation:1.09,
+      name:'Subaru BRZ', shortName:'Subaru BRZ', teamName:'Subaru BRZ',
+      width:21, height:43, topSpeedKmh:225, livery:{primary:'#1765d1',secondary:'#0f3270',accent:'#62b8ff',wing:'#101a2d'},
+      drivers:[{name:'BRZ',number:8,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_bmw_m3', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'sedan', hasWing:true, driveTraction:1.02, driveRotation:.99,
+      name:'BMW M3 E46 / E92 / F80', shortName:'BMW M3', teamName:'BMW M3',
+      width:22, height:45, topSpeedKmh:275, livery:{primary:'#22252a',secondary:'#555b63',accent:'#ef4444',wing:'#101215'},
+      drivers:[{name:'M3',number:9,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_bmw_m4', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'coupe', hasWing:true, driveTraction:1.04, driveRotation:.98,
+      name:'BMW M4 F82', shortName:'BMW M4', teamName:'BMW M4',
+      width:22, height:45, topSpeedKmh:295, livery:{primary:'#f0b323',secondary:'#e9edf2',accent:'#20242a',wing:'#15181c'},
+      drivers:[{name:'M4',number:10,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_s2000', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'roadster', driveTraction:.99, driveRotation:1.14,
+      name:'Honda S2000', shortName:'Honda S2000', teamName:'Honda S2000',
+      width:20, height:41, topSpeedKmh:250, livery:{primary:'#e5e7eb',secondary:'#aeb7c0',accent:'#e63946',wing:'#22262b'},
+      drivers:[{name:'S2000',number:11,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_silvia', carClass:'TA', drivetrain:'RWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'coupe', hasWing:true, driveTraction:.94, driveRotation:1.12,
+      name:'Nissan Silvia S14 / S15', shortName:'Nissan Silvia', teamName:'Nissan Silvia',
+      width:21, height:44, topSpeedKmh:285, livery:{primary:'#24272d',secondary:'#111418',accent:'#f25d5d',wing:'#0e1115'},
+      drivers:[{name:'Silvia',number:12,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_porsche_911', carClass:'TA', drivetrain:'RWD', engineLayout:'RR', enginePosition:'rear', bodyStyle:'supercar', hasWing:true, driveTraction:1.12, driveRotation:1.03,
+      name:'Porsche 911 991 / 992', shortName:'Porsche 911', teamName:'Porsche 911',
+      width:22, height:44, topSpeedKmh:305, livery:{primary:'#df3034',secondary:'#15191e',accent:'#f5f5f4',wing:'#111418'},
+      drivers:[{name:'911',number:13,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_lancer_evo', carClass:'TA', drivetrain:'AWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'rally', hasWing:true, driveTraction:1.12, driveRotation:1.02,
+      name:'Mitsubishi Lancer Evolution IX / X', shortName:'Lancer Evolution', teamName:'Mitsubishi Lancer Evolution',
+      width:22, height:46, topSpeedKmh:300, livery:{primary:'#eceff1',secondary:'#30343a',accent:'#e63946',wing:'#111418'},
+      drivers:[{name:'Evo',number:14,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] },
+    { id:'ta_wrx_sti', carClass:'TA', drivetrain:'AWD', engineLayout:'FB', enginePosition:'front', bodyStyle:'rally', hasWing:true, driveTraction:1.10, driveRotation:1.05,
+      name:'Subaru Impreza WRX STI', shortName:'Impreza WRX STI', teamName:'Subaru Impreza WRX STI',
+      width:22, height:46, topSpeedKmh:285, livery:{primary:'#1765d1',secondary:'#f5f7fa',accent:'#f3cf3c',wing:'#15233c'},
+      drivers:[{name:'WRX STI',number:15,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
+];
+
 // ============================================================================
 // БАЛАНС МАШИН (реалистичные величины)
 //   power  — удельная мощность, Вт/кг
@@ -294,14 +358,31 @@ const CAR_PERF = {
     f1_rb:        { power: 902, vmax: 343, grip: 1.94, aero: 3.15, brake: 2.7, tire: 0.99, note: 'Быстро разгоняется' },
     f1_williams:  { power: 906, vmax: 349, grip: 1.92, aero: 3.00, brake: 2.7, tire: 1.03, note: 'Низкое сопротивление воздуха' },
     f1_haas:      { power: 890, vmax: 342, grip: 1.90, aero: 3.05, brake: 2.65, tire: 0.98, note: 'Скромные ресурсы' },
-    f1_cadillac:  { power: 882, vmax: 340, grip: 1.88, aero: 3.00, brake: 2.65, tire: 1.00, note: 'Новичок чемпионата' }
+    f1_cadillac:  { power: 882, vmax: 340, grip: 1.88, aero: 3.00, brake: 2.65, tire: 1.00, note: 'Новичок чемпионата' },
+    // ---- Time Attack: разная мощность, прижим, тормоза и ресурс шин ----
+    ta_civic:       { power: 176, vmax: 230, grip: 1.46, aero: 0.46, brake: 1.42, tire: 1.08, note: 'Лёгкий передний привод' },
+    ta_megane_rs:   { power: 205, vmax: 255, grip: 1.55, aero: 0.62, brake: 1.74, tire: 1.05, note: 'Передняя подвеска цепко держит дугу' },
+    ta_kalina:      { power: 90,  vmax: 180, grip: 1.18, aero: 0.16, brake: 1.08, tire: 1.00, note: 'Лёгкая машина начального класса' },
+    ta_granta:      { power: 110, vmax: 190, grip: 1.22, aero: 0.20, brake: 1.12, tire: 1.01, note: 'Мягкая настройка для плавной езды' },
+    ta_vesta:       { power: 135, vmax: 205, grip: 1.28, aero: 0.26, brake: 1.20, tire: 1.04, note: 'Устойчивый передний привод' },
+    ta_mx5:         { power: 126, vmax: 210, grip: 1.46, aero: 0.36, brake: 1.40, tire: 1.12, note: 'Лёгкая и точная в повороте' },
+    ta_gt86:        { power: 150, vmax: 225, grip: 1.50, aero: 0.46, brake: 1.50, tire: 1.12, note: 'Сбалансированное заднеприводное купе' },
+    ta_brz:         { power: 150, vmax: 225, grip: 1.52, aero: 0.48, brake: 1.52, tire: 1.10, note: 'Низкий центр тяжести и ровный баланс' },
+    ta_bmw_m3:      { power: 245, vmax: 275, grip: 1.56, aero: 0.62, brake: 1.70, tire: 0.95, note: 'Тяжёлый задний привод с сильным мотором' },
+    ta_bmw_m4:      { power: 285, vmax: 295, grip: 1.58, aero: 0.72, brake: 1.78, tire: 0.97, note: 'Мощная машина для скоростных прямых' },
+    ta_s2000:       { power: 205, vmax: 250, grip: 1.58, aero: 0.45, brake: 1.65, tire: 1.00, note: 'Высокооборотный родстер с острым рулём' },
+    ta_silvia:      { power: 255, vmax: 285, grip: 1.50, aero: 0.76, brake: 1.50, tire: 0.92, note: 'Под газом охотно уходит в занос' },
+    ta_porsche_911: { power: 300, vmax: 305, grip: 1.66, aero: 0.88, brake: 2.00, tire: 1.02, note: 'Заднемоторная компоновка даёт тягу на выходе' },
+    ta_lancer_evo:  { power: 285, vmax: 300, grip: 1.61, aero: 0.72, brake: 1.90, tire: 0.96, note: 'Полный привод цепко разгоняется из поворота' },
+    ta_wrx_sti:     { power: 260, vmax: 285, grip: 1.56, aero: 0.62, brake: 1.76, tire: 1.03, note: 'Стабильный полный привод и оппозитный мотор' }
 };
 // Настройки по классам: обороты, передаточные отношения (доля vmax на красной зоне), время переключения
 const CLASS_CFG = {
     GT3: { redline: 7800,  idle: 1100, gearFrac: [0.30, 0.43, 0.57, 0.71, 0.85, 1.00],                     upRpm: 0.965, shiftTime: 0.09, brakeAero: 0.80, rampers: 'V8' },
-    F1:  { redline: 15000, idle: 4500, gearFrac: [0.26, 0.35, 0.45, 0.55, 0.66, 0.77, 0.88, 1.00],         upRpm: 0.970, shiftTime: 0.04, brakeAero: 3.00, rampers: 'V6' }
+    F1:  { redline: 15000, idle: 4500, gearFrac: [0.26, 0.35, 0.45, 0.55, 0.66, 0.77, 0.88, 1.00],         upRpm: 0.970, shiftTime: 0.04, brakeAero: 3.00, rampers: 'V6' },
+    TA:  { redline: 8200,  idle: 950,  gearFrac: [0.28, 0.42, 0.56, 0.70, 0.84, 1.00],                     upRpm: 0.960, shiftTime: 0.12, brakeAero: 0.48, rampers: 'I4' }
 };
-for (const cat of [GT3_CATALOG, F1_CATALOG]) {
+for (const cat of [GT3_CATALOG, F1_CATALOG, TIME_ATTACK_CATALOG]) {
     for (const spec of cat) {
         const p = CAR_PERF[spec.id];
         if (p) { spec.perf = p; spec.topSpeedKmh = Math.round(p.vmax); }
@@ -403,6 +484,8 @@ function getStrategyPresetsForLaps(laps) {
     });
 }
 
+EST_LAP_SEC.TA = [170, 165, 145, 180];
+
 const TRACKS_DB = [
     {
         id: 'usa', name: '🇺🇸 США (Остин)', shortName: 'США (COTA)', desc: 'Подъем 41 м к Т1', scale: 66, pitSideSign: 1,
@@ -503,3 +586,6 @@ TRACKS_DB.push({"id": "redbullring", "name": "🇦🇹 Ред Булл Ринг"
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
 TRACKS_DB.push({"id":"monaco","name":"🇲🇨 Монако","shortName":"Монако","desc":"Городская трасса · 19 поворотов · гавань и тоннель · детальная схема","scale":23,"pitSideSign":-1,"theme":{"grassBase":"#173c2c","grassAlt":"#143425","runoffColor":"#334155"},"drsZones":[{"detect":0.82,"start":0.86,"end":0.98}],"rawPoints":[{"x":58,"y":333},{"x":56,"y":300},{"x":57,"y":266},{"x":77,"y":233},{"x":91,"y":226},{"x":113,"y":230},{"x":173,"y":230},{"x":230,"y":230},{"x":290,"y":225},{"x":316,"y":214},{"x":328,"y":189},{"x":320,"y":150},{"x":341,"y":127},{"x":373,"y":99},{"x":395,"y":80},{"x":404,"y":74},{"x":406,"y":110},{"x":401,"y":146},{"x":392,"y":161},{"x":386,"y":182},{"x":390,"y":194},{"x":400,"y":194},{"x":408,"y":179},{"x":416,"y":137},{"x":428,"y":129},{"x":445,"y":131},{"x":451,"y":145},{"x":448,"y":161},{"x":431,"y":182},{"x":407,"y":205},{"x":373,"y":226},{"x":329,"y":240},{"x":282,"y":248},{"x":247,"y":253},{"x":234,"y":258},{"x":225,"y":249},{"x":217,"y":260},{"x":207,"y":267},{"x":194,"y":258},{"x":181,"y":262},{"x":152,"y":265},{"x":116,"y":265},{"x":105,"y":276},{"x":99,"y":300},{"x":98,"y":324},{"x":93,"y":350},{"x":91,"y":371},{"x":96,"y":390},{"x":113,"y":399},{"x":128,"y":414},{"x":138,"y":431},{"x":134,"y":440},{"x":118,"y":443},{"x":105,"y":436},{"x":94,"y":425},{"x":84,"y":432},{"x":79,"y":447},{"x":67,"y":451},{"x":60,"y":435},{"x":59,"y":403},{"x":61,"y":373}],"pitRoutePoints":[{"x":94,"y":425},{"x":90,"y":402},{"x":83,"y":374},{"x":79,"y":338},{"x":80,"y":308},{"x":82,"y":285},{"x":85,"y":261},{"x":83,"y":242}],"layoutVersion":"monaco-custom-v2"});
 EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
+
+// Для Time Attack оцениваем темп дорожных машин относительно базы GT3 на каждой трассе.
+EST_LAP_SEC.TA = EST_LAP_SEC.GT3.map(seconds => Math.round(seconds * 1.18));
