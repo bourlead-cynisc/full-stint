@@ -12,25 +12,15 @@ python3 -m http.server 8000
 
 Откройте http://localhost:8000 или [Full Stint на GitHub Pages](https://bourlead-cynisc.github.io/full-stint/).
 
-## Обновление 2.1 — привод, ручник и трассы
+## HUD, мини-карта и гоночные приводы
 
-- Приводы **FWD, AWD и RWD** можно сравнить в новом классе **ТРЕК-ДЕНЬ**:
-  Volkswagen Golf GTI (передний), Audi RS 3 Sportback (полный), Porsche 911 Carrera (задний).
-  Эти машины не являются GT3 и не участвуют в чемпионате F1. Реальные GT3/F1 остаются RWD.
-- В физике учитываются перераспределение тяги, недостаточная поворачиваемость FWD
-  под газом, тяга AWD на выходе из поворотов и реакция RWD на подачу газа.
-  Коэффициенты являются игровым балансом, а не заводской телеметрией.
-- **Пробел** — удерживать ручник, в том числе при сохранённом фокусе на кнопке HUD;
-  на телефоне есть отдельная кнопка. Состояние ручника и тип привода отображаются на HUD.
-- Пит-лейны стыкуются с основной трассой по координатам и направлению,
-  исправлен маршрут Монако по присланной схеме, обновлена прорисовка.
-- В окне выбора появились крупные карточки и схемы трасс.
-- Статическая страница обновляет CSS/JS через новый номер сборки; при необходимости
-  после развёртывания используйте принудительное обновление страницы (Ctrl+Shift+R).
+- Левый HUD и состояние машины расположены одной колонкой, панели не перекрываются.
+- Мини-карта стала крупнее и чётче; её маркеры также увеличены.
+- Проверка гоночных спецификаций: все 12 машин в текущем каталоге GT3 и 11 машин F1 имеют задний привод. Для F1 это также прямо закреплено в FIA 2026, ст. 9.2.1. Учитывается именно гоночная версия: например, Audi R8 LMS GT3 — RWD, даже если дорожная модель могла предлагаться с полным приводом. Источники по гоночным версиям: [Audi R8 LMS GT3](https://uploads.audi-mediacenter.com/system/production/uploaded_files/19514/file/259808bc1b08337b8b1096c2f4008a6fcde1be67/Technische_Daten_Audi_R8_LMS_GT3_2021_GB.pdf), [Aston Martin Vantage GT3](https://www.gt-world-challenge-europe.com/images/News%202024/STATE-OF-THE-ART%20ASTON%20MARTIN%20VANTAGE%20GT3%20SPEARHEADS%20NEW%20ERA%20IN%20TOP-FLIGHT%20GT%20RACING_FINAL_120224.pdf), [Ford Mustang GT3](https://www.fordracing.com/motorsport/sports-car-racing/mustang-gt3), [Lamborghini Huracán GT3 EVO2](https://www.lamborghini.com/en-en/motorsport/motorsport-models/huracan-gt3-evo2), [Lexus RC F GT3](https://www.toyota.com/racing/lexus-gt3/car/), [McLaren 720S GT3](https://mclaren-web.s3.eu-west-2.amazonaws.com/716/McLaren-720S-GT3---Product-1.pdf), [Porsche 911 GT3 R](https://racing.porsche.com/en-US/cars/911-gt3-r-2026), [FIA F1 Technical Regulations 2026](https://www.fia.com/sites/default/files/fia_2026_formula_1_technical_regulations_issue_8_-_2024-06-24.pdf).
+- **Пробел** удерживает ручник, в том числе при фокусе на кнопке HUD; состояние ручника отображается на HUD.
+- CSS и JavaScript получили новый номер сборки. После развёртывания можно обновить страницу принудительно (Ctrl+Shift+R).
 
-Быстрая отдельная проверка новых возможностей:
-[tests/drive.html](tests/drive.html). Она проверяет три привода и
-торможение ручником. Полный набор прежних тестов находится в [tests/index.html](tests/index.html).
+[tests/drive.html](tests/drive.html) проверяет состав классов, разнесение HUD, масштаб мини-карты и действие ручника на машинах GT3/F1. Полный набор проверок находится в [tests/index.html](tests/index.html).
 
 ## Управление
 
