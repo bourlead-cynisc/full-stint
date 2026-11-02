@@ -114,11 +114,11 @@ function drawTrialGhost(ctx,overviewScale=0) {
 function updateTrialHUD() {
  const panel=document.getElementById('trial-panel');panel.hidden=currentSession!=='TIME_TRIAL';
  if(currentSession!=='TIME_TRIAL'||!trialState)return;
- document.getElementById('trialPauseHint').textContent='Пауза и выход в гараж: '+bindingLabel('pause');
+ document.getElementById('trialPauseHint').textContent='ПАУЗА · '+bindingLabel('pause');
  document.getElementById('trialRecord').textContent=trialState.best?formatTime(trialState.best.time):'Первый чистый круг';
- document.getElementById('trialStatus').textContent=!trialState.active?'Выезд: пересеките старт':trialState.invalid?'Не зачёт: '+trialState.reason:'Чистый круг · одинаковые шины Medium';
+ document.getElementById('trialStatus').textContent=!trialState.active?'ПЕРЕСЕКИТЕ СТАРТ':trialState.invalid?'НЕ ЗАЧЁТ · '+trialState.reason:'ЧИСТЫЙ КРУГ · M';
  document.getElementById('trialStatus').classList.toggle('invalid',trialState.invalid);
- document.getElementById('trialGhostStatus').textContent=trialState.reference?'Глобальный призрак активен'+(trialState.sessionOnly?' · сохранён только до закрытия страницы':' · общий для всех режимов'):'Призрак появится после первого чистого круга';
+ document.getElementById('trialGhostStatus').textContent=trialState.reference?'ПРИЗРАК АКТИВЕН':'ПРИЗРАК ПОСЛЕ КРУГА';
  if(trialState.lastLap&&!trialState.lastLap.valid)document.getElementById('lastTime').textContent='НЕ ЗАЧЁТ';
  document.getElementById('topPosCounter').textContent='СОЛО';
  document.getElementById('topClockLabel').textContent='TIME ATTACK RECORD';
