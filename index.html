@@ -5,25 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>Full Stint — F1, GT3 &amp; Time Attack</title>
-    <link rel="stylesheet" href="styles.css?v=20261103-time-attack-ghost-v4">
+    <link rel="stylesheet" href="styles.css?v=20261103-minimal-race-hud-v1">
 </head>
 <body tabindex="-1">
 
 <div id="viewportContainer">
     <div id="hud-top-center">
-        <span class="hud-build-mark">FULL STINT · 2.6</span>
         <div class="top-metric">
             <div class="top-label" id="sessionLabel">КВАЛИФИКАЦИЯ</div>
             <div class="top-value" id="topLapCounter">КРУГ 1</div>
         </div>
         <div class="top-divider"></div>
         <div class="top-metric">
-            <div class="top-label">ПОЗИЦИЯ</div>
+            <div class="top-label">ПОЗ.</div>
             <div class="top-value" id="topPosCounter" style="color:#38bdf8;">P1 / 1</div>
         </div>
         <div class="top-divider"></div>
         <div class="top-metric">
-            <div class="top-label">ВРЕМЯ КРУГА</div>
+            <div class="top-label">КРУГ</div>
             <div class="top-value" id="topCurTime">--:--.---</div>
         </div>
         <div class="top-divider"></div>
@@ -39,20 +38,12 @@
     <div id="hud-left-stack">
       <div id="hud-left" class="hud-panel">
         <h1 id="hudCarTitle">—</h1>
-        <div class="sub" id="hudDriverName"></div>
-        <div class="hud-powertrain" aria-label="Данные привода и управления">
-            <div class="hud-powertrain-label">ПРИВОД / КОМПОНОВКА</div>
-            <div class="hud-powertrain-drive" id="hudDriveType">—</div>
-            <div class="hud-powertrain-engine" id="hudEngineLayout">—</div>
-            <div class="hud-powertrain-label">РУЧНИК · ПРОБЕЛ</div>
-            <div class="hud-handbrake" id="hudHandbrake">ОТПУЩЕН</div>
-        </div>
         <div class="timer-row">Сектор <span id="cpStatus" class="timer-val">1 / 4</span></div>
         <div class="timer-row">Последний круг <span id="lastTime" class="timer-val">--:--.---</span></div>
-        <div class="standings-mini" id="liveTower"></div>
+        <div class="standings-mini" id="liveTower" hidden></div>
     </div>
 
-    <section id="damage-panel" aria-label="Повреждения машины">
+    <section id="damage-panel" aria-label="Повреждения машины" hidden>
         <h2>Состояние машины</h2>
         <div data-damage="front"><span>Переднее крыло</span><b>0%</b></div>
         <div data-damage="rear"><span>Заднее крыло</span><b>0%</b></div>
@@ -65,8 +56,8 @@
 
     <div id="hud-right" class="hud-panel">
         <div class="timer-row">ТРАССА <span id="hudTrackName" style="color:#38bdf8; font-weight:700;">—</span></div>
-        <div class="timer-row">Лучший круг <span id="bestTime" class="timer-val best-val">--:--.---</span></div>
-        <div class="timer-row">Рекорд сессии <span id="sessionBestTime" class="timer-val">--:--.---</span></div>
+        <div class="timer-row">ЛУЧШИЙ <span id="bestTime" class="timer-val best-val">--:--.---</span></div>
+        <div class="timer-row">СЕССИЯ <span id="sessionBestTime" class="timer-val">--:--.---</span></div>
 
     </div>
 
@@ -76,52 +67,45 @@
         <canvas id="minimapCanvas" width="600" height="420"></canvas>
     </section>
 
-    <div id="steering-wheel-dash">
-        <div class="dash-block"><div class="dash-lbl">СКОРОСТЬ</div><div class="dash-val" id="dashSpeed">0 <small>км/ч</small></div></div>
+    <div id="steering-wheel-dash" aria-label="Показатели автомобиля">
+        <div class="dash-block dash-speed-block"><div class="dash-lbl">СКОРОСТЬ</div><div class="dash-val" id="dashSpeed">0 <small>км/ч</small></div></div>
         <div class="dash-divider"></div>
-        <div class="dash-block"><div class="dash-lbl">ПЕРЕДАЧА</div><div class="dash-val" id="dashGear" style="color:#facc15;">N</div></div>
-        <div class="dash-block" style="min-width:118px;">
-            <div class="dash-lbl">ОБОРОТЫ</div>
-            <div class="rpm-bar"><div class="rpm-fill" id="dashRpmFill"></div></div>
-            <div class="dash-val" id="dashRpm" style="font-size:13px;">1100 <small>об/мин</small></div>
-        </div>
+        <div class="dash-block dash-gear-block"><div class="dash-lbl">ПЕРЕДАЧА</div><div class="dash-val" id="dashGear">N</div></div>
+        <div class="dash-block rpm-block"><div class="dash-lbl">RPM</div><div class="rpm-bar"><div class="rpm-fill" id="dashRpmFill"></div></div><div class="dash-val" id="dashRpm">1100</div></div>
         <div class="dash-divider"></div>
-        <div class="dash-block"><div class="dash-lbl">Сейчас на машине</div><div class="dash-val" id="dashCompound" style="font-size:16px;">—</div></div>
-        <div class="dash-block"><div class="dash-lbl">ОСТАТОК ШИН</div><div class="dash-val" id="dashTireHealth">100<small>%</small></div></div>
-        <div class="dash-block"><div class="dash-lbl">ТЕМП. ШИН</div><div class="dash-val" id="dashTireTemp">35°C</div></div>
+        <div class="dash-block tire-block"><div class="dash-lbl">ШИНЫ</div><div class="dash-val" id="dashTireHealth">100<small>%</small></div><small class="dash-sub" id="dashCompound">M</small></div>
         <div class="dash-divider"></div>
-        <div class="dash-block"><div class="dash-lbl">Повреждения</div><div class="dash-val" id="dashWingDmg">0%</div></div>
-        <div class="dash-block"><div class="dash-lbl">DRS</div><div class="dash-val" id="dashDRS" style="color:#64748b;">—</div></div>
-        <div class="dash-block aero-block" title="Слипстрим повышает максимальную скорость; грязный воздух уменьшает прижим в поворотах"><div class="dash-lbl">АЭРОПОТОК</div><div class="dash-val" id="dashAero">ЧИСТЫЙ</div></div>
+        <div class="dash-block damage-block"><div class="dash-lbl">УРОН</div><div class="dash-val" id="dashWingDmg">0%</div></div>
+        <div class="dash-block drs-block" id="drsDashBlock" hidden><div class="dash-lbl">DRS</div><div class="dash-val" id="dashDRS">—</div></div>
     </div>
-    <div id="shiftLights"></div>
+
     <button id="btnHudControls" data-open-controls>Управление · F2</button>
-    <section id="pit-assistant" aria-label="Следующий пит-стоп">
-        <div class="pit-panel-heading"><div><span class="pit-kicker">КОМАНДНЫЙ МОСТИК</span><h2>Пит-стоп</h2></div><span class="pit-speed-badge" id="pitSpeedBadge">80 км/ч</span></div>
-        <p class="pit-section-title">Шины на следующую остановку</p>
+    <section id="pit-assistant" aria-label="Пит-стоп">
+        <div class="pit-panel-heading"><h2>ПИТ</h2><span class="pit-speed-badge" id="pitSpeedBadge">80 км/ч</span></div>
+        <p class="pit-section-title">ШИНЫ</p>
         <div class="next-tires">
-            <button data-next-tire="soft" title="Больше сцепления, стинт около 5 кругов"><b class="tire-dot soft">S</b><span>Мягкие</span><small>≈5 кр. · 1</small></button>
-            <button data-next-tire="medium" title="Баланс сцепления и ресурса, около 8 кругов"><b class="tire-dot medium">M</b><span>Средние</span><small>≈8 кр. · 2</small></button>
-            <button data-next-tire="hard" title="Дольше служат, стинт около 12 кругов"><b class="tire-dot hard">H</b><span>Жёсткие</span><small>≈12 кр. · 3</small></button>
+            <button data-next-tire="soft" title="Мягкие · около 5 кругов" aria-label="Мягкие"><b class="tire-dot soft">S</b><small>1</small></button>
+            <button data-next-tire="medium" title="Средние · около 8 кругов" aria-label="Средние"><b class="tire-dot medium">M</b><small>2</small></button>
+            <button data-next-tire="hard" title="Жёсткие · около 12 кругов" aria-label="Жёсткие"><b class="tire-dot hard">H</b><small>3</small></button>
         </div>
-        <div id="nextTireSummary" aria-live="polite">Поставят: —</div>
-        <button id="btnPitRequest">Запросить пит-стоп · P</button>
-        <div id="pitPlanText" class="pit-status" role="status">Заезд пока не запланирован</div>
-        <div class="race-strategy-card" aria-label="План гонки">
-            <div class="race-strategy-heading"><span>ПЛАН ГОНКИ</span><span class="auto-tag">СТАНДАРТ</span></div>
-            <div id="raceStrategyPlan" aria-live="polite">Сбалансированная тактика</div>
+        <div id="nextTireSummary" aria-live="polite" hidden>—</div>
+        <button id="btnPitRequest">ПИТ · P</button>
+        <div id="pitPlanText" class="pit-status" role="status">ПИТ НЕ ЗАПЛАНИРОВАН</div>
+        <div class="race-strategy-card" aria-label="План гонки" hidden>
+            <div class="race-strategy-heading"><span>ПЛАН</span><span class="auto-tag">СТАНДАРТ</span></div>
+            <div id="raceStrategyPlan" aria-live="polite">—</div>
         </div>
-        <small class="pit-help">Заезд и выезд автоматические · торможение перед линией плавное.</small>
+        <small class="pit-help" hidden></small>
     </section>
-    <section id="trial-panel" hidden aria-label="Time Attack"><h2>Time Attack · рекорд</h2><b id="trialRecord">—</b><p id="trialStatus">Выезд</p><small id="trialGhostStatus"></small><p>Рекорд по трассе и машине общий для квалификации, гонки и Time Attack.<br>Срезка или удар — круг не засчитывается.<br><span id="trialPauseHint">Пауза и выход в гараж: Esc</span>.</p></section>
-    <div id="control-hint">W / ↑ — газ · S / ↓ — тормоз · Пробел — ручник · Esc — пауза</div>
+    <section id="trial-panel" hidden aria-label="Time Attack"><h2>TIME ATTACK</h2><b id="trialRecord">—</b><p id="trialStatus">ПЕРЕСЕКИТЕ СТАРТ</p><small id="trialGhostStatus"></small><p><span id="trialPauseHint">Esc · пауза</span></p></section>
+    <div id="control-hint">W / ↑ газ · S / ↓ тормоз · Space ручник · Esc пауза</div>
 </div>
 
 <!-- ============ ГАРАЖ ============ -->
 <div id="garageModal" class="modal-overlay">
     <div class="modal-card garage-card">
         <div class="modal-title">
-            <span>FULL STINT · ОБНОВЛЕНИЕ 2.6</span>
+            <span>FULL STINT · ОБНОВЛЕНИЕ 2.7</span>
             <span style="font-size:12px; color:#5eead4;">F1 · GT3 · TIME ATTACK</span>
         </div>
 
@@ -297,7 +281,7 @@
 <script src="physics.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="season.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="controls.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="ghost.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="main.js?v=20261103-time-attack-only-hud-v1"></script>
+<script src="ghost.js?v=20261103-minimal-race-hud-v1"></script>
+<script src="main.js?v=20261103-minimal-race-hud-v1"></script>
 </body>
 </html>

@@ -621,7 +621,6 @@ function buildWeekendRoster() {
     gridOrder = null;
 
     document.getElementById('hudCarTitle').textContent = team.teamName.toUpperCase();
-    document.getElementById('hudDriverName').textContent = `#${pd.number} ${pd.name} · ${team.name}`;
     document.getElementById('hudTrackName').textContent = TRACKS_DB[selectedTrackIndex].shortName;
     document.getElementById('pitSpeedBadge').textContent = TRACKS_DB[selectedTrackIndex].pitSpeedLimit+' км/ч';
 }
@@ -975,40 +974,26 @@ function updateHUD() {
 
     const comp = TIRE_COMPOUNDS[p.compound];
     const compEl = document.getElementById('dashCompound');
-    compEl.textContent = ({soft:'Мягкие · S',medium:'Средние · M',hard:'Жёсткие · H'})[p.compound]; compEl.style.color = comp.color;
+    compEl.textContent = ({soft:'S',medium:'M',hard:'H'})[p.compound]; compEl.style.color = comp.color;
     const hEl = document.getElementById('dashTireHealth');
     hEl.innerHTML = `${Math.round(p.tireHealth)}<small>%</small>`;
     hEl.classList.toggle('hud-tire-warn', p.tireHealth <= TIRE_CLIFF_PCT);
-    document.getElementById('dashTireTemp').textContent = `${Math.round(p.tireTemp)}°C`;
     document.getElementById('dashWingDmg').textContent = `${Math.round(p.damageLevel * 100)}%`;
     updateDamageHUD(p);
+    const f1 = p.spec.carClass === 'F1';
+    document.getElementById('drsDashBlock').hidden = !f1;
     const drsEl = document.getElementById('dashDRS');
-    if (p.spec.carClass === 'F1') { drsEl.textContent = p.drsActive ? 'ОТКР.' : 'ЗАКР.'; drsEl.style.color = p.drsActive ? '#00e676' : '#64748b'; }
+    if (f1) { drsEl.textContent = p.drsActive ? 'ОТКР.' : 'ЗАКР.'; drsEl.style.color = p.drsActive ? '#00e676' : '#64748b'; }
     else { drsEl.textContent = '—'; drsEl.style.color = '#64748b'; }
-    const aeroEl=document.getElementById('dashAero');
-    const f1=p.spec.carClass==='F1';
-    const driveName=DRIVETRAIN_LABELS[p.drivetrain]||'Привод не указан';
-    document.getElementById('hudDriveType').textContent=driveName;
-    document.getElementById('hudEngineLayout').textContent=ENGINE_LAYOUT_LABELS[p.engineLayout]||'Компоновка не указана';
-    const hb=document.getElementById('hudHandbrake');
-    hb.textContent=p.handbrakeActive?'ЗАЖАТ':'ОТПУЩЕН';
-    hb.classList.toggle('active',!!p.handbrakeActive);
-    const towPct=Math.round((p.slipstream||0)*(f1?3.5:2.2));
-    const dirtyPct=Math.round((p.dirtyAir||0)*(f1?20:12));
-    const aeroParts=[];
-    if(towPct>=1)aeroParts.push(`СЛИП +${towPct}%`);
-    if(dirtyPct>=1)aeroParts.push(`ПРИЖИМ −${dirtyPct}%`);
-    aeroEl.textContent=aeroParts.join(' · ')||'ЧИСТЫЙ';
-    aeroEl.style.color=dirtyPct>towPct?'#f0b76b':(towPct?'#75d7bc':'#9aa4b2');
-    aeroEl.title='Слипстрим снижает сопротивление и повышает максимальную скорость. Грязный воздух уменьшает прижим и сцепление в поворотах.';
+
 
     let plan = '—';
     if (currentSession === 'RACE') {
         const sched = p.strategy && p.strategy.stops && p.strategy.stops[p.pitStopsDone];
-        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `Обслуживание · ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? `Въезд · ${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} км/ч` : 'Выезд · ждём безопасное окно');
-        else if (p.pitRequested) plan = 'Пит запрошен · подъезжаем к линии ограничения';
-        else if (sched) plan = `Плановый пит · после круга ${sched.lap}`;
-        else plan = p.tireHealth < 40 ? 'Шины изношены · рекомендуется пит' : 'Нет планового пита · остановку можно запросить вручную';
+        if (p.pitPhase !== 'none') plan = p.pitPhase === 'service' ? `СЕРВИС · ${Math.max(0,p.pitTimer).toFixed(1)} с` : (p.pitPhase === 'entry' ? `ПИТ · ${TRACKS_DB[selectedTrackIndex].pitSpeedLimit} км/ч` : 'ВЫЕЗД');
+        else if (p.pitRequested) plan = 'ПИТ ЗАПРОШЕН';
+        else if (sched) plan = `ПИТ · КРУГ ${sched.lap}`;
+        else plan = p.tireHealth < 40 ? 'ШИНЫ ИЗНОШЕНЫ · ПИТ' : 'ПИТ НЕ ЗАПЛАНИРОВАН';
     }
     document.getElementById('pitPlanText').textContent = plan;
     const strategyBox = document.getElementById('raceStrategyPlan');
