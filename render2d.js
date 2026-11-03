@@ -1,24 +1,24 @@
 const spriteImgs = {};
 
-// WEC-style Time Attack models in the same left-to-right, top-to-bottom order
-// as the 4x4 atlas. Rectangles are tight alpha bounds in the atlas.
+// Stock Time Attack silhouettes with subtle endurance-racing paint, in the supplied 4x4 order.
+// Rectangles are tight alpha bounds in the atlas.
 const TIME_ATTACK_SPRITE_RECTS = {
-    ta_civic:       [123, 20, 152, 286],
-    ta_megane_rs:   [409, 21, 157, 285],
-    ta_kalina:      [698, 19, 151, 287],
-    ta_granta:      [986, 21, 150, 285],
-    ta_vesta:       [122, 325, 158, 283],
-    ta_mx5:         [404, 324, 169, 283],
-    ta_gt86:        [690, 325, 164, 281],
-    ta_brz:         [978, 324, 165, 283],
-    ta_bmw_m3:      [127, 629, 152, 279],
-    ta_bmw_m4:      [407, 629, 157, 279],
-    ta_s2000:       [696, 628, 157, 280],
-    ta_silvia:      [980, 629, 160, 279],
-    ta_porsche_911: [120, 930, 163, 294],
-    ta_lancer_evo:  [405, 930, 169, 294],
-    ta_wrx_sti:     [691, 930, 174, 293],
-    ta_gtr34:       [979, 928, 165, 295]
+    ta_civic:       [140, 38, 136, 256],
+    ta_megane_rs:   [426, 37, 136, 257],
+    ta_kalina:      [707, 40, 132, 253],
+    ta_granta:      [989, 39, 134, 260],
+    ta_vesta:       [138, 338, 139, 258],
+    ta_mx5:         [423, 341, 145, 248],
+    ta_gt86:        [701, 340, 146, 257],
+    ta_brz:         [984, 339, 148, 270],
+    ta_bmw_m3:      [141, 630, 140, 268],
+    ta_bmw_m4:      [421, 629, 143, 274],
+    ta_s2000:       [699, 644, 149, 246],
+    ta_silvia:      [984, 633, 149, 270],
+    ta_porsche_911: [136, 936, 148, 277],
+    ta_lancer_evo:  [418, 935, 149, 276],
+    ta_wrx_sti:     [701, 934, 147, 278],
+    ta_gtr34:       [982, 937, 149, 276]
 };
 
 function loadTimeAttackSprites() {
@@ -36,7 +36,7 @@ function loadTimeAttackSprites() {
             spriteImgs[id] = sprite;
         }
     };
-    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-sprites-v2')
+    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-stock-v3')
         .then(response => {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.text();
