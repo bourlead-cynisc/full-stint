@@ -515,6 +515,13 @@ function drawGarageTrackPreview(canvasEl,track) {
 function renderGarageUI() {
     const f1 = selectedCarClass === 'F1';
     const ta = selectedCarClass === 'TA';
+    const gt3PilotCount = GT3_CATALOG.reduce((count, team) => count + team.drivers.length, 0);
+    const pilotLastTwo = gt3PilotCount % 100;
+    const pilotLastDigit = gt3PilotCount % 10;
+    const pilotNoun = pilotLastTwo >= 11 && pilotLastTwo <= 14 ? 'пилотов'
+        : pilotLastDigit === 1 ? 'пилот'
+        : pilotLastDigit >= 2 && pilotLastDigit <= 4 ? 'пилота' : 'пилотов';
+    document.getElementById('gt3RosterSummary').textContent = `Гонка на выживание · ${GT3_CATALOG.length} моделей · ${gt3PilotCount} ${pilotNoun} в сетке`;
     document.getElementById('classModeLabel').textContent = ta ? 'РЕЖИМ' : 'КЛАСС ГОНКИ';
     document.getElementById('sessionLabel').textContent = ta ? 'TIME ATTACK' : 'КВАЛИФИКАЦИЯ';
     document.getElementById('garageAdvanced').hidden = ta;
@@ -601,7 +608,7 @@ function renderGarageUI() {
     renderStrategyCards();
     updateStartButtons();
     const bestGhost=loadGhost(trialKey());
-    document.getElementById("ghostRecordHint").textContent=bestGhost?"Общий рекорд этой машины на трассе: "+formatTime(bestGhost.time):"Time Attack: первый чистый круг сохранит общий призрак для этой машины";
+    document.getElementById("ghostRecordHint").textContent=bestGhost?"Общий рекорд этой машины на трассе: "+formatTime(bestGhost.time)+" · Time Attack: выезд 90 км/ч, круг начинается на стартовой линии":"Time Attack: выезд 90 км/ч · круг начинается на стартовой линии · первый чистый круг сохранит призрак этой машины";
 }
 
 // ============================================================================
@@ -664,7 +671,7 @@ function startQualifyingSession() {
     rebuildEngineVoices();
     document.getElementById('sessionLabel').textContent = 'КВАЛИФИКАЦИЯ';
     document.getElementById('start-lights').style.opacity = 0;
-    showRaceControl('Квалификация: быстрые круги. '+bindingLabel('pause')+' → завершение квалификации', '#38bdf8');
+    showRaceControl('Квалификация · выезд 90 км/ч · круг начнётся на стартовой линии · '+bindingLabel('pause')+' — завершить', '#38bdf8');
 }
 
 // ---- огни старта ----

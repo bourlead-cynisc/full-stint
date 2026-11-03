@@ -194,7 +194,7 @@ function handleBindingCapture(e) {
     return true;
 }
 function updateControlHints() {
-    document.getElementById('control-hint').textContent=`КЛАВИАТУРА: ${bindingLabel('throttle')} газ · ${bindingLabel('brake')} тормоз · ${bindingLabel('handbrake')} ручник · ${bindingLabel('pause')} пауза\nГЕЙМПАД: ${gamepadBindingLabel('throttle')} газ · ${gamepadBindingLabel('brake')} тормоз · ${gamepadBindingLabel('handbrake')} ручник · ${gamepadBindingLabel('pause')} пауза`;
+    document.getElementById('control-hint').textContent=`КЛАВИАТУРА: ${bindingLabel('throttle')} газ · ${bindingLabel('brake')} тормоз / назад · ${bindingLabel('left')} / ${bindingLabel('right')} руль · ${bindingLabel('handbrake')} ручник · ${bindingLabel('pause')} пауза\nГЕЙМПАД: ${gamepadBindingLabel('throttle')} газ · ${gamepadBindingLabel('brake')} тормоз / назад · ${gamepadBindingLabel('steer')} руль · ${gamepadBindingLabel('handbrake')} ручник · ${gamepadBindingLabel('pause')} пауза`;
     document.getElementById('btnHudControls').textContent=`Управление · ${bindingLabel('settings')} / ${gamepadBindingLabel('settings')}`;
     for(const tire of ['soft','medium','hard']) document.querySelector(`[data-next-tire="${tire}"] small`).textContent=`${bindingLabel(tire)} · ${gamepadBindingLabel(tire)}`;
     const pitButton=document.getElementById('btnPitRequest');if(pitButton)pitButton.textContent=(pitButton.textContent.startsWith('Отменить')?'Отменить заезд':'Запросить заезд')+' · '+combinedBindingLabel('pit');

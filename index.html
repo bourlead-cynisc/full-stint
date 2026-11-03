@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>Full Stint — F1, GT3 &amp; Time Attack</title>
-    <link rel="stylesheet" href="styles.css?v=20261103-hud-sharpness-2.14">
+    <link rel="stylesheet" href="styles.css?v=20261103-review-fixes-2.16">
 </head>
 <body tabindex="-1">
 
@@ -97,21 +97,21 @@
         </div>
         <small class="pit-help" hidden></small>
     </section>
-    <section id="trial-panel" hidden aria-label="Time Attack"><h2>TIME ATTACK</h2><b id="trialRecord">—</b><p id="trialStatus">ПЕРЕСЕКИТЕ СТАРТ</p><small id="trialGhostStatus"></small><p><span id="trialPauseHint">Esc · пауза</span></p></section>
-    <div id="control-hint">W / ↑ газ · S / ↓ тормоз · Space ручник · Esc пауза</div>
+    <section id="trial-panel" hidden aria-label="Time Attack"><h2>TIME ATTACK</h2><b id="trialRecord">—</b><p id="trialStatus">ПЕРЕСЕКИТЕ СТАРТ</p><small id="trialStartNote">Выезд 90 км/ч · время начнётся на линии</small><small id="trialGhostStatus"></small><p><span id="trialPauseHint">Esc · пауза</span></p></section>
+    <div id="control-hint">W / ↑ газ · S / ↓ тормоз / назад · A / ← и D / → руль · Space ручник · Esc пауза</div>
 </div>
 
 <!-- ============ ГАРАЖ ============ -->
 <div id="garageModal" class="modal-overlay">
     <div class="modal-card garage-card">
         <div class="modal-title">
-            <span>FULL STINT · ОБНОВЛЕНИЕ 2.15</span>
+            <span>FULL STINT · ОБНОВЛЕНИЕ 2.16</span>
             <span style="font-size:12px; color:#5eead4;">F1 · GT3 · TIME ATTACK</span>
         </div>
 
         <div class="section-label" id="classModeLabel">КЛАСС ГОНКИ</div>
         <div class="class-switch-row">
-            <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small>Гонка на выживание · 12 гоночных машин</small></button>
+            <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small id="gt3RosterSummary">Гонка на выживание · 12 моделей · 21 пилот</small></button>
             <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Сезон, календарь гонок, очки и DRS</small></button>
             <button class="class-btn" id="classBtnTA" onclick="selectCarClass('TA')">🏁 TIME ATTACK<small>16 дорожных машин · передний, задний и полный привод</small></button>
         </div>
@@ -274,15 +274,15 @@
 <script src="sprite-overrides.js?v=20261103-audi-r8-v1"></script>
 <script src="models.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="track.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="render2d.js?v=20261103-sharp-sprites-2.14"></script>
+<script src="render2d.js?v=20261103-sharp-sprites-2.16"></script>
 
 <script src="topview.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="audio.js?v=20261103-time-attack-16-car-v1"></script>
 <script src="race-ai.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="physics.js?v=20261103-time-attack-ghost-v4"></script>
+<script src="physics.js?v=20261103-review-start-2.16"></script>
 <script src="season.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="controls.js?v=20261103-time-attack-ghost-v4"></script>
+<script src="controls.js?v=20261103-review-controls-2.16"></script>
 <script src="ghost.js?v=20261103-minimal-race-hud-v1"></script>
-<script src="main.js?v=20261103-sharp-hud-2.15"></script>
+<script src="main.js?v=20261103-review-ui-2.16"></script>
 </body>
 </html>

@@ -181,7 +181,7 @@ class Car {
         const nx = trackSamples[(idx + 3) % totalSamples];
         this.angle = Math.atan2(nx.x - pt.x, -(nx.y - pt.y));
         this.resetSessionDynamicState();
-        this.velocity = 38 / MS;                      // выезжаем на ходу ≈ 140 км/ч
+        this.velocity = 25 / MS;                      // спокойный выезд на ходу ≈ 90 км/ч
         this.dx = Math.sin(this.angle) * this.velocity;
         this.dy = -Math.cos(this.angle) * this.velocity;
         this.gear = 3; this.rpm = 0.55;

@@ -60,7 +60,7 @@ function loadSprites() {
 
 function spriteDims(car) {
     const img = spriteImgs[car.spec.id];
-    const h = car.height * 1.16;
+    const h = car.height * 1.28;
     return { img, h, w: h * img.width / img.height };
 }
 

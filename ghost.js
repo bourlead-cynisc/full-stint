@@ -92,7 +92,7 @@ function startTimeTrialSession() {
  sessionBestLap={time:trialState.best?.time||null,driverName:playerCar.driverName,carName:playerCar.spec.shortName};
  rebuildEngineVoices();document.getElementById('sessionLabel').textContent='TIME ATTACK';
  document.getElementById('start-lights').style.opacity=0;releaseFocus();
- showRaceControl(trialState.best?'Пересеките старт — общий призрак начнёт лучший круг вместе с вами.':'Первый чистый круг сохранит призрак этой машины.','#67e8f9');
+ showRaceControl('Выезд 90 км/ч · пересеките линию для начала круга.','#67e8f9');
 }
 function ghostPoseAt(elapsed) {
  const samples=trialState?.reference?.samples;
