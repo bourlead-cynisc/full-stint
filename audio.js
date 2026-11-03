@@ -36,7 +36,7 @@ const CAR_ENGINE_FAMILIES = {
     mclaren_gt3: 'V8T', mercedes_gt3: 'V8', porsche_gt3: 'F6', bentley_gt3: 'V8',
     ta_civic: 'I4', ta_megane_rs: 'I4', ta_kalina: 'I4', ta_granta: 'I4', ta_vesta: 'I4',
     ta_mx5: 'I4', ta_gt86: 'H4', ta_brz: 'H4', ta_bmw_m3: 'I6', ta_bmw_m4: 'V8F',
-    ta_s2000: 'I4', ta_silvia: 'I6', ta_porsche_911: 'F6', ta_lancer_evo: 'I4', ta_wrx_sti: 'H4',
+    ta_s2000: 'I4', ta_silvia: 'I6', ta_porsche_911: 'F6', ta_lancer_evo: 'I4', ta_wrx_sti: 'H4', ta_gtr34: 'I6',
     f1_redbull: 'F1', f1_mercedes: 'F1', f1_ferrari: 'F1', f1_mclaren: 'F1',
     f1_aston: 'F1', f1_alpine: 'F1', f1_sauber: 'F1', f1_rb: 'F1',
     f1_williams: 'F1', f1_haas: 'F1', f1_cadillac: 'F1'

@@ -13,7 +13,7 @@ const CAR_CHARACTER = {
  ta_mx5:[1050,1.16,.97,.96,.88],ta_gt86:[1280,1.10,1.00,.99,1.02],ta_brz:[1275,1.12,1.02,1.00,1.05],
  ta_bmw_m3:[1460,.98,1.08,1.03,1.00],ta_bmw_m4:[1550,.96,1.10,1.04,1.12],
  ta_s2000:[1270,1.16,1.00,1.01,.95],ta_silvia:[1280,1.13,.92,.95,1.10],
- ta_porsche_911:[1480,1.05,.90,1.14,1.16],ta_lancer_evo:[1520,.98,1.10,1.12,1.05],ta_wrx_sti:[1500,1.03,1.08,1.09,1.02]
+ ta_porsche_911:[1480,1.05,.90,1.14,1.16],ta_lancer_evo:[1520,.98,1.10,1.12,1.05],ta_wrx_sti:[1500,1.03,1.08,1.09,1.02],ta_gtr34:[1560,1.04,1.08,1.15,1.02]
 };
 for(const catalog of [GT3_CATALOG,F1_CATALOG,TIME_ATTACK_CATALOG]) for(const spec of catalog) {
  const [mass,rotation,brakeStability,traction,aeroResponse]=CAR_CHARACTER[spec.id];
