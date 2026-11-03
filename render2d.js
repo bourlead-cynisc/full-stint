@@ -73,19 +73,14 @@ let topZoomNow = 1;
 function getScaledSprite(id, tintIdx, tw, th) {
     const key = id + ':' + tintIdx + ':' + tw + 'x' + th;
     if (scaledCache[key]) return scaledCache[key];
-    let src = spriteImgs[id];
-    let cw = src.width, ch = src.height;
-    while (cw / 2 >= tw && ch / 2 >= th) {
-        const c = document.createElement('canvas');
-        c.width = Math.max(1, Math.round(cw / 2)); c.height = Math.max(1, Math.round(ch / 2));
-        const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-        g.drawImage(src, 0, 0, c.width, c.height);
-        src = c; cw = c.width; ch = c.height;
-    }
+    const src = spriteImgs[id];
     const out = document.createElement('canvas');
     out.width = tw; out.height = th;
-    const g = out.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-    g.drawImage(src, 0, 0, tw, th);
+    const g = out.getContext('2d');
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    // Scale the full-resolution source once, directly into the high-DPI game canvas.
+    g.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
     scaledCache[key] = out;
     return out;
 }
@@ -98,7 +93,7 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
         return;
     }
     const { h, w } = spriteDims(car);
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = window.__GAME_CANVAS_DPR || window.devicePixelRatio || 1;
     const z = Math.max(0.05, topZoomNow) * scaleMul * dpr;
     const tw = Math.max(12, Math.round(w * z / 4) * 4), th = Math.max(24, Math.round(h * z / 4) * 4);
     const spr = getScaledSprite(car.spec.id, -1, tw, th);
