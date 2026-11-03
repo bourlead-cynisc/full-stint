@@ -115,7 +115,7 @@ function refreshOptionButtons() {
     document.querySelectorAll('[data-tf]').forEach(b => b.classList.toggle('active', b.dataset.tf === topFollow));
     document.querySelectorAll('[data-hm]').forEach(b => b.classList.toggle('active', b.dataset.hm === window.handlingMode));
 }
-window.setTopFollow = function (mode) { topFollow = mode; refreshOptionButtons(); };
+window.setTopFollow = function (mode) { topFollow = mode; refreshOptionButtons(); resizeViewport(); };
 window.setHandling = function (mode) {
     if(currentSession==='TIME_TRIAL')return;
     window.handlingMode = mode; refreshOptionButtons();
@@ -206,7 +206,7 @@ function onKeyDown(e) {
     if(!e.repeat) {
         if(bindingMatches('shiftUp',c))window.shiftUpPressed=true;
         if(bindingMatches('shiftDown',c))window.shiftDownPressed=true;
-        if(bindingMatches('camera',c)){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();}
+        if(bindingMatches('camera',c)){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();resizeViewport();}
         if(bindingMatches('zoomIn',c))topZoom=Math.min(2.2,topZoom*1.15);
         if(bindingMatches('zoomOut',c))topZoom=Math.max(0.45,topZoom/1.15);
         if(bindingMatches('line',c))window.showRacingLine=!window.showRacingLine;
@@ -361,7 +361,7 @@ function dispatchGamepadAction(action) {
     if(isPaused || !['QUALI','RACE','TIME_TRIAL'].includes(currentSession))return;
     if(action==='shiftUp')window.shiftUpPressed=true;
     if(action==='shiftDown')window.shiftDownPressed=true;
-    if(action==='camera'){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();}
+    if(action==='camera'){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();resizeViewport();}
     if(action==='zoomIn')topZoom=Math.min(2.2,topZoom*1.15);
     if(action==='zoomOut')topZoom=Math.max(0.45,topZoom/1.15);
     if(action==='line')window.showRacingLine=!window.showRacingLine;
@@ -660,6 +660,7 @@ function startQualifyingSession() {
     initAudio();
     hideAllModals();
     currentSession = 'QUALI'; raceState = 'RACING'; isPaused = false; simTimeMs = 0;
+    resizeViewport();
     qualifyingTimeExpired = false; qualifyingFinishers = new Set();
     clearInputs(); resetEffects(); releaseFocus();
     sessionBestLap = { time: null, driverName: '---', carName: '' };
@@ -714,6 +715,7 @@ function startRaceSessionFromGrid(order) {
     initAudio();
     hideAllModals();
     currentSession = 'RACE'; isPaused = false; simTimeMs = 0; raceStartTimestamp = 0;
+    resizeViewport();
     raceMode = selectedCarClass === 'GT3' ? 'TIMED' : 'LAPS';
     raceDurationMs = ENDURANCE_MINUTES * 60000;
     raceRecorded = false; timeUpAnnounced = false;
@@ -896,6 +898,7 @@ function togglePauseMenu() {
 function backToGarage() {
     const leavingTrial=currentSession==='TIME_TRIAL';
     isPaused = true; currentSession = 'MENU'; clearInputs();
+    resizeViewport();
     document.getElementById('pauseModal').style.display = 'none';
     document.getElementById('finishModal').style.display = 'none';
     document.getElementById('start-lights').style.opacity = 0;
@@ -1112,7 +1115,19 @@ function drawMinimap() {
 }
 
 function resizeViewport() {
-    const s = Math.min(window.innerWidth / 1284, window.innerHeight / 794, 1.6);
+    const portraitGameplay = window.innerHeight > window.innerWidth * 1.08
+        && currentSession !== 'MENU' && topFollow === 'CAR';
+    const s = portraitGameplay
+        ? Math.min(window.innerHeight / 794, 1.6)
+        : Math.min(window.innerWidth / 1284, window.innerHeight / 794, 1.6);
+    const visibleWidth = Math.min(1280, window.innerWidth / s);
+    const cropInset = Math.max(0, (1280 - visibleWidth) / 2);
+    viewportEl.classList.toggle('portrait-gameplay', portraitGameplay);
+    viewportEl.style.setProperty('--portrait-inset', `${cropInset}px`);
+    viewportEl.style.setProperty('--portrait-visible-width', `${visibleWidth}px`);
+    viewportEl.style.setProperty('--portrait-panel-width', `${Math.min(190, visibleWidth * 0.29)}px`);
+    viewportEl.style.setProperty('--portrait-compact-panel-width', `${Math.min(170, visibleWidth * 0.27)}px`);
+    viewportEl.style.setProperty('--portrait-minimap-width', `${Math.min(160, visibleWidth * 0.26)}px`);
     viewportEl.style.transform = `scale(${s})`;
 }
 window.addEventListener('resize', resizeViewport);

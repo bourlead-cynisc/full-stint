@@ -870,7 +870,7 @@ canvas#minimapCanvas {
 }
 
 
-/* 2.16 · clearer controls, gentler rolling start, and responsive garage */
+/* 2.17 · clearer controls, gentler rolling start, and responsive views */
 #hud-left-stack {
     position:absolute!important; top:58px; left:14px; right:auto; bottom:auto;
     width:190px; height:auto!important; min-height:0!important; max-height:none!important;
@@ -939,4 +939,57 @@ canvas#minimapCanvas {
 }
 @media(max-width:700px) {
     #control-hint { max-width:calc(100% - 14px); }
+}
+
+/* Use portrait screens for the moving camera while keeping the car and HUD in-frame. */
+#viewportContainer.portrait-gameplay {
+    border-radius:0;
+    box-shadow:none;
+}
+#viewportContainer.portrait-gameplay #hud-left-stack {
+    left:calc(var(--portrait-inset) + 10px)!important;
+    width:var(--portrait-panel-width)!important;
+}
+#viewportContainer.portrait-gameplay #hud-right {
+    right:calc(var(--portrait-inset) + 10px)!important;
+    min-width:var(--portrait-panel-width)!important;
+}
+#viewportContainer.portrait-gameplay #pit-assistant,
+#viewportContainer.portrait-gameplay #trial-panel {
+    right:calc(var(--portrait-inset) + 10px)!important;
+    width:var(--portrait-panel-width)!important;
+}
+#viewportContainer.portrait-gameplay #minimapFrame {
+    left:calc(var(--portrait-inset) + 10px);
+    right:auto;
+    width:var(--portrait-minimap-width);
+}
+#viewportContainer.portrait-gameplay #hud-top-center {
+    gap:8px;
+    padding-right:10px;
+    padding-left:10px;
+}
+#viewportContainer.portrait-gameplay #control-hint {
+    left:calc(var(--portrait-inset) + 10px);
+    max-width:calc(var(--portrait-visible-width) - 20px);
+}
+#viewportContainer.portrait-gameplay #race-control {
+    max-width:calc(var(--portrait-visible-width) - 28px);
+}
+#viewportContainer.portrait-gameplay #mobSteerLeft { left:calc(var(--portrait-inset) + 14px); }
+#viewportContainer.portrait-gameplay #mobSteerRight { left:calc(var(--portrait-inset) + 99px); }
+#viewportContainer.portrait-gameplay #mobBrake { right:calc(var(--portrait-inset) + 104px); }
+#viewportContainer.portrait-gameplay #mobThrottle { right:calc(var(--portrait-inset) + 14px); }
+#viewportContainer.portrait-gameplay #mobGyroToggle { left:calc(var(--portrait-inset) + 14px); }
+#viewportContainer.portrait-gameplay #mobTireSoft { right:calc(var(--portrait-inset) + 154px); }
+#viewportContainer.portrait-gameplay #mobTireMed { right:calc(var(--portrait-inset) + 84px); }
+#viewportContainer.portrait-gameplay #mobTireHard { right:calc(var(--portrait-inset) + 14px); }
+@media(max-width:520px) {
+    #viewportContainer.portrait-gameplay #hud-left-stack { width:var(--portrait-compact-panel-width)!important; }
+    #viewportContainer.portrait-gameplay #hud-right { min-width:var(--portrait-compact-panel-width)!important; }
+    #viewportContainer.portrait-gameplay #trial-panel,
+    #viewportContainer.portrait-gameplay #pit-assistant { width:var(--portrait-compact-panel-width)!important; }
+    #viewportContainer.portrait-gameplay #hud-top-center { gap:5px;padding-right:6px;padding-left:6px; }
+    #viewportContainer.portrait-gameplay #hud-top-center .top-label { font-size:7px; }
+    #viewportContainer.portrait-gameplay #hud-top-center .top-value { font-size:12px; }
 }

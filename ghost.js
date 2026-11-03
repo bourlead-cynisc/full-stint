@@ -85,6 +85,7 @@ function finishTrialLap(car,time) {
 }
 function startTimeTrialSession() {
  initAudio();hideAllModals();currentSession='TIME_TRIAL';isPaused=false;raceState='RACING';simTimeMs=0;
+ resizeViewport();
  clearInputs();resetEffects();aiCars=[];allCars=[playerCar];
  playerCar.placeForQualifying(0,1);playerCar.compound='medium';playerCar.tireTemp=90;playerCar.wearScale=0;
  startGhostCaptureSession();
