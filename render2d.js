@@ -47,22 +47,9 @@ function loadTimeAttackSprites() {
 
 function loadSprites() {
     if (typeof SPRITE_DATA !== 'undefined') {
-        const alternateSpriteIds = Object.keys(SPRITE_DATA).filter(id => id.endsWith('__livery2'));
-        let alternateSpritesSettled = 0;
-        const onAlternateSpriteSettled = () => {
-            alternateSpritesSettled++;
-            if (alternateSpritesSettled === alternateSpriteIds.length
-                && currentSession === 'MENU' && typeof renderGarageUI === 'function') {
-                renderGarageUI();
-            }
-        };
         for (const id in SPRITE_DATA) {
             const img = new Image();
-            img.onload = () => {
-                spriteImgs[id] = img;
-                if (id.endsWith('__livery2')) onAlternateSpriteSettled();
-            };
-            img.onerror = () => { if (id.endsWith('__livery2')) onAlternateSpriteSettled(); };
+            img.onload = () => { spriteImgs[id] = img; };
             img.src = SPRITE_DATA[id];
         }
     }
@@ -81,14 +68,10 @@ function spriteDims(car) {
 const scaledCache = {};
 let topZoomNow = 1;
 
-function getScaledSprite(id, tintIdx, tw, th) {
-    const alternate = Number(tintIdx) === 1 && !id.startsWith('f1_');
-    const sourceId = alternate ? `${id}__livery2` : id;
-    const src = spriteImgs[sourceId];
-    // Keep showing the original until the alternate PNG has finished loading.
-    if (!src && alternate && spriteImgs[id]) return spriteImgs[id];
+function getScaledSprite(id, tw, th) {
+    const src = spriteImgs[id];
     if (!src) return null;
-    const key = sourceId + ':' + tw + 'x' + th;
+    const key = id + ':' + tw + 'x' + th;
     if (scaledCache[key]) return scaledCache[key];
     const out = document.createElement('canvas');
     out.width = tw; out.height = th;
@@ -112,7 +95,7 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
     const dpr = window.__GAME_CANVAS_DPR || window.devicePixelRatio || 1;
     const z = Math.max(0.05, topZoomNow) * scaleMul * dpr;
     const tw = Math.max(12, Math.round(w * z / 4) * 4), th = Math.max(24, Math.round(h * z / 4) * 4);
-    const spr = getScaledSprite(car.spec.id, car.liveryVariant || 0, tw, th);
+    const spr = getScaledSprite(car.spec.id, tw, th);
 
     // мягкая тень (градиент), а не смещённая копия
     ctx.save();

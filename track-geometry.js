@@ -79,6 +79,6 @@ for(const track of TRACKS_DB) {
     track.hasRealContour=!!track.wecVenue&&source.pit.length>=2&&!customMonaco;
     // Monaco runs a 60 km/h pit speed limit (2026 F1 event notes).
     track.pitSpeedLimit=track.id==='monaco'?60:Math.max(80,source.pitLimit||80);
-    track.layoutVersion=track.wecVenue?'wec-20261104-v1':(customMonaco?'monaco-custom-20261102':'osm-20261030-contour-cleanup');
+    track.layoutVersion=track.wecVenue?'wec-pitlane-short-20261104-v1':(customMonaco?'monaco-custom-20261102':'osm-20261030-contour-cleanup');
 }
 EST_LAP_SEC.TA=EST_LAP_SEC.GT3.map(seconds=>Math.round(seconds*1.18));

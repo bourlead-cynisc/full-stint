@@ -803,6 +803,7 @@ canvas#minimapCanvas {
 #steering-wheel-dash #dashRpm { color:rgba(235,232,221,.65); font-size:9px; font-weight:600; }
 #steering-wheel-dash .tire-block { min-width:42px; }
 #steering-wheel-dash .dash-sub { color:var(--fs-accent); font-size:8px; line-height:1; font-weight:700; }
+#steering-wheel-dash .slipstream-sub {display:block;margin-top:3px;color:#67e8f9;font-size:7px;letter-spacing:.15px;white-space:nowrap;}
 #steering-wheel-dash .damage-block { min-width:40px; }
 #steering-wheel-dash .drs-block { min-width:40px; }
 #steering-wheel-dash #dashDRS { font-size:11px; }
@@ -1202,27 +1203,4 @@ canvas#minimapCanvas {width:100%;height:auto;aspect-ratio:10/7;}
 }
 @media(max-width:520px) {
     #viewportContainer.portrait-gameplay #damage-panel {width:var(--portrait-compact-panel-width);}
-}
-
-/* 2.21 · selectable companion liveries for GT3 and Time Attack */
-.livery-picker {
-    display:flex;align-items:center;gap:7px;margin:10px 0 12px;padding-top:9px;
-    border-top:1px solid var(--fs-line);
-}
-.livery-picker-label {margin-right:auto;color:var(--fs-muted);font-size:9px;font-weight:800;letter-spacing:.09em;}
-.livery-choice {
-    display:inline-flex;align-items:center;gap:6px;min-width:56px;padding:5px 8px;
-    border:1px solid var(--fs-line);border-radius:10px;background:var(--fs-raised);
-    color:var(--fs-text);font-size:10px;font-weight:800;cursor:pointer;
-}
-.livery-choice.active {border-color:var(--fs-accent);background:var(--fs-accent-soft);box-shadow:0 0 0 1px var(--fs-accent-soft);}
-.livery-swatch {
-    display:block;width:20px;height:20px;border:1px solid rgba(100,116,139,.35);border-radius:6px;
-    background:linear-gradient(135deg,var(--livery-primary) 0 52%,var(--livery-secondary) 52% 100%);
-}
-@media(max-width:700px) {
-    .livery-picker {gap:5px;margin:8px 0 10px;padding-top:7px;}
-    .livery-picker-label {font-size:8px;}
-    .livery-choice {min-width:48px;padding:4px 6px;}
-    .livery-swatch {width:17px;height:17px;}
 }

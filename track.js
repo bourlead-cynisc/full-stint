@@ -167,12 +167,11 @@ function buildActiveTrackGeometry() {
         return Math.sqrt(bestDistance);
     };
     let pitSection=findStraightPitSection(trk),surveyedPitWaypoints=null,oldStartIndex;
-    // On the three surveyed circuits the OSM pit-lane centerline shares the
-    // same projection as the real outline. Keep that route and anchor its
-    // ends to the racing line; simplified maps use the clear straight below.
+    // Keep surveyed pit routes for non-WEC tracks; WEC venues use the short,
+    // automatically placed straight pit lane selected below.
     // Monaco uses a hand-mapped harbour-side pit road matching the detailed circuit.
     // Convert its map coordinates using the very same transformation as the asphalt.
-    if(trk.pitRoutePoints?.length>=2){
+    if(!trk.wecVenue&&trk.pitRoutePoints?.length>=2){
         const route=trk.pitRoutePoints.map(p=>({x:(p.x-trk.rawPoints[0].x)*trk.scale,y:(p.y-trk.rawPoints[0].y)*trk.scale}));
         const start=nearestTrackIndex(route[0]),end=nearestTrackIndex(route.at(-1));
         const span=(end-start+totalSamples)%totalSamples;
@@ -186,7 +185,7 @@ function buildActiveTrackGeometry() {
             oldStartIndex=nearestTrackIndex(midLane);
         }
     }
-    if(!surveyedPitWaypoints&&trk.hasRealContour&&trk.realPitPoints?.length>=2) {
+    if(!trk.wecVenue&&!surveyedPitWaypoints&&trk.hasRealContour&&trk.realPitPoints?.length>=2) {
         let routePoints=simplifyOpenPitPolyline(trk.realPitPoints,14);
         let start=nearestTrackIndex(routePoints[0]),end=nearestTrackIndex(routePoints.at(-1));
         let span=(end-start+totalSamples)%totalSamples;
@@ -296,9 +295,14 @@ function buildActiveTrackGeometry() {
 
 function findStraightPitSection(track) {
     const N=totalSamples,spacing=trackLengthPx/N,stride=Math.max(1,Math.floor(N/520));
-    const preferredSpan=Math.min(4800,Math.max(2200,trackLengthPx*.08));
+    const preferredSpan=track.wecVenue
+        ?Math.min(3200,Math.max(1800,trackLengthPx*.052))
+        :Math.min(4800,Math.max(2200,trackLengthPx*.08));
     let best=null;
-    for(const spanPx of [...new Set([preferredSpan,2100,1650])]) {
+    const spanOptions=track.wecVenue
+        ?[preferredSpan,preferredSpan*.85,preferredSpan*.7]
+        :[preferredSpan,2100,1650];
+    for(const spanPx of [...new Set(spanOptions.map(value=>Math.round(value)))]) {
         const span=Math.min(N-4,Math.max(40,Math.round(spanPx/spacing)));
         const candidates=[];
         for(let start=0;start<N;start+=stride) {
@@ -324,7 +328,9 @@ function findStraightPitSection(track) {
         candidates.sort((a,b)=>a.score-b.score);
         for(const candidate of candidates.slice(0,96)) {
             if(candidate.maxDeviation>Math.max(42,spanPx*.016)||candidate.maxAngleError>Math.PI/12) continue;
-            const transition=Math.min(PIT_TRANSITION_MAX_PX,spanPx*.25);
+            const transition=track.wecVenue
+                ?Math.min(440,spanPx*.16)
+                :Math.min(PIT_TRANSITION_MAX_PX,spanPx*.25);
             for(const offset of [PIT_CORRIDOR_OFFSET,286,350,430,520]) {
                 for(const side of [track.pitSideSign||1,-(track.pitSideSign||1)]) {
                     const path=sampleStraightPitPath(trackSamples[candidate.start],trackSamples[candidate.end],candidate.dx,candidate.dy,candidate.nx,candidate.ny,side,offset,PIT_WAYPOINT_COUNT,transition);

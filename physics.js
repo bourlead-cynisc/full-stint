@@ -36,6 +36,15 @@ function wakeFalloff(offset, radius) {
     return t*t*(3-2*t);
 }
 
+function getSlipstreamTopSpeedBonus(car) {
+    const wake=Math.max(0,Math.min(1,car?.slipstream||0));
+    return wake*(car?.spec?.carClass === 'F1' ? 0.05 : 0.04);
+}
+function getSlipstreamDragMultiplier(car) {
+    const wake=Math.max(0,Math.min(1,car?.slipstream||0));
+    return 1-wake*(car?.spec?.carClass === 'F1' ? 0.20 : 0.17);
+}
+
 // Aerodynamic wake is measured from the leader's rear bumper and fades across
 // the lane. A tow helps straight-line speed; turbulent air reduces downforce.
 function getAerodynamicWake(car) {
@@ -43,7 +52,7 @@ function getAerodynamicWake(car) {
     const forwardX=Math.sin(car.angle),forwardY=-Math.cos(car.angle);
     const sideX=Math.cos(car.angle),sideY=Math.sin(car.angle);
     const speedMs=Math.abs(car.velocity||0)*MS;
-    const speedFactor=Math.max(0,Math.min(1,(speedMs-24)/28));
+    const speedFactor=Math.max(0,Math.min(1,(speedMs-22)/25));
     if(speedFactor<=0)return {slipstream:0,dirtyAir:0};
 
     let slipstream=0,dirtyAir=0;
@@ -52,22 +61,22 @@ function getAerodynamicWake(car) {
         const dx=other.x-car.x,dy=other.y-car.y;
         const along=dx*forwardX+dy*forwardY;
         const gap=along-(car.height+other.height)*0.5;
-        if(gap<0||gap>480)continue;
+        if(gap<0||gap>560)continue;
         const otherForwardX=Math.sin(other.angle),otherForwardY=-Math.cos(other.angle);
         const direction=forwardX*otherForwardX+forwardY*otherForwardY;
         const alignment=Math.max(0,Math.min(1,(direction-0.52)/0.42));
         if(alignment<=0)continue;
         const otherSpeed=Math.abs(other.velocity||0)*MS;
-        const leaderSpeedFactor=Math.max(0,Math.min(1,(otherSpeed-18)/27));
+        const leaderSpeedFactor=Math.max(0,Math.min(1,(otherSpeed-18)/24));
         const pairSpeed=Math.min(speedFactor,leaderSpeedFactor);
         if(pairSpeed<=0)continue;
         const lateral=Math.abs(dx*sideX+dy*sideY);
-        const dirtyRange=Math.max(0,Math.min(1,(480-gap)/440));
-        const slipRange=Math.max(0,Math.min(1,(350-gap)/325));
-        const dirtyLane=wakeFalloff(lateral,car.width*0.62+other.width*0.62+gap*0.11);
-        const slipLane=wakeFalloff(lateral,car.width*0.52+other.width*0.52+gap*0.075);
+        const dirtyRange=Math.max(0,Math.min(1,(560-gap)/500));
+        const slipRange=Math.max(0,Math.min(1,(520-gap)/460));
+        const dirtyLane=wakeFalloff(lateral,car.width*0.68+other.width*0.68+gap*0.10);
+        const slipLane=wakeFalloff(lateral,car.width*0.82+other.width*0.82+gap*0.11);
         dirtyAir=Math.max(dirtyAir,dirtyRange*dirtyLane*pairSpeed*alignment);
-        slipstream=Math.max(slipstream,Math.pow(slipRange,1.15)*slipLane*pairSpeed*alignment);
+        slipstream=Math.max(slipstream,Math.pow(slipRange,0.9)*slipLane*pairSpeed*alignment);
     }
     return {slipstream,dirtyAir};
 }
@@ -398,7 +407,7 @@ class Car {
         // Plan for only part of the available braking force. This leaves room
         // for steering, traffic, worn tires and the model's frame-by-frame delay.
         const aBr = (this.spec.carClass === 'F1' ? 0.42 : 0.48) * aBrCap;
-        const towTopSpeedBonus=(this.slipstream||0)*(this.spec.carClass==='F1'?0.035:0.022);
+        const towTopSpeedBonus=getSlipstreamTopSpeedBonus(this);
         const vTop = this.vmaxMs * comp.speedMult * (1+towTopSpeedBonus);
         let vAllow = vTop;
         let reqDecel = 0;
@@ -665,7 +674,7 @@ class Car {
         // Rear-axle lock differs by drivetrain: front drive rotates most readily,
         // AWD stays composed, and rear drive needs a measured pull to rotate.
         if (handbrake > 0.01 && vmsSigned > 0.3) aBrk += handbrake * (5.7 + 1.3 * q) * drive.hbBrake * Math.max(.38,circle);
-        const towDragMul=1-(this.slipstream||0)*(this.spec.carClass==='F1'?0.15:0.095);
+        const towDragMul=getSlipstreamDragMultiplier(this);
         const dragMul = (this.drsActive ? 0.80 : 1.0) * towDragMul;
         let aDrag = this.dragK * dragMul * (1 + 0.12 * this.bodyDamage) * vms * vms + 0.12;
         if(Math.abs(this.impactSpin)>.1)aDrag+=Math.min(gripMax*.6,Math.abs(this.dx*Math.cos(this.angle)+this.dy*Math.sin(this.angle))*MS*.8);
@@ -683,7 +692,7 @@ class Car {
         }
         this.aLong = (newV - vmsSigned) / dt;
         // потолок скорости (DRS/шины слегка влияют)
-        const towTopSpeedBonus=(this.slipstream||0)*(this.spec.carClass==='F1'?0.035:0.022);
+        const towTopSpeedBonus=getSlipstreamTopSpeedBonus(this);
         const topMs = this.vmaxMs * comp.speedMult * (this.drsActive ? 1.03 : 1.0) * (1+towTopSpeedBonus) * (1 - 0.06 * this.wingDamage);
         if (newV > topMs) newV = newV + (topMs - newV) * 0.2;
         this.velocity = newV / MS;

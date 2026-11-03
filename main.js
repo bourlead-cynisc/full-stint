@@ -26,14 +26,10 @@ let garageStage = 'class';
 let showFavoritesOnly = false;
 const FAVORITES_STORAGE_KEY = 'full-stint:favorites:v1';
 const THEME_STORAGE_KEY = 'full-stint:menu-theme:v1';
-const LIVERY_STORAGE_KEY = 'full-stint:car-liveries:v1';
 let favoriteCarIds = new Set();
-let selectedLiveryVariants = {};
 let menuTheme = 'dark';
 try {
     favoriteCarIds = new Set(JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]'));
-    const savedLiveries = JSON.parse(localStorage.getItem(LIVERY_STORAGE_KEY) || '{}');
-    if (savedLiveries && typeof savedLiveries === 'object' && !Array.isArray(savedLiveries)) selectedLiveryVariants = savedLiveries;
     menuTheme = localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
 } catch (_) {}
 let totalRaceLaps = 3;                 // для F1: выбранное число кругов
@@ -173,20 +169,6 @@ window.selectCarClass = function (cls) {
     buildActiveTrackGeometry();
     renderGarageUI();
 };
-
-function getSelectedLiveryVariant(spec) {
-    return spec?.carClass === 'F1' ? 0 : (Number(selectedLiveryVariants[spec?.id]) === 1 ? 1 : 0);
-}
-function setSelectedLiveryVariant(carId, variant) {
-    selectedLiveryVariants[carId] = Number(variant) === 1 ? 1 : 0;
-    try { localStorage.setItem(LIVERY_STORAGE_KEY, JSON.stringify(selectedLiveryVariants)); } catch (_) {}
-    renderGarageUI();
-}
-function applyCarLiveryVariant(car, variant) {
-    car.liveryVariant = car.spec.carClass === 'F1' ? 0 : (Number(variant) === 1 ? 1 : 0);
-    car.livery = getCarLivery(car.spec, car.liveryVariant);
-    return car;
-}
 
 const GARAGE_STAGES = ['class', 'track', 'car'];
 function updateGarageProgress() {
@@ -525,7 +507,7 @@ function renderStrategyCards() {
     }).join('');
 }
 
-function drawCarThumb(canvasEl, spec, liveryVariant = 0) {
+function drawCarThumb(canvasEl, spec) {
     const cssWidth = canvasEl.clientWidth || 52;
     const cssHeight = canvasEl.clientHeight || 86;
     const pixelRatio = Math.min(2.5, Math.max(2, window.devicePixelRatio || 1));
@@ -541,13 +523,10 @@ function drawCarThumb(canvasEl, spec, liveryVariant = 0) {
     c.translate(cssWidth / 2, cssHeight / 2);
     if (img) {
         const h = cssHeight - 4, w = h * img.width / img.height;
-        const sprite = Number(liveryVariant) === 1 && spec.carClass !== 'F1'
-            ? getScaledSprite(spec.id, 1, Math.max(1, Math.round(w)), Math.max(1, Math.round(h)))
-            : img;
-        c.drawImage(sprite, -w / 2, -h / 2, w, h);
+        c.drawImage(img, -w / 2, -h / 2, w, h);
     } else {
         c.scale(1.05, 1.05);
-        renderCarBody(c, spec, getCarLivery(spec,liveryVariant), 'soft', false, false, 1);
+        renderCarBody(c, spec, spec.livery, 'soft', false, false, 1);
     }
     c.restore();
 }
@@ -617,14 +596,10 @@ function renderSelectedCarPreview(car,catalog) {
     const root=document.getElementById('selectedCarPreview');
     const scores={speed:carMetricRating(car,'speed',catalog),accel:carMetricRating(car,'accel',catalog),handling:carMetricRating(car,'handling',catalog),grip:carMetricRating(car,'grip',catalog)};
     const balance=carBalanceRating(car,catalog),favorite=favoriteCarIds.has(car.id);
-    const liveryVariant=getSelectedLiveryVariant(car);
-    const liveryName=liveryVariant===1?(getCarLivery(car,1).name||'Вариант 2'):'Основная';
     const metrics=[['Максимальная скорость',scores.speed],['Разгон',scores.accel],['Управляемость',scores.handling],['Сцепление',scores.grip]];
-    const liveryPicker=car.carClass==='F1'?'':`<div class="livery-picker" role="group" aria-label="Выбор расцветки"><span class="livery-picker-label">РАСЦВЕТКА · ${liveryName}</span>${[0,1].map(index=>{const palette=getCarLivery(car,index),schemeName=index===1?(palette.name||'Вариант 2'):'Основная';return `<button class="livery-choice ${index===liveryVariant?'active':''}" type="button" data-livery-variant="${index}" aria-pressed="${index===liveryVariant}" aria-label="Расцветка ${index+1}: ${schemeName}" title="${schemeName}"><i class="livery-swatch" style="--livery-primary:${palette.primary};--livery-secondary:${palette.secondary}"></i><span>${index+1}</span></button>`}).join('')}</div>`;
-    root.innerHTML=`<div class="selected-car-art"><span class="selected-car-class">${selectedCarClass==='TA'?'ГОРОДСКОЙ СПОРТ':selectedCarClass==='F1'?'FORMULA 1':'WEC · GT3'}</span><canvas id="selectedCarCanvas" width="280" height="300" aria-label="${car.shortName}, вид сверху"></canvas><div class="selected-car-caption"><h2>${car.shortName}</h2><p>${car.perf.note}</p><span>${DRIVETRAIN_LABELS[car.drivetrain]||car.drivetrain}</span></div><button class="selected-favorite ${favorite?'active':''}" type="button" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из':'Добавить в'} избранное" title="${favorite?'Убрать из':'Добавить в'} избранное">${favorite?'♥':'♡'}</button></div><div class="selected-car-specs"><div class="selected-spec-header"><p class="rating-legend">Игровые оценки · от 1 до 100</p><div class="balance-score"><strong>${balance}</strong><span>БАЛАНС</span></div></div><div class="selected-stat-list">${metrics.map(([label,value])=>`<div class="selected-stat"><div><span>${label}</span><b>${value}</b></div><i><span style="width:${value}%"></span></i></div>`).join('')}</div><div class="selected-facts"><div><small>Класс</small><b>${selectedCarClass==='TA'?'Time Attack':selectedCarClass}</b></div><div><small>Привод</small><b>${car.drivetrain==='AWD'?'Полный':car.drivetrain==='FWD'?'Передний':'Задний'}</b></div><div><small>Масса</small><b>${car.character.mass} кг</b></div></div>${liveryPicker}<div class="select-this-car">Выбрана эта машина <span>✓</span></div></div>`;
-    drawCarThumb(document.getElementById('selectedCarCanvas'),car,liveryVariant);
+    root.innerHTML=`<div class="selected-car-art"><span class="selected-car-class">${selectedCarClass==='TA'?'ГОРОДСКОЙ СПОРТ':selectedCarClass==='F1'?'FORMULA 1':'WEC · GT3'}</span><canvas id="selectedCarCanvas" width="280" height="300" aria-label="${car.shortName}, вид сверху"></canvas><div class="selected-car-caption"><h2>${car.shortName}</h2><p>${car.perf.note}</p><span>${DRIVETRAIN_LABELS[car.drivetrain]||car.drivetrain}</span></div><button class="selected-favorite ${favorite?'active':''}" type="button" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из':'Добавить в'} избранное" title="${favorite?'Убрать из':'Добавить в'} избранное">${favorite?'♥':'♡'}</button></div><div class="selected-car-specs"><div class="selected-spec-header"><p class="rating-legend">Игровые оценки · от 1 до 100</p><div class="balance-score"><strong>${balance}</strong><span>БАЛАНС</span></div></div><div class="selected-stat-list">${metrics.map(([label,value])=>`<div class="selected-stat"><div><span>${label}</span><b>${value}</b></div><i><span style="width:${value}%"></span></i></div>`).join('')}</div><div class="selected-facts"><div><small>Класс</small><b>${selectedCarClass==='TA'?'Time Attack':selectedCarClass}</b></div><div><small>Привод</small><b>${car.drivetrain==='AWD'?'Полный':car.drivetrain==='FWD'?'Передний':'Задний'}</b></div><div><small>Масса</small><b>${car.character.mass} кг</b></div></div><div class="select-this-car">Выбрана эта машина <span>✓</span></div></div>`;
+    drawCarThumb(document.getElementById('selectedCarCanvas'),car);
     root.querySelector('.selected-favorite').addEventListener('click',()=>toggleFavoriteCar(car.id));
-    root.querySelectorAll('[data-livery-variant]').forEach(button=>button.addEventListener('click',()=>setSelectedLiveryVariant(car.id,button.dataset.liveryVariant)));
 }
 function renderGarageUI() {
     updateGarageProgress();
@@ -692,7 +667,7 @@ function renderGarageUI() {
         card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectedCarIndex=idx;selectedTeammateSlot=0;renderGarageUI();}});
         card.querySelector('.car-favorite').addEventListener('click',event=>{event.stopPropagation();toggleFavoriteCar(car.id);});
         grid.appendChild(card);
-        drawCarThumb(card.querySelector('canvas'), car, getSelectedLiveryVariant(car));
+        drawCarThumb(card.querySelector('canvas'), car);
     });
 
     // пилоты команды
@@ -732,8 +707,6 @@ function buildWeekendRoster() {
     const seat = selectedCarClass === 'F1' ? Math.min(selectedTeammateSlot, team.drivers.length - 1) : 0;
     const pd = team.drivers[seat];
     playerCar = new Car(pd.name + ' (ВЫ)', pd.number, selectedCarIndex, true, false, pd, 0);
-    const playerLiveryVariant=getSelectedLiveryVariant(team);
-    applyCarLiveryVariant(playerCar,playerLiveryVariant);
     playerCar.baseName = pd.name;
     playerCar.assignStrategy(strategies[selectedStrategyIndex % strategies.length]);
 
@@ -744,10 +717,6 @@ function buildWeekendRoster() {
             tm.drivers.forEach((d, di) => {
                 if (ti === selectedCarIndex && di === seat) return;
                 const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
-                const botLiveryVariant=selectedCarClass==='GT3'
-                    ? ti===selectedCarIndex ? 1-playerLiveryVariant : di%2
-                    : 0;
-                applyCarLiveryVariant(bot,botLiveryVariant);
                 bot.baseName = d.name;
                 bot.assignStrategy(strategies[slot % strategies.length]);
                 aiCars.push(bot);
@@ -1109,6 +1078,10 @@ function updateHUD() {
 
     const kmh = Math.round(Math.hypot(p.dx, p.dy) * KMH_FACTOR);
     document.getElementById('dashSpeed').innerHTML = `${kmh} <small>км/ч</small>`;
+    const slipstreamEl=document.getElementById('dashSlipstream');
+    const slipstreamGain=Math.round(p.vmaxMs*3.6*getSlipstreamTopSpeedBonus(p));
+    slipstreamEl.hidden=(p.slipstream||0)<0.12;
+    if(!slipstreamEl.hidden)slipstreamEl.textContent=`СЛИПСТРИМ · +${slipstreamGain} км/ч`;
     document.getElementById('dashGear').textContent = p.velocity < -0.1 ? 'R' : (p.gear === 0 ? 'N' : String(p.gear));
     document.getElementById('dashRpmFill').style.width = Math.round(Math.min(1, p.rpm) * 100) + '%';
     document.getElementById('dashRpm').innerHTML = `${Math.round(p.rpmReal / 10) * 10} <small>об/мин</small>`;
