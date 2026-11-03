@@ -448,7 +448,7 @@ function renderStrategyCards() {
 function drawCarThumb(canvasEl, spec) {
     const cssWidth = canvasEl.clientWidth || 52;
     const cssHeight = canvasEl.clientHeight || 86;
-    const pixelRatio = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    const pixelRatio = Math.min(2.5, Math.max(2, window.devicePixelRatio || 1));
     canvasEl.width = Math.round(cssWidth * pixelRatio);
     canvasEl.height = Math.round(cssHeight * pixelRatio);
     const c = canvasEl.getContext('2d');
