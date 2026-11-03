@@ -4,7 +4,7 @@
 // Таблицы: кубок гонщиков и кубок конструкторов. Сохраняется в localStorage.
 // ============================================================================
 
-const SEASON_KEY = 'fiaSim.season.v2';
+const SEASON_KEY = 'fiaSim.season.wec.v3';
 let season = null;
 
 function shuffleArr(a) {

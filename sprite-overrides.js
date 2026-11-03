@@ -11,6 +11,6 @@ if (typeof SPRITE_DATA !== 'undefined') {
         'ta_lancer_evo', 'ta_wrx_sti', 'ta_gtr34'
     ];
     alternateLiveryIds.forEach(id => {
-        SPRITE_DATA[`${id}__livery2`] = `assets/liveries/${id}-alt.png?v=20261103-real-schemes-v2`;
+        SPRITE_DATA[`${id}__livery2`] = `assets/liveries/${id}-alt.png?v=20261104-real-schemes-v5`;
     });
 }

@@ -651,7 +651,7 @@ function renderGarageUI() {
         const card = document.createElement('div');
         card.tabIndex = 0; card.setAttribute('role','button');
         card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
-        card.innerHTML = `<canvas class="track-card-preview" width="96" height="76" aria-hidden="true"></canvas><div class="track-card-copy"><div class="track-info-title">${tObj.name}</div><div class="track-info-sub">${tObj.desc || ''}</div></div>`;
+        card.innerHTML = `<canvas class="track-card-preview" width="96" height="76" aria-hidden="true"></canvas><div class="track-card-copy"><div class="track-info-title">${tObj.name}</div></div>`;
         drawGarageTrackPreview(card.querySelector('canvas'),tObj);
         const selectTrack=()=>{
             const previousTrackIndex=selectedTrackIndex;

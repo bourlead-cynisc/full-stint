@@ -161,6 +161,11 @@ function buildActiveTrackGeometry() {
         }
         return bestIndex;
     };
+    const nearestTrackDistance=point=>{
+        let bestDistance=Infinity;
+        for(const sample of trackSamples) bestDistance=Math.min(bestDistance,(sample.x-point.x)**2+(sample.y-point.y)**2);
+        return Math.sqrt(bestDistance);
+    };
     let pitSection=findStraightPitSection(trk),surveyedPitWaypoints=null,oldStartIndex;
     // On the three surveyed circuits the OSM pit-lane centerline shares the
     // same projection as the real outline. Keep that route and anchor its
@@ -182,7 +187,7 @@ function buildActiveTrackGeometry() {
         }
     }
     if(!surveyedPitWaypoints&&trk.hasRealContour&&trk.realPitPoints?.length>=2) {
-        let routePoints=trk.realPitPoints;
+        let routePoints=simplifyOpenPitPolyline(trk.realPitPoints,14);
         let start=nearestTrackIndex(routePoints[0]),end=nearestTrackIndex(routePoints.at(-1));
         let span=(end-start+totalSamples)%totalSamples;
         if(span>totalSamples/2) {
@@ -190,7 +195,8 @@ function buildActiveTrackGeometry() {
             [start,end]=[end,start];
             span=(end-start+totalSamples)%totalSamples;
         }
-        if(span>=4&&span<totalSamples/3) {
+        const anchorsMatchTrack=nearestTrackDistance(routePoints[0])<1100&&nearestTrackDistance(routePoints.at(-1))<1100;
+        if(anchorsMatchTrack&&span>=4&&span<totalSamples/3) {
             const entry=trackSamples[start],exit=trackSamples[end];
             // OSM pit routes occasionally double back and form a kink or loop.
             // Validate their direction before accepting them for driving.
@@ -501,7 +507,8 @@ function getTrackInfo(px, py, hintIdx = -1) {
 
 function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
     const extent = 2500;
-    ctx.fillStyle = '#29382f';
+    const theme=TRACKS_DB[selectedTrackIndex]?.theme||{};
+    ctx.fillStyle = theme.grassBase||'#29382f';
     ctx.fillRect(camCenterX - extent, camCenterY - extent, extent * 2, extent * 2);
 
     // Soft, irregular turf patches keep the infield from reading as a striped grid.
@@ -515,12 +522,52 @@ function drawBackgroundWorld(ctx, camCenterX, camCenterY) {
             ctx.save();
             ctx.translate(gx + 150 + variation * 420, gy + 130 + (1 - variation) * 450);
             ctx.rotate(variation * Math.PI);
-            ctx.fillStyle = variation > 0.5 ? 'rgba(185,177,132,0.035)' : 'rgba(8,15,11,0.075)';
+            ctx.fillStyle = variation > 0.5 ? 'rgba(206,194,145,0.055)' : 'rgba(8,15,11,0.085)';
             ctx.beginPath();
             ctx.ellipse(0, 0, 150 + variation * 120, 70 + (1 - variation) * 90, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }
+    }
+}
+
+function drawWecPaddock(ctx,camCenterX,camCenterY){
+    if(!TRACKS_DB[selectedTrackIndex]?.wecVenue||pitWaypoints.length<60)return;
+    const sideX=sfNormX,sideY=sfNormY;
+    const complexes=[
+        {from:.24,to:.43,offset:280,depth:245,tone:'#747875'},
+        {from:.46,to:.69,offset:320,depth:285,tone:'#858681'},
+        {from:.72,to:.84,offset:260,depth:205,tone:'#686e6d'}
+    ];
+    for(let complexIndex=0;complexIndex<complexes.length;complexIndex++){
+        const item=complexes[complexIndex];
+        const start=pitWaypoints[Math.floor(item.from*(pitWaypoints.length-1))];
+        const end=pitWaypoints[Math.floor(item.to*(pitWaypoints.length-1))];
+        const dx=end.x-start.x,dy=end.y-start.y,length=Math.hypot(dx,dy)||1;
+        const tx=dx/length,ty=dy/length,nx=-ty,ny=tx;
+        const side=(nx*sideX+ny*sideY)>=0?1:-1;
+        const x=(start.x+end.x)*.5+nx*side*item.offset;
+        const y=(start.y+end.y)*.5+ny*side*item.offset;
+        const buildingLength=Math.max(520,length*.92),angle=Math.atan2(ty,tx);
+        if(Math.hypot(x-camCenterX,y-camCenterY)>2900)continue;
+        ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+        ctx.fillStyle='rgba(0,0,0,.24)';ctx.fillRect(-buildingLength*.5+12,-item.depth*.5+14,buildingLength,item.depth);
+        ctx.fillStyle='#4d5353';ctx.fillRect(-buildingLength*.5,-item.depth*.5,buildingLength,item.depth);
+        ctx.fillStyle=item.tone;ctx.fillRect(-buildingLength*.5+15,-item.depth*.5+12,buildingLength-30,item.depth-28);
+        ctx.fillStyle='#adb0a9';ctx.fillRect(-buildingLength*.5+22,-item.depth*.5+19,buildingLength-44,item.depth*.19);
+        ctx.fillStyle='#414748';ctx.fillRect(-buildingLength*.5+22,item.depth*.5-64,buildingLength-44,38);
+        ctx.fillStyle='#252c30';
+        const bays=Math.max(5,Math.min(14,Math.floor(buildingLength/120)));
+        for(let bay=0;bay<bays;bay++){
+            const bayX=-buildingLength*.5+42+(buildingLength-84)*(bay+.5)/bays;
+            ctx.fillRect(bayX-14,-item.depth*.5+item.depth*.38,28,item.depth*.42);
+            ctx.fillStyle=bay%3===0?'#f3a65a':'#c9d0ce';
+            ctx.fillRect(bayX-10,-item.depth*.5+item.depth*.42,20,5);
+            ctx.fillStyle='#252c30';
+        }
+        ctx.strokeStyle='rgba(226,232,230,.6)';ctx.lineWidth=5;
+        ctx.strokeRect(-buildingLength*.5,-item.depth*.5,buildingLength,item.depth);
+        ctx.restore();
     }
 }
 
@@ -606,6 +653,7 @@ function drawTrack(ctx) {
     const camX = playerCar ? playerCar.x : 0, camY = playerCar ? playerCar.y : 0;
     drawBackgroundWorld(ctx, camX, camY);
     if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,camX,camY);
+    drawWecPaddock(ctx,camX,camY);
     drawGrandstands(ctx, camX, camY);
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';

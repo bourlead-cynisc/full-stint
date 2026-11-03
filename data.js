@@ -331,18 +331,18 @@ const TIME_ATTACK_CATALOG = [
 // Variant 2 palettes correspond to named motorsport schemes also used by the
 // baked overhead sprites. These explicit colors keep the picker truthful.
 const SECOND_LIVERY_PALETTES = {
-    aston_gt3: { primary: '#174b38', secondary: '#b7d432', name: 'Heart of Racing' },
+    aston_gt3: { primary: '#c6d52d', secondary: '#14694a', name: "D'Station Racing" },
     audi_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
     bmw_gt3: { primary: '#eceff2', secondary: '#0876bd', name: 'BMW M Motorsport' },
     corvette_gt3: { primary: '#f5cf00', secondary: '#15191e', name: 'Corvette Racing' },
-    ferrari_gt3: { primary: '#f0eee8', secondary: '#17191d', name: 'AF Corse #83' },
+    ferrari_gt3: { primary: '#f4d218', secondary: '#17191d', name: 'AF Corse #83' },
     mustang_gt3: { primary: '#f1f0ec', secondary: '#07539a', name: 'Ford Performance' },
-    lambo_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
+    lambo_gt3: { primary: '#a8d51e', secondary: '#17191d', name: 'Iron Lynx Lamborghini' },
     lexus_gt3: { primary: '#f4d21f', secondary: '#15191e', name: 'Vasser Sullivan' },
-    mclaren_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
+    mclaren_gt3: { primary: '#ff6a1a', secondary: '#17191d', name: 'Garage 59' },
     mercedes_gt3: { primary: '#17191d', secondary: '#1677bd', name: 'Iron Lynx #61' },
     porsche_gt3: { primary: '#b5cf29', secondary: '#f0d42f', name: 'Manthey Grello' },
-    bentley_gt3: { primary: '#f0eee8', secondary: '#16503d', name: 'Bentley M-Sport' },
+    bentley_gt3: { primary: '#07539a', secondary: '#f1cb22', name: 'K-PAX Racing' },
     ta_civic: { primary: '#0876bd', secondary: '#f2d52c', name: 'Spoon Sports' },
     ta_megane_rs: { primary: '#17191d', secondary: '#f4d21f', name: 'Renault Sport' },
     ta_kalina: { primary: '#0870ca', secondary: '#f0eee8', name: 'RATATA Racing' },
@@ -633,3 +633,28 @@ EST_LAP_SEC.GT3.push(115); EST_LAP_SEC.F1.push(90);
 
 // Для Time Attack оцениваем темп дорожных машин относительно базы GT3 на каждой трассе.
 EST_LAP_SEC.TA = EST_LAP_SEC.GT3.map(seconds => Math.round(seconds * 1.18));
+
+// Первая версия проекта с нуля для WEC: в расписании и во всех режимах остаются
+// только шесть выбранных трасс и всегда в одном порядке.
+const WEC_TRACK_IDS = ['imola', 'spa', 'lemans', 'interlagos', 'fuji', 'monza'];
+const WEC_TRACK_NAMES = {
+    imola: ['🇮🇹 Имола', 'Имола'],
+    spa: ['🇧🇪 Спа-Франкоршам', 'Спа-Франкоршам'],
+    lemans: ['🇫🇷 Ле-Ман', 'Ле-Ман'],
+    interlagos: ['🇧🇷 Интерлагос', 'Интерлагос'],
+    fuji: ['🇯🇵 Фудзи', 'Фудзи'],
+    monza: ['🇮🇹 Монца', 'Монца']
+};
+const WEC_TRACK_INDICES = WEC_TRACK_IDS.map(id => TRACKS_DB.findIndex(track => track.id === id));
+const wecTracks = WEC_TRACK_INDICES.map(index => TRACKS_DB[index]).filter(Boolean);
+TRACKS_DB.splice(0, TRACKS_DB.length, ...wecTracks);
+for (const track of TRACKS_DB) {
+    const [name, shortName] = WEC_TRACK_NAMES[track.id];
+    track.name = name;
+    track.shortName = shortName;
+    track.wecVenue = true;
+}
+for (const classKey of Object.keys(EST_LAP_SEC)) {
+    const originalTimes = EST_LAP_SEC[classKey];
+    EST_LAP_SEC[classKey] = WEC_TRACK_INDICES.map(index => originalTimes[index]).filter(Number.isFinite);
+}
