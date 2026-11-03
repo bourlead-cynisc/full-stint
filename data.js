@@ -328,8 +328,8 @@ const TIME_ATTACK_CATALOG = [
       drivers:[{name:'GT-R R34',number:16,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
 ];
 
-// Second non-F1 livery: preserve each car's paint pattern while rotating its
-// paint colors into a clearly distinct companion palette.
+// The second static sprite set uses this companion palette in the selector
+// swatches and in the vector fallback for non-F1 cars.
 const SECOND_LIVERY_HUE_SHIFT = 150;
 function shiftLiveryColor(color, degrees = SECOND_LIVERY_HUE_SHIFT) {
     const match = /^#?([\da-f]{6})$/i.exec(color || '');

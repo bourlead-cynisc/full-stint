@@ -47,11 +47,22 @@ function loadTimeAttackSprites() {
 
 function loadSprites() {
     if (typeof SPRITE_DATA !== 'undefined') {
+        const alternateSpriteIds = Object.keys(SPRITE_DATA).filter(id => id.endsWith('__livery2'));
+        let alternateSpritesSettled = 0;
+        const onAlternateSpriteSettled = () => {
+            alternateSpritesSettled++;
+            if (alternateSpritesSettled === alternateSpriteIds.length
+                && currentSession === 'MENU' && typeof renderGarageUI === 'function') {
+                renderGarageUI();
+            }
+        };
         for (const id in SPRITE_DATA) {
             const img = new Image();
             img.onload = () => {
                 spriteImgs[id] = img;
+                if (id.endsWith('__livery2')) onAlternateSpriteSettled();
             };
+            img.onerror = () => { if (id.endsWith('__livery2')) onAlternateSpriteSettled(); };
             img.src = SPRITE_DATA[id];
         }
     }
@@ -71,43 +82,21 @@ const scaledCache = {};
 let topZoomNow = 1;
 
 function getScaledSprite(id, tintIdx, tw, th) {
-    const key = id + ':' + tintIdx + ':' + tw + 'x' + th;
+    const alternate = Number(tintIdx) === 1 && !id.startsWith('f1_');
+    const sourceId = alternate ? `${id}__livery2` : id;
+    const src = spriteImgs[sourceId];
+    // Keep showing the original until the alternate PNG has finished loading.
+    if (!src && alternate && spriteImgs[id]) return spriteImgs[id];
+    if (!src) return null;
+    const key = sourceId + ':' + tw + 'x' + th;
     if (scaledCache[key]) return scaledCache[key];
-    const src = spriteImgs[id];
     const out = document.createElement('canvas');
     out.width = tw; out.height = th;
     const g = out.getContext('2d');
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
-    if (Number(tintIdx) === 1 && !id.startsWith('f1_')) g.filter = `hue-rotate(${SECOND_LIVERY_HUE_SHIFT}deg) saturate(1.12)`;
     // Scale the full-resolution source once, directly into the high-DPI game canvas.
     g.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
-    g.filter = 'none';
-    if (Number(tintIdx) === 1 && !id.startsWith('f1_')) {
-        // Keep the red pixels in the lower outer corners: those are the rear
-        // lamps on our consistently nose-up car sprites.
-        const original = document.createElement('canvas');
-        original.width = tw; original.height = th;
-        const originalContext = original.getContext('2d', { willReadFrequently: true });
-        originalContext.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
-        const originalPixels = originalContext.getImageData(0, 0, tw, th).data;
-        const shiftedPixels = g.getImageData(0, 0, tw, th);
-        const pixels = shiftedPixels.data;
-        const rearStart = Math.floor(th * 0.88);
-        for (let y = rearStart; y < th; y++) {
-            for (let x = 0; x < tw; x++) {
-                const nx = x / tw;
-                const inRearLampArea = (nx >= 0.08 && nx <= 0.36) || (nx >= 0.64 && nx <= 0.92);
-                if (!inRearLampArea) continue;
-                const i = (y * tw + x) * 4;
-                const r = originalPixels[i], green = originalPixels[i + 1];
-                const b = originalPixels[i + 2], alpha = originalPixels[i + 3];
-                if (alpha < 32 || r < 95 || r < green * 1.32 || r < b * 1.18) continue;
-                pixels[i] = r; pixels[i + 1] = green; pixels[i + 2] = b; pixels[i + 3] = alpha;
-            }
-        }
-        g.putImageData(shiftedPixels, 0, 0);
-    }
     scaledCache[key] = out;
     return out;
 }
