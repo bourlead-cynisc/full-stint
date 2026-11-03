@@ -36,7 +36,7 @@ function loadTimeAttackSprites() {
             spriteImgs[id] = sprite;
         }
     };
-    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-stock-v3')
+    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-ta-ratata-v5')
         .then(response => {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.text();
