@@ -1,24 +1,24 @@
 const spriteImgs = {};
 
-// User-provided Time Attack models in the same left-to-right, top-to-bottom order
-// as the supplied 4x4 sprite sheet. Rectangles are tight alpha bounds in the atlas.
+// WEC-style Time Attack models in the same left-to-right, top-to-bottom order
+// as the 4x4 atlas. Rectangles are tight alpha bounds in the atlas.
 const TIME_ATTACK_SPRITE_RECTS = {
-    ta_civic:       [122, 14, 163, 292],
-    ta_megane_rs:   [404, 15, 158, 291],
-    ta_kalina:      [690, 14, 158, 290],
-    ta_granta:      [979, 17, 157, 289],
-    ta_vesta:       [118, 323, 170, 288],
-    ta_mx5:         [401, 327, 170, 278],
-    ta_gt86:        [684, 323, 167, 286],
-    ta_brz:         [972, 324, 172, 283],
-    ta_bmw_m3:      [122, 626, 166, 283],
-    ta_bmw_m4:      [402, 628, 173, 283],
-    ta_s2000:       [681, 627, 176, 281],
-    ta_silvia:      [971, 624, 177, 283],
-    ta_porsche_911: [116, 922, 174, 303],
-    ta_lancer_evo:  [402, 919, 172, 306],
-    ta_wrx_sti:     [679, 921, 182, 305],
-    ta_gtr34:       [971, 921, 178, 306]
+    ta_civic:       [123, 20, 152, 286],
+    ta_megane_rs:   [409, 21, 157, 285],
+    ta_kalina:      [698, 19, 151, 287],
+    ta_granta:      [986, 21, 150, 285],
+    ta_vesta:       [122, 325, 158, 283],
+    ta_mx5:         [404, 324, 169, 283],
+    ta_gt86:        [690, 325, 164, 281],
+    ta_brz:         [978, 324, 165, 283],
+    ta_bmw_m3:      [127, 629, 152, 279],
+    ta_bmw_m4:      [407, 629, 157, 279],
+    ta_s2000:       [696, 628, 157, 280],
+    ta_silvia:      [980, 629, 160, 279],
+    ta_porsche_911: [120, 930, 163, 294],
+    ta_lancer_evo:  [405, 930, 169, 294],
+    ta_wrx_sti:     [691, 930, 174, 293],
+    ta_gtr34:       [979, 928, 165, 295]
 };
 
 function loadTimeAttackSprites() {
@@ -36,7 +36,7 @@ function loadTimeAttackSprites() {
             spriteImgs[id] = sprite;
         }
     };
-    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-sprites-v1')
+    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-sprites-v2')
         .then(response => {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.text();
