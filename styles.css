@@ -870,7 +870,7 @@ canvas#minimapCanvas {
 }
 
 
-/* 2.17 · clearer controls, gentler rolling start, and responsive views */
+/* 2.18 · clearer controls, gentler rolling start, and responsive views */
 #hud-left-stack {
     position:absolute!important; top:58px; left:14px; right:auto; bottom:auto;
     width:190px; height:auto!important; min-height:0!important; max-height:none!important;
@@ -962,6 +962,8 @@ canvas#minimapCanvas {
 #viewportContainer.portrait-gameplay #minimapFrame {
     left:calc(var(--portrait-inset) + 10px);
     right:auto;
+    top:276px;
+    bottom:auto;
     width:var(--portrait-minimap-width);
 }
 #viewportContainer.portrait-gameplay #hud-top-center {
@@ -971,6 +973,7 @@ canvas#minimapCanvas {
 }
 #viewportContainer.portrait-gameplay #control-hint {
     left:calc(var(--portrait-inset) + 10px);
+    bottom:86px;
     max-width:calc(var(--portrait-visible-width) - 20px);
 }
 #viewportContainer.portrait-gameplay #race-control {
