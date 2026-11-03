@@ -541,8 +541,10 @@ function drawCarThumb(canvasEl, spec, liveryVariant = 0) {
     c.translate(cssWidth / 2, cssHeight / 2);
     if (img) {
         const h = cssHeight - 4, w = h * img.width / img.height;
-        if (Number(liveryVariant) === 1 && spec.carClass !== 'F1') c.filter = `hue-rotate(${SECOND_LIVERY_HUE_SHIFT}deg) saturate(1.12)`;
-        c.drawImage(img, -w / 2, -h / 2, w, h);
+        const sprite = Number(liveryVariant) === 1 && spec.carClass !== 'F1'
+            ? getScaledSprite(spec.id, 1, Math.max(1, Math.round(w)), Math.max(1, Math.round(h)))
+            : img;
+        c.drawImage(sprite, -w / 2, -h / 2, w, h);
     } else {
         c.scale(1.05, 1.05);
         renderCarBody(c, spec, getCarLivery(spec,liveryVariant), 'soft', false, false, 1);

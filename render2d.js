@@ -83,6 +83,31 @@ function getScaledSprite(id, tintIdx, tw, th) {
     // Scale the full-resolution source once, directly into the high-DPI game canvas.
     g.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
     g.filter = 'none';
+    if (Number(tintIdx) === 1 && !id.startsWith('f1_')) {
+        // Keep the red pixels in the lower outer corners: those are the rear
+        // lamps on our consistently nose-up car sprites.
+        const original = document.createElement('canvas');
+        original.width = tw; original.height = th;
+        const originalContext = original.getContext('2d', { willReadFrequently: true });
+        originalContext.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
+        const originalPixels = originalContext.getImageData(0, 0, tw, th).data;
+        const shiftedPixels = g.getImageData(0, 0, tw, th);
+        const pixels = shiftedPixels.data;
+        const rearStart = Math.floor(th * 0.88);
+        for (let y = rearStart; y < th; y++) {
+            for (let x = 0; x < tw; x++) {
+                const nx = x / tw;
+                const inRearLampArea = (nx >= 0.08 && nx <= 0.36) || (nx >= 0.64 && nx <= 0.92);
+                if (!inRearLampArea) continue;
+                const i = (y * tw + x) * 4;
+                const r = originalPixels[i], green = originalPixels[i + 1];
+                const b = originalPixels[i + 2], alpha = originalPixels[i + 3];
+                if (alpha < 32 || r < 95 || r < green * 1.32 || r < b * 1.18) continue;
+                pixels[i] = r; pixels[i + 1] = green; pixels[i + 2] = b; pixels[i + 3] = alpha;
+            }
+        }
+        g.putImageData(shiftedPixels, 0, 0);
+    }
     scaledCache[key] = out;
     return out;
 }
