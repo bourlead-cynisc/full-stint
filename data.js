@@ -322,6 +322,10 @@ const TIME_ATTACK_CATALOG = [
       name:'Subaru Impreza WRX STI', shortName:'Impreza WRX STI', teamName:'Subaru Impreza WRX STI',
       width:22, height:46, topSpeedKmh:285, livery:{primary:'#1765d1',secondary:'#f5f7fa',accent:'#f3cf3c',wing:'#15233c'},
       drivers:[{name:'WRX STI',number:15,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
+    { id:'ta_gtr34', carClass:'TA', drivetrain:'AWD', engineLayout:'FR', enginePosition:'front', bodyStyle:'coupe', hasWing:true, driveTraction:1.14, driveRotation:1.04,
+      name:'Nissan GT-R R34', shortName:'Nissan GT-R R34', teamName:'Nissan GT-R',
+      width:22, height:47, topSpeedKmh:300, livery:{primary:'#747980',secondary:'#d8dce1',accent:'#30343a',wing:'#292d33'},
+      drivers:[{name:'GT-R R34',number:16,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
 ];
 
 // ============================================================================
@@ -375,6 +379,7 @@ const CAR_PERF = {
     ta_porsche_911: { power: 300, vmax: 305, grip: 1.66, aero: 0.88, brake: 2.00, tire: 1.02, note: 'Заднемоторная компоновка даёт тягу на выходе' },
     ta_lancer_evo:  { power: 285, vmax: 300, grip: 1.61, aero: 0.72, brake: 1.90, tire: 0.96, note: 'Полный привод цепко разгоняется из поворота' },
     ta_wrx_sti:     { power: 260, vmax: 285, grip: 1.56, aero: 0.62, brake: 1.76, tire: 1.03, note: 'Стабильный полный привод и оппозитный мотор' }
+    ta_gtr34:      { power: 295, vmax: 300, grip: 1.62, aero: 0.78, brake: 1.94, tire: 0.98, note: 'Полный привод уверенно тянет из поворота' },
 };
 // Настройки по классам: обороты, передаточные отношения (доля vmax на красной зоне), время переключения
 const CLASS_CFG = {
