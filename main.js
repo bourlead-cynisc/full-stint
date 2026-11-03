@@ -4,7 +4,16 @@
 
 const viewportEl = document.getElementById('viewportContainer');
 const canvas = document.getElementById('gameCanvas');
+const GAME_CANVAS_WIDTH = 1280;
+const GAME_CANVAS_HEIGHT = 790;
+const GAME_CANVAS_DPR = Math.min(2.5, Math.max(2, window.devicePixelRatio || 1));
+canvas.width = Math.round(GAME_CANVAS_WIDTH * GAME_CANVAS_DPR);
+canvas.height = Math.round(GAME_CANVAS_HEIGHT * GAME_CANVAS_DPR);
+canvas.style.width = GAME_CANVAS_WIDTH + 'px';
+canvas.style.height = GAME_CANVAS_HEIGHT + 'px';
+window.__GAME_CANVAS_DPR = GAME_CANVAS_DPR;
 const ctx = canvas.getContext('2d');
+ctx.setTransform(GAME_CANVAS_DPR, 0, 0, GAME_CANVAS_DPR, 0, 0);
 const minimapCanvas = document.getElementById('minimapCanvas');
 const mCtx = minimapCanvas.getContext('2d');
 
@@ -1171,13 +1180,13 @@ function gameLoop(now) {
         }
 
         if (topFollow === 'TRACK') {
-            renderTopTrack(ctx, canvas.width, canvas.height);
+            renderTopTrack(ctx, GAME_CANVAS_WIDTH, GAME_CANVAS_HEIGHT);
         } else {
             topZoomNow = camZoom;
             ctx.fillStyle = '#122419';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, GAME_CANVAS_WIDTH, GAME_CANVAS_HEIGHT);
             ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.translate(GAME_CANVAS_WIDTH / 2, GAME_CANVAS_HEIGHT / 2);
             ctx.scale(camZoom, camZoom);
             ctx.translate(-playerCar.x, -playerCar.y);
             drawTrack(ctx);
@@ -1193,7 +1202,7 @@ function gameLoop(now) {
         updateHUD();
     } else {
         ctx.fillStyle = '#0b1220';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, GAME_CANVAS_WIDTH, GAME_CANVAS_HEIGHT);
     }
     updateAudio(frameDt);
     requestAnimationFrame(gameLoop);

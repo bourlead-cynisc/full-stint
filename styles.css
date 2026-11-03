@@ -8,7 +8,7 @@ body {
     position: relative; width: 1280px; height: 790px; overflow: hidden;
     box-shadow: 0 12px 55px rgba(0,0,0,0.95); border: 2px solid #232a38; border-radius: 10px; background: #14221a;
 }
-canvas#gameCanvas { position: absolute; top: 0; left: 0; transform-origin: 50% 58%; z-index: 2; }
+canvas#gameCanvas { position: absolute; top: 0; left: 0; width:1280px; height:790px; transform-origin: 50% 58%; z-index: 2; }
 canvas#minimapCanvas { position: absolute; bottom: 14px; right: 14px; z-index: 7; pointer-events: none; }
 
 .hud-panel {
@@ -772,7 +772,7 @@ canvas#minimapCanvas {
     background:rgba(12,14,13,.58); box-shadow:none; backdrop-filter:blur(7px);
 }
 #hudCarTitle { margin:0 0 5px; font-size:11px; font-weight:650; letter-spacing:0; color:#f0eee8; }
-#hudDriverName, .hud-powertrain, #liveTower, #damage-panel { display:none !important; }
+#hudDriverName, .hud-powertrain, #liveTower { display:none !important; }
 #hud-left .timer-row {
     display:flex; justify-content:space-between; gap:12px; padding:3px 0;
     border-bottom:1px solid rgba(255,255,255,.07); color:rgba(235,232,221,.56); font-size:9px;
@@ -867,4 +867,47 @@ canvas#minimapCanvas {
     #minimapFrame { right:7px; bottom:7px; width:120px; padding:4px; }
     #pit-assistant, #trial-panel { top:108px; right:7px; width:150px; padding:7px; }
     #control-hint { left:7px; bottom:7px; font-size:6px; }
+}
+
+
+/* 2.14 · sharp car sprites and clean, readable race HUD */
+#hud-left-stack {
+    position:absolute!important; top:58px; left:14px; right:auto; bottom:auto;
+    width:190px; height:auto!important; min-height:0!important; max-height:none!important;
+    margin:0!important; padding:0!important; gap:6px; overflow:visible!important;
+    border:0!important; outline:0!important; background:transparent!important; box-shadow:none!important;
+}
+#hud-left-stack::before, #hud-left-stack::after { content:none!important; display:none!important; }
+#hud-left-stack > #damage-panel {
+    display:block!important; position:relative!important; inset:auto!important;
+    flex:none; width:100%; min-height:0; margin:0; padding:7px 9px;
+    border:1px solid rgba(255,255,255,.1); border-radius:8px;
+    background:rgba(12,14,13,.68); box-shadow:none; backdrop-filter:blur(7px);
+    font-size:8px;
+}
+#damage-panel h2 {
+    margin:0 0 3px; color:#f0eee8; font-size:8px; letter-spacing:.08em;
+}
+#damage-panel > div {
+    display:flex; justify-content:space-between; gap:4px;
+    padding:2px 0; border-bottom:1px solid rgba(255,255,255,.06);
+    color:rgba(235,232,221,.68); font-size:8px; line-height:1.25;
+}
+#damage-panel b { color:#d8e9df; }
+#damage-panel .damaged b { color:#ff987e; }
+#damageEffect { margin:4px 0 0; color:rgba(235,232,221,.58); font-size:7px; line-height:1.25; }
+#damageRepairHint { display:none!important; }
+#trial-panel { top:164px; }
+#control-hint {
+    left:12px; right:auto!important; top:auto!important; bottom:13px;
+    height:auto!important; max-height:none!important; border:0!important; outline:0!important;
+    padding:0; border-radius:0; background:transparent!important; box-shadow:none!important;
+}
+@media(max-width:700px) {
+    #hud-left-stack { top:46px; left:7px; width:132px; }
+    #hud-left-stack > #damage-panel { padding:6px 7px; }
+    #damage-panel > div { font-size:7px; }
+    #damageEffect { font-size:6px; }
+    #trial-panel { top:132px; right:7px; width:150px; padding:7px; }
+    #control-hint { left:7px; bottom:7px; }
 }
