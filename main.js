@@ -672,7 +672,7 @@ function startQualifyingSession() {
     rebuildEngineVoices();
     document.getElementById('sessionLabel').textContent = 'КВАЛИФИКАЦИЯ';
     document.getElementById('start-lights').style.opacity = 0;
-    showRaceControl('Квалификация · выезд 90 км/ч · круг начнётся на стартовой линии · '+bindingLabel('pause')+' — завершить', '#38bdf8');
+    showRaceControl('Квалификация: 90 км/ч · линия = старт · '+bindingLabel('pause')+' — выход', '#38bdf8');
 }
 
 // ---- огни старта ----
@@ -1128,6 +1128,7 @@ function resizeViewport() {
     viewportEl.style.setProperty('--portrait-panel-width', `${Math.min(190, visibleWidth * 0.29)}px`);
     viewportEl.style.setProperty('--portrait-compact-panel-width', `${Math.min(170, visibleWidth * 0.27)}px`);
     viewportEl.style.setProperty('--portrait-minimap-width', `${Math.min(160, visibleWidth * 0.26)}px`);
+    viewportEl.style.setProperty('--portrait-notice-width', `${Math.min(260, visibleWidth * 0.36)}px`);
     viewportEl.style.transform = `scale(${s})`;
 }
 window.addEventListener('resize', resizeViewport);
