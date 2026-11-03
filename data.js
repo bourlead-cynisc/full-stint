@@ -328,39 +328,43 @@ const TIME_ATTACK_CATALOG = [
       drivers:[{name:'GT-R R34',number:16,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
 ];
 
-// The second static sprite set uses this companion palette in the selector
-// swatches and in the vector fallback for non-F1 cars.
-const SECOND_LIVERY_HUE_SHIFT = 150;
-function shiftLiveryColor(color, degrees = SECOND_LIVERY_HUE_SHIFT) {
-    const match = /^#?([\da-f]{6})$/i.exec(color || '');
-    if (!match) return color;
-    const value = parseInt(match[1], 16);
-    let r = ((value >> 16) & 255) / 255;
-    let g = ((value >> 8) & 255) / 255;
-    let b = (value & 255) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
-    let hue = 0;
-    if (delta) {
-        if (max === r) hue = 60 * (((g - b) / delta) % 6);
-        else if (max === g) hue = 60 * ((b - r) / delta + 2);
-        else hue = 60 * ((r - g) / delta + 4);
-    }
-    hue = (hue + degrees + 360) % 360;
-    const light = (max + min) / 2;
-    const saturation = delta ? delta / (1 - Math.abs(2 * light - 1)) : 0;
-    const chroma = (1 - Math.abs(2 * light - 1)) * saturation;
-    const section = hue / 60;
-    const x = chroma * (1 - Math.abs(section % 2 - 1));
-    let rgb = section < 1 ? [chroma, x, 0] : section < 2 ? [x, chroma, 0]
-        : section < 3 ? [0, chroma, x] : section < 4 ? [0, x, chroma]
-        : section < 5 ? [x, 0, chroma] : [chroma, 0, x];
-    const offset = light - chroma / 2;
-    return '#' + rgb.map(channel => Math.round((channel + offset) * 255).toString(16).padStart(2, '0')).join('');
-}
+// Variant 2 palettes correspond to named motorsport schemes also used by the
+// baked overhead sprites. These explicit colors keep the picker truthful.
+const SECOND_LIVERY_PALETTES = {
+    aston_gt3: { primary: '#174b38', secondary: '#b7d432', name: 'Heart of Racing' },
+    audi_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
+    bmw_gt3: { primary: '#eceff2', secondary: '#0876bd', name: 'BMW M Motorsport' },
+    corvette_gt3: { primary: '#f5cf00', secondary: '#15191e', name: 'Corvette Racing' },
+    ferrari_gt3: { primary: '#f0eee8', secondary: '#17191d', name: 'AF Corse #83' },
+    mustang_gt3: { primary: '#f1f0ec', secondary: '#07539a', name: 'Ford Performance' },
+    lambo_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
+    lexus_gt3: { primary: '#f4d21f', secondary: '#15191e', name: 'Vasser Sullivan' },
+    mclaren_gt3: { primary: '#62bfd8', secondary: '#f07828', name: 'Gulf Racing' },
+    mercedes_gt3: { primary: '#17191d', secondary: '#1677bd', name: 'Iron Lynx #61' },
+    porsche_gt3: { primary: '#b5cf29', secondary: '#f0d42f', name: 'Manthey Grello' },
+    bentley_gt3: { primary: '#f0eee8', secondary: '#16503d', name: 'Bentley M-Sport' },
+    ta_civic: { primary: '#0876bd', secondary: '#f2d52c', name: 'Spoon Sports' },
+    ta_megane_rs: { primary: '#17191d', secondary: '#f4d21f', name: 'Renault Sport' },
+    ta_kalina: { primary: '#0870ca', secondary: '#f0eee8', name: 'RATATA Racing' },
+    ta_granta: { primary: '#0870ca', secondary: '#f0eee8', name: 'RATATA Racing' },
+    ta_vesta: { primary: '#0870ca', secondary: '#f0eee8', name: 'RATATA Racing' },
+    ta_mx5: { primary: '#08753f', secondary: '#f07828', name: 'Mazda 787B' },
+    ta_gt86: { primary: '#f0eee8', secondary: '#e52a35', name: 'Toyota Gazoo Racing' },
+    ta_brz: { primary: '#07539a', secondary: '#f2d52b', name: 'Subaru STI' },
+    ta_bmw_m3: { primary: '#f0eee8', secondary: '#0876bd', name: 'BMW M Motorsport' },
+    ta_bmw_m4: { primary: '#17191d', secondary: '#0876bd', name: 'BMW M Motorsport' },
+    ta_s2000: { primary: '#f2d52b', secondary: '#0876bd', name: 'Spoon Sports' },
+    ta_silvia: { primary: '#f0eee8', secondary: '#d92332', name: 'NISMO' },
+    ta_porsche_911: { primary: '#f0eee8', secondary: '#0876bd', name: 'Martini Racing' },
+    ta_lancer_evo: { primary: '#f0eee8', secondary: '#d92332', name: 'Mitsubishi Ralliart' },
+    ta_wrx_sti: { primary: '#07539a', secondary: '#f2d52b', name: 'Subaru 555 Rally' },
+    ta_gtr34: { primary: '#0753a1', secondary: '#f0eee8', name: 'Calsonic Skyline' }
+};
 function getCarLivery(spec, variant = 0) {
     if (!spec) return {};
     if (spec.carClass === 'F1' || Number(variant) !== 1) return spec.livery;
-    return Object.fromEntries(Object.entries(spec.livery).map(([part, color]) => [part, shiftLiveryColor(color)]));
+    const palette = SECOND_LIVERY_PALETTES[spec.id];
+    return palette ? { ...spec.livery, ...palette, accent: palette.secondary } : spec.livery;
 }
 
 // ============================================================================

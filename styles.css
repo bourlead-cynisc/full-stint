@@ -1047,11 +1047,12 @@ canvas#minimapCanvas {
 .selected-car-caption>span {flex:none;padding:7px 10px;border-radius:999px;background:#ffffffbc;color:#45545f;font-size:9px;font-weight:800;}
 .selected-favorite {position:absolute;top:16px;right:16px;z-index:3;width:42px;height:42px;border:0;border-radius:50%;background:#fff;color:#ec6863;font-size:24px;line-height:1;cursor:pointer;box-shadow:0 4px 15px #33415522;}
 .selected-favorite.active {color:#e84752;}
-.selected-car-specs {position:relative;padding:19px 20px;border:1px solid var(--fs-line);border-radius:22px;background:var(--fs-panel);}
-.balance-score {position:absolute;top:16px;right:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:var(--fs-accent-soft);color:var(--fs-accent);}
+.selected-car-specs {padding:19px 20px;border:1px solid var(--fs-line);border-radius:22px;background:var(--fs-panel);}
+.selected-spec-header {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;}
+.balance-score {display:flex;flex:0 0 58px;flex-direction:column;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:var(--fs-accent-soft);color:var(--fs-accent);}
 .balance-score strong {font-size:23px;line-height:1;}
 .balance-score span {margin-top:4px;font-size:8px;font-weight:800;letter-spacing:.08em;}
-.rating-legend {margin:0 70px 17px 0;color:var(--fs-muted);font-size:11px;}
+.rating-legend {min-width:0;margin:0;color:var(--fs-muted);font-size:11px;}
 .selected-stat-list {display:grid;gap:13px;}
 .selected-stat>div {display:flex;justify-content:space-between;gap:10px;margin-bottom:5px;font-size:12px;font-weight:700;}
 .selected-stat>div span {color:var(--fs-text);}
@@ -1164,7 +1165,7 @@ canvas#minimapCanvas {width:100%;height:auto;aspect-ratio:10/7;}
     .selected-car-art {min-height:245px;padding:13px 16px;}
     #selectedCarCanvas {top:15px;width:190px;height:195px;}
     .selected-car-specs {padding:13px;}
-    .rating-legend {margin-bottom:9px;}
+    .selected-spec-header {margin-bottom:8px;}
     .selected-stat-list {gap:8px;}
     .selected-stat>div {margin-bottom:3px;}
     .selected-stat>i {height:6px;}
