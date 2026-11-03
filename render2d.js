@@ -79,8 +79,10 @@ function getScaledSprite(id, tintIdx, tw, th) {
     const g = out.getContext('2d');
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
+    if (Number(tintIdx) === 1 && !id.startsWith('f1_')) g.filter = `hue-rotate(${SECOND_LIVERY_HUE_SHIFT}deg) saturate(1.12)`;
     // Scale the full-resolution source once, directly into the high-DPI game canvas.
     g.drawImage(src, 0, 0, src.width, src.height, 0, 0, tw, th);
+    g.filter = 'none';
     scaledCache[key] = out;
     return out;
 }
@@ -96,7 +98,7 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
     const dpr = window.__GAME_CANVAS_DPR || window.devicePixelRatio || 1;
     const z = Math.max(0.05, topZoomNow) * scaleMul * dpr;
     const tw = Math.max(12, Math.round(w * z / 4) * 4), th = Math.max(24, Math.round(h * z / 4) * 4);
-    const spr = getScaledSprite(car.spec.id, -1, tw, th);
+    const spr = getScaledSprite(car.spec.id, car.liveryVariant || 0, tw, th);
 
     // мягкая тень (градиент), а не смещённая копия
     ctx.save();

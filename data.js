@@ -328,6 +328,41 @@ const TIME_ATTACK_CATALOG = [
       drivers:[{name:'GT-R R34',number:16,tier:'PLAYER',skill:1,cornerMult:1,aggression:.8}] }
 ];
 
+// Second non-F1 livery: preserve each car's paint pattern while rotating its
+// paint colors into a clearly distinct companion palette.
+const SECOND_LIVERY_HUE_SHIFT = 150;
+function shiftLiveryColor(color, degrees = SECOND_LIVERY_HUE_SHIFT) {
+    const match = /^#?([\da-f]{6})$/i.exec(color || '');
+    if (!match) return color;
+    const value = parseInt(match[1], 16);
+    let r = ((value >> 16) & 255) / 255;
+    let g = ((value >> 8) & 255) / 255;
+    let b = (value & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+    let hue = 0;
+    if (delta) {
+        if (max === r) hue = 60 * (((g - b) / delta) % 6);
+        else if (max === g) hue = 60 * ((b - r) / delta + 2);
+        else hue = 60 * ((r - g) / delta + 4);
+    }
+    hue = (hue + degrees + 360) % 360;
+    const light = (max + min) / 2;
+    const saturation = delta ? delta / (1 - Math.abs(2 * light - 1)) : 0;
+    const chroma = (1 - Math.abs(2 * light - 1)) * saturation;
+    const section = hue / 60;
+    const x = chroma * (1 - Math.abs(section % 2 - 1));
+    let rgb = section < 1 ? [chroma, x, 0] : section < 2 ? [x, chroma, 0]
+        : section < 3 ? [0, chroma, x] : section < 4 ? [0, x, chroma]
+        : section < 5 ? [x, 0, chroma] : [chroma, 0, x];
+    const offset = light - chroma / 2;
+    return '#' + rgb.map(channel => Math.round((channel + offset) * 255).toString(16).padStart(2, '0')).join('');
+}
+function getCarLivery(spec, variant = 0) {
+    if (!spec) return {};
+    if (spec.carClass === 'F1' || Number(variant) !== 1) return spec.livery;
+    return Object.fromEntries(Object.entries(spec.livery).map(([part, color]) => [part, shiftLiveryColor(color)]));
+}
+
 // ============================================================================
 // БАЛАНС МАШИН (реалистичные величины)
 //   power  — удельная мощность, Вт/кг
