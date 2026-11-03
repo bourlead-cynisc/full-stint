@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:,">
     <title>Full Stint — F1, GT3 &amp; Time Attack</title>
-    <link rel="stylesheet" href="styles.css?v=20261103-portrait-notices-2.19">
+    <link rel="stylesheet" href="styles.css?v=20261103-garage-2.20">
 </head>
 <body tabindex="-1">
 
@@ -41,6 +41,7 @@
         <div class="timer-row">Сектор <span id="cpStatus" class="timer-val">1 / 4</span></div>
         <div class="timer-row">Последний круг <span id="lastTime" class="timer-val">--:--.---</span></div>
         <div class="standings-mini" id="liveTower" hidden></div>
+      </div>
     </div>
 
     <section id="damage-panel" aria-label="Повреждения машины">
@@ -52,7 +53,6 @@
         <div data-damage="body"><span>Кузов</span><b>0%</b></div>
         <p id="damageEffect">Все узлы исправны</p><small id="damageRepairHint">Ремонт выполняется на пит-стопе</small>
     </section>
-    </div>
 
     <div id="hud-right" class="hud-panel">
         <div class="timer-row">ТРАССА <span id="hudTrackName" style="color:#38bdf8; font-weight:700;">—</span></div>
@@ -103,22 +103,31 @@
 
 <!-- ============ ГАРАЖ ============ -->
 <div id="garageModal" class="modal-overlay">
-    <div class="modal-card garage-card">
+    <div class="modal-card garage-card" id="garageCard">
         <div class="modal-title">
-            <span>FULL STINT · ОБНОВЛЕНИЕ 2.19</span>
-            <span style="font-size:12px; color:#5eead4;">F1 · GT3 · TIME ATTACK</span>
+            <span>FULL STINT · 2.20</span>
+            <div class="garage-top-tools"><span>F1 · GT3 · TIME ATTACK</span><button id="themeToggle" class="theme-toggle" type="button" aria-label="Переключить тему">Светлая тема</button></div>
         </div>
 
-        <div class="section-label" id="classModeLabel">КЛАСС ГОНКИ</div>
-        <div class="class-switch-row">
-            <button class="class-btn active" id="classBtnGT3" onclick="selectCarClass('GT3')">🏆 WEC / GT3<small id="gt3RosterSummary">Гонка на выживание · 12 моделей · 21 пилот</small></button>
-            <button class="class-btn" id="classBtnF1" onclick="selectCarClass('F1')">🏎️ FORMULA 1<small>Сезон, календарь гонок, очки и DRS</small></button>
-            <button class="class-btn" id="classBtnTA" onclick="selectCarClass('TA')">🏁 TIME ATTACK<small>16 дорожных машин · передний, задний и полный привод</small></button>
+        <div class="garage-progress" id="garageProgress" aria-label="Шаги выбора">
+            <span class="garage-progress-step active" data-step="class"><b>1</b> Класс</span><i></i>
+            <span class="garage-progress-step" data-step="track"><b>2</b> Трасса</span><i></i>
+            <span class="garage-progress-step" data-step="car"><b>3</b> Машина</span>
         </div>
 
-        <div class="garage-layout">
+        <section class="garage-stage is-active" id="garageStageClass" aria-label="Выбор класса">
+            <div class="stage-heading"><div><div class="section-label" id="classModeLabel">ВЫБЕРИ КЛАСС</div><p>Сначала выбери формат гонки</p></div></div>
+            <div class="class-switch-row">
+                <button class="class-btn active" id="classBtnGT3" onclick="chooseClass('GT3')">🏆 WEC / GT3<small id="gt3RosterSummary">Гонка на выживание · 12 моделей · 21 пилот</small></button>
+                <button class="class-btn" id="classBtnF1" onclick="chooseClass('F1')">🏎️ FORMULA 1<small>Сезон гонок и чемпионат</small></button>
+                <button class="class-btn" id="classBtnTA" onclick="chooseClass('TA')">🏁 TIME ATTACK<small>16 дорожных машин · FWD, RWD, AWD</small></button>
+            </div>
+            <div class="stage-actions"><button class="secondary-btn" data-open-controls>Управление</button><button class="primary-btn" id="btnClassContinue" onclick="continueGarageStage('track')">Выбрать трассу <span>→</span></button></div>
+        </section>
+
+        <section class="garage-stage" id="garageStageTrack" aria-label="Выбор трассы">
+            <div class="stage-heading"><div><div class="section-label">ВЫБЕРИ ТРАССУ <span id="trackLockHint"></span></div><p id="trackStageDescription">Выбери трассу для заезда</p></div><button class="secondary-btn stage-back" onclick="continueGarageStage('class')">← Класс</button></div>
             <section class="garage-section garage-track-section">
-                <div class="section-label">ТРАССА <span id="trackLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
                 <div id="seasonPanel" class="season-panel" style="display:none;">
                     <div class="season-head">
                         <div><b id="seasonTitle">СЕЗОН</b> <span id="seasonSub" style="color:#8b95a5; font-size:11px;"></span></div>
@@ -131,19 +140,25 @@
                 </div>
                 <div class="track-grid" id="trackSelectorGrid"></div>
             </section>
+            <div class="stage-actions"><button class="secondary-btn" data-open-controls>Управление</button><button class="primary-btn" onclick="continueGarageStage('car')">Выбрать машину <span>→</span></button></div>
+        </section>
 
+        <section class="garage-stage" id="garageStageCar" aria-label="Выбор машины">
+            <div class="stage-heading"><div><div class="section-label">ВЫБЕРИ МАШИНУ</div><p id="carStageDescription">Игровые оценки характеристик — от 1 до 100</p></div><button class="secondary-btn stage-back" onclick="continueGarageStage('track')">← Трасса</button></div>
             <section class="garage-section garage-car-section">
-                <div class="section-label"><span>МАШИНА И ПИЛОТ</span><small class="car-score-legend">100% = лучший показатель класса</small><span id="teamLockHint" style="color:#f59e0b; font-weight:600; text-transform:none; letter-spacing:0;"></span></div>
+                <div class="selected-car-preview" id="selectedCarPreview"></div>
+                <div class="car-filter-row"><span class="section-label">ТВОЙ ГАРАЖ</span><span id="garageCarCount"></span><button id="favoriteFilter" class="favorite-filter" type="button" aria-pressed="false">♡ Избранное</button></div>
                 <div class="car-grid" id="carSelectorGrid"></div>
+                <div class="favorite-empty" id="favoriteEmpty" hidden>Пока нет избранных машин. Нажми ♡ на карточке машины.</div>
+                <div class="section-label team-lock-hint" id="teamLockHint"></div>
                 <div class="teammate-bar" id="driverBar">
                     <span>Пилот</span>
                     <span id="driverPills" style="display:flex; gap:8px;"></span>
                     <span id="driverHint" style="color:#95a5a6; font-size:10.5px;"></span>
                 </div>
             </section>
-        </div>
 
-        <details class="garage-advanced" id="garageAdvanced">
+            <details class="garage-advanced" id="garageAdvanced">
             <summary>Дополнительные настройки · дистанция, соперники, тактика</summary>
             <div class="garage-advanced-content">
                 <div class="section-label">СОПЕРНИКИ</div>
@@ -164,15 +179,16 @@
                 </div>
                 <div class="strategy-grid" id="strategyGrid"></div>
             </div>
-        </details>
+            </details>
 
-        <p id="ghostRecordHint"></p>
-        <small class="map-credit">Геометрия © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · ODbL</small>
-        <div class="start-actions"><button class="secondary-btn" data-open-controls>Управление и клавиши</button>
+            <p id="ghostRecordHint"></p>
+            <small class="map-credit">Геометрия © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · ODbL</small>
+            <div class="start-actions"><button class="secondary-btn" data-open-controls>Управление и клавиши</button>
                 <button class="ghost-btn" id="btnGhostRace">🏁 Time Attack</button>
                 <button class="secondary-btn" id="btnStartQuali">⏱️ Квалификация</button>
                 <button class="primary-btn" id="btnDirectRace">Гонка со старта ▶</button>
             </div>
+        </section>
     </div>
 </div>
 
@@ -266,10 +282,10 @@
     </div>
 </div>
 
-<script src="data.js?v=20261103-time-attack-16-car-v1"></script>
+<script src="data.js?v=20261103-balance-2.20"></script>
 <script src="circuits.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="track-geometry.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="vehicle-character.js?v=20261103-time-attack-16-car-v1"></script>
+<script src="vehicle-character.js?v=20261103-balance-2.20"></script>
 <script src="sprites.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="sprite-overrides.js?v=20261103-audi-r8-v1"></script>
 <script src="models.js?v=20261103-time-attack-ghost-v4"></script>
@@ -279,10 +295,10 @@
 <script src="topview.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="audio.js?v=20261103-time-attack-16-car-v1"></script>
 <script src="race-ai.js?v=20261103-time-attack-ghost-v4"></script>
-<script src="physics.js?v=20261103-review-start-2.17"></script>
+<script src="physics.js?v=20261103-drivetrain-balance-2.20"></script>
 <script src="season.js?v=20261103-time-attack-ghost-v4"></script>
 <script src="controls.js?v=20261103-review-controls-2.17"></script>
 <script src="ghost.js?v=20261103-portrait-notices-2.19"></script>
-<script src="main.js?v=20261103-portrait-notices-2.19"></script>
+<script src="main.js?v=20261103-garage-steps-2.20"></script>
 </body>
 </html>
