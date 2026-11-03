@@ -924,6 +924,7 @@ function standingsOrder() {
 const shiftLightEls = [];
 function buildShiftLights() {
     const el = document.getElementById('shiftLights');
+    if (!el) return; // The minimalist HUD has no shift-light strip.
     for (let i = 0; i < 10; i++) { const d = document.createElement('div'); d.className = 'sl'; el.appendChild(d); shiftLightEls.push(d); }
 }
 function updateShiftLights(rpm) {
