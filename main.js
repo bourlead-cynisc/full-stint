@@ -437,13 +437,21 @@ function renderStrategyCards() {
 }
 
 function drawCarThumb(canvasEl, spec) {
+    const cssWidth = canvasEl.clientWidth || 52;
+    const cssHeight = canvasEl.clientHeight || 86;
+    const pixelRatio = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    canvasEl.width = Math.round(cssWidth * pixelRatio);
+    canvasEl.height = Math.round(cssHeight * pixelRatio);
     const c = canvasEl.getContext('2d');
     c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
     const img = spriteImgs[spec.id];
     c.save();
-    c.translate(canvasEl.width / 2, canvasEl.height / 2);
+    c.scale(pixelRatio, pixelRatio);
+    c.translate(cssWidth / 2, cssHeight / 2);
     if (img) {
-        const h = canvasEl.height - 4, w = h * img.width / img.height;
+        const h = cssHeight - 4, w = h * img.width / img.height;
         c.drawImage(img, -w / 2, -h / 2, w, h);
     } else {
         c.scale(1.05, 1.05);
@@ -560,9 +568,9 @@ function renderGarageUI() {
             <div class="car-note">${DRIVETRAIN_LABELS[car.drivetrain]||'Привод не указан'} · ${ENGINE_LAYOUT_LABELS[car.engineLayout]||'Средний мотор'} · ${p.note}</div>
             <div class="car-character">${characterSummary(car)}</div>
             <div class="car-stats-grid" aria-label="Характеристики в процентах от лучшего значения в классе">${bar('Сцепление', 'grip')}${bar('Прижим', 'aero')}${bar('Тормоза', 'brake')}${bar('Ресурс шин', 'tire')}</div>`;
-        drawCarThumb(card.querySelector('canvas'), car);
         card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; renderGarageUI(); });
         grid.appendChild(card);
+        drawCarThumb(card.querySelector('canvas'), car);
     });
 
     // пилоты команды
