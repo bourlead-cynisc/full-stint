@@ -3,22 +3,22 @@ const spriteImgs = {};
 // User-provided Time Attack models in the same left-to-right, top-to-bottom order
 // as the supplied 4x4 sprite sheet. Rectangles are tight alpha bounds in the atlas.
 const TIME_ATTACK_SPRITE_RECTS = {
-    ta_civic:       [143, 44, 133, 247],
-    ta_megane_rs:   [429, 43, 130, 248],
-    ta_kalina:      [709, 44, 128, 247],
-    ta_granta:      [991, 44, 131, 251],
-    ta_vesta:       [141, 340, 135, 255],
-    ta_mx5:         [424, 345, 141, 241],
-    ta_gt86:        [703, 342, 143, 251],
-    ta_brz:         [986, 342, 142, 251],
-    ta_bmw_m3:      [144, 637, 133, 256],
-    ta_bmw_m4:      [423, 636, 139, 259],
-    ta_s2000:       [702, 645, 144, 243],
-    ta_silvia:      [987, 639, 142, 256],
-    ta_porsche_911: [139, 939, 142, 270],
-    ta_lancer_evo:  [421, 938, 144, 271],
-    ta_wrx_sti:     [703, 938, 141, 272],
-    ta_gtr34:       [985, 940, 143, 270]
+    ta_civic:       [122, 14, 163, 292],
+    ta_megane_rs:   [404, 15, 158, 291],
+    ta_kalina:      [690, 14, 158, 290],
+    ta_granta:      [979, 17, 157, 289],
+    ta_vesta:       [118, 323, 170, 288],
+    ta_mx5:         [401, 327, 170, 278],
+    ta_gt86:        [684, 323, 167, 286],
+    ta_brz:         [972, 324, 172, 283],
+    ta_bmw_m3:      [122, 626, 166, 283],
+    ta_bmw_m4:      [402, 628, 173, 283],
+    ta_s2000:       [681, 627, 176, 281],
+    ta_silvia:      [971, 624, 177, 283],
+    ta_porsche_911: [116, 922, 174, 303],
+    ta_lancer_evo:  [402, 919, 172, 306],
+    ta_wrx_sti:     [679, 921, 182, 305],
+    ta_gtr34:       [971, 921, 178, 306]
 };
 
 function loadTimeAttackSprites() {
@@ -36,7 +36,7 @@ function loadTimeAttackSprites() {
             spriteImgs[id] = sprite;
         }
     };
-    fetch('assets/time-attack-cars.webp.b64?v=20261103-time-attack-16-car-v1')
+    fetch('assets/time-attack-wec-cars.webp.b64?v=20261103-wec-ta-sprites-v1')
         .then(response => {
             if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.text();
