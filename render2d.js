@@ -1,40 +1,48 @@
 const spriteImgs = {};
 
 // User-provided Time Attack models in the same left-to-right, top-to-bottom order
-// as the supplied 5x3 sprite sheet. Rectangles are tight alpha bounds in the atlas.
+// as the supplied 4x4 sprite sheet. Rectangles are tight alpha bounds in the atlas.
 const TIME_ATTACK_SPRITE_RECTS = {
-    ta_civic:       [127, 26, 167, 299],
-    ta_megane_rs:   [407, 25, 168, 297],
-    ta_kalina:      [684, 32, 163, 289],
-    ta_granta:      [961, 28, 165, 298],
-    ta_vesta:       [1234, 26, 170, 301],
-    ta_mx5:         [120, 366, 179, 294],
-    ta_gt86:        [404, 358, 176, 302],
-    ta_brz:         [679, 361, 179, 299],
-    ta_bmw_m3:      [956, 356, 179, 314],
-    ta_bmw_m4:      [1234, 358, 172, 308],
-    ta_s2000:       [120, 700, 182, 301],
-    ta_silvia:      [403, 699, 178, 307],
-    ta_porsche_911: [675, 695, 183, 310],
-    ta_lancer_evo:  [953, 696, 182, 301],
-    ta_wrx_sti:     [1230, 697, 181, 308]
+    ta_civic:       [143, 44, 133, 247],
+    ta_megane_rs:   [429, 43, 130, 248],
+    ta_kalina:      [709, 44, 128, 247],
+    ta_granta:      [991, 44, 131, 251],
+    ta_vesta:       [141, 340, 135, 255],
+    ta_mx5:         [424, 345, 141, 241],
+    ta_gt86:        [703, 342, 143, 251],
+    ta_brz:         [986, 342, 142, 251],
+    ta_bmw_m3:      [144, 637, 133, 256],
+    ta_bmw_m4:      [423, 636, 139, 259],
+    ta_s2000:       [702, 645, 144, 243],
+    ta_silvia:      [987, 639, 142, 256],
+    ta_porsche_911: [139, 939, 142, 270],
+    ta_lancer_evo:  [421, 938, 144, 271],
+    ta_wrx_sti:     [703, 938, 141, 272],
+    ta_gtr34:       [985, 940, 143, 270]
 };
 
 function loadTimeAttackSprites() {
     const atlas = new Image();
     atlas.onload = () => {
+        const atlasScale = atlas.width / 1266;
         for (const [id, [sx, sy, sw, sh]] of Object.entries(TIME_ATTACK_SPRITE_RECTS)) {
             const sprite = document.createElement('canvas');
-            sprite.width = sw;
-            sprite.height = sh;
+            sprite.width = Math.max(1, Math.round(sw * atlasScale));
+            sprite.height = Math.max(1, Math.round(sh * atlasScale));
             const ctx = sprite.getContext('2d');
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(atlas, sx, sy, sw, sh, 0, 0, sw, sh);
+            ctx.drawImage(atlas, sx * atlasScale, sy * atlasScale, sw * atlasScale, sh * atlasScale, 0, 0, sprite.width, sprite.height);
             spriteImgs[id] = sprite;
         }
     };
-    atlas.src = 'assets/time-attack-cars.png?v=20261103-time-attack-models-v1';
+    fetch('assets/time-attack-cars.webp.b64?v=20261103-time-attack-16-car-v1')
+        .then(response => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.text();
+        })
+        .then(base64 => { atlas.src = 'data:image/webp;base64,' + base64.trim(); })
+        .catch(error => console.error('Unable to load Time Attack car sprites', error));
 }
 
 function loadSprites() {
