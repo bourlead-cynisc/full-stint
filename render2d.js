@@ -1,4 +1,5 @@
 const spriteImgs = {};
+const spriteLoadPending = new Set();
 
 // Stock Time Attack silhouettes with subtle endurance-racing paint, in the supplied 4x4 order.
 // Rectangles are tight alpha bounds in the atlas.
@@ -45,12 +46,24 @@ function loadTimeAttackSprites() {
         .catch(error => console.error('Unable to load Time Attack car sprites', error));
 }
 
+function loadSprite(id) {
+    if (!id || spriteImgs[id] || spriteLoadPending.has(id) || typeof SPRITE_DATA === 'undefined' || !SPRITE_DATA[id]) return;
+    spriteLoadPending.add(id);
+    const img = new Image();
+    img.onload = () => {
+        spriteImgs[id] = img;
+        spriteLoadPending.delete(id);
+        if (id.endsWith('_livery2') && typeof renderGarageUI === 'function' && currentSession === 'MENU') renderGarageUI();
+    };
+    img.onerror = () => spriteLoadPending.delete(id);
+    img.src = SPRITE_DATA[id];
+}
+
 function loadSprites() {
     if (typeof SPRITE_DATA !== 'undefined') {
         for (const id in SPRITE_DATA) {
-            const img = new Image();
-            img.onload = () => { spriteImgs[id] = img; };
-            img.src = SPRITE_DATA[id];
+            if (id.endsWith('_livery2')) continue;
+            loadSprite(id);
         }
     }
     loadTimeAttackSprites();
@@ -86,6 +99,7 @@ function getScaledSprite(id, tw, th) {
 
 // Контекст уже в центре машины и повёрнут носом вверх. scaleMul — увеличение значка (в режиме «вся трасса»).
 function drawCarSpriteTop(ctx, car, scaleMul = 1) {
+    if (car.spriteId && car.spriteId !== car.spec.id && !spriteImgs[car.spriteId]) loadSprite(car.spriteId);
     const spriteId = spriteImgs[car.spriteId] ? car.spriteId : car.spec.id;
     const img = spriteImgs[spriteId];
     if (!img) {
