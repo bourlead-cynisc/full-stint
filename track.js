@@ -11,6 +11,7 @@ let pitSpeedLinePt = {x: 0, y: 0, nx: 1, ny: 0};
 let teamPitBoxes = [];
 let drsMarkerLines = [];
 let dynamicRacingLinePoints = [];
+let brakingDistanceBoards = [];
 
 let minX = 0, maxX = 1, minY = 0, maxY = 1;
 let trackLengthPx = 1;
@@ -37,6 +38,81 @@ function getSplinePoint(p0, p1, p2, p3, fraction) {
     const mix=(a,b,lo,hi)=>({x:((hi-t)*a.x+(t-lo)*b.x)/(hi-lo),y:((hi-t)*a.y+(t-lo)*b.y)/(hi-lo)});
     const a1=mix(p0,p1,t0,t1), a2=mix(p1,p2,t1,t2), a3=mix(p2,p3,t2,t3);
     return mix(mix(a1,a2,t0,t2),mix(a2,a3,t1,t3),t1,t2);
+}
+
+function buildCornerDistanceBoards() {
+    brakingDistanceBoards = [];
+    const N = trackSamples.length;
+    if (N < 8 || trackLengthPx <= 0) return;
+
+    // kappa is 1/pixel; PX_M converts it to 1/metre. Ignore broad bends and
+    // cluster nearby peaks so a corner gets one 150 / 100 / 50 m marker set.
+    const curvatureM = trackSamples.map(sample => Math.abs(sample.kappa || 0) / PX_M);
+    const peakThreshold = 1 / 900;
+    const clusterGapPx = 230 / PX_M;
+    const peaks = [];
+    for (let i = 0; i < N; i++) {
+        const cur = curvatureM[i];
+        if (cur < peakThreshold) continue;
+        if (cur >= curvatureM[(i - 1 + N) % N] && cur > curvatureM[(i + 1) % N]) {
+            peaks.push({ index: i, curvature: cur, distance: sampleCumDist[i] });
+        }
+    }
+    if (!peaks.length) return;
+
+    const groups = [];
+    for (const peak of peaks) {
+        const group = groups.at(-1);
+        if (group && peak.distance - group.lastDistance <= clusterGapPx) {
+            group.lastDistance = peak.distance;
+            if (peak.curvature > group.peak.curvature) group.peak = peak;
+        } else {
+            groups.push({ firstDistance: peak.distance, lastDistance: peak.distance, peak });
+        }
+    }
+    if (groups.length > 1) {
+        const first = groups[0], last = groups.at(-1);
+        if (first.firstDistance + trackLengthPx - last.lastDistance <= clusterGapPx) {
+            if (last.peak.curvature > first.peak.curvature) first.peak = last.peak;
+            groups.pop();
+        }
+    }
+
+    for (const { peak } of groups) {
+        const approachThreshold = Math.max(1 / 1300, peak.curvature * 0.22);
+        const maxBack = Math.min(N - 1, Math.ceil((700 / PX_M) / (trackLengthPx / N)));
+        let start = peak.index, belowCount = 0;
+        for (let step = 1; step <= maxBack; step++) {
+            const idx = (peak.index - step + N) % N;
+            if (curvatureM[idx] <= approachThreshold) {
+                belowCount++;
+                if (belowCount >= 5) {
+                    start = (idx + 4) % N;
+                    break;
+                }
+            } else belowCount = 0;
+        }
+
+        const startDistance = sampleCumDist[start];
+        const turnSign = Math.sign(trackSamples[peak.index].curv || 1);
+        const side = turnSign >= 0 ? -1 : 1;
+        for (const distance of [150, 100, 50]) {
+            let markerDistance = startDistance - distance / PX_M;
+            markerDistance = (markerDistance % trackLengthPx + trackLengthPx) % trackLengthPx;
+            let lo = 0, hi = N;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (sampleCumDist[mid] < markerDistance) lo = mid + 1;
+                else hi = mid;
+            }
+            const index = lo % N;
+            const tooClose = brakingDistanceBoards.some(board => {
+                const delta = Math.abs(sampleCumDist[index] - sampleCumDist[board.index]);
+                return Math.min(delta, trackLengthPx - delta) < 28 / PX_M;
+            });
+            if (!tooClose) brakingDistanceBoards.push({ index, distance, side });
+        }
+    }
 }
 
 function buildActiveTrackGeometry() {
@@ -93,8 +169,8 @@ function buildActiveTrackGeometry() {
         cur.curv = dAng;
     }
 
-    // Filter small survey/spline wiggles before using curvature for the visual
-    // racing line or AI braking. A short cyclic Gaussian preserves real corners.
+    // Filter small survey/spline wiggles before planning AI corner speeds.
+    // A short cyclic Gaussian preserves real corners.
     const signedCurv = trackSamples.map(p => p.curv);
     const curvatureKernel = [1, 2, 3, 4, 3, 2, 1];
     const curvatureWeight = curvatureKernel.reduce((a, b) => a + b, 0);
@@ -112,16 +188,11 @@ function buildActiveTrackGeometry() {
             maxFutCurv = Math.max(maxFutCurv, Math.abs(trackSamples[(i + f) % totalSamples].curv));
         }
         cur.futCurv = maxFutCurv;
-        let color = '#22c55e';
-        if (maxFutCurv > 0.14) color = '#ef4444';
-        else if (maxFutCurv > 0.07) color = '#facc15';
-
         const apexOffset = 15 * Math.tanh(cur.curv * 8);
         dynamicRacingLinePoints.push({
             x: cur.x + cur.nx * apexOffset,
             y: cur.y + cur.ny * apexOffset,
-            z: cur.z,
-            color
+            z: cur.z
         });
     }
 
@@ -249,6 +320,7 @@ function buildActiveTrackGeometry() {
         const a=trackSamples[i],b=trackSamples[(i+1)%totalSamples];
         trackLengthPx+=Math.hypot(b.x-a.x,b.y-a.y);
     }
+    buildCornerDistanceBoards();
 
     const prevPt = trackSamples[totalSamples - 8];
     const nextPt = trackSamples[8];
@@ -691,18 +763,43 @@ function drawTrack(ctx) {
     drawPitLane(ctx);
     drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale);
 
-    // Отрисовка динамической траектории по клавише H
-    if (window.showRacingLine && dynamicRacingLinePoints.length > 0) {
+    // Вместо цветной траектории показываем дистанционные таблички перед поворотами.
+}
+
+function drawCornerDistanceBoards(ctx, options = {}) {
+    const minBoardWidth = options.minBoardWidth || 0;
+    const minBoardHeight = options.minBoardHeight || 0;
+    const minFontSize = options.minFontSize || 0;
+    const boardWidth = Math.max(48, minBoardWidth);
+    const boardHeight = Math.max(30, minBoardHeight);
+    const fontSize = Math.max(18, minFontSize);
+    const cameraX = playerCar ? playerCar.x : 0;
+    const cameraY = playerCar ? playerCar.y : 0;
+
+    for (const board of brakingDistanceBoards) {
+        const sample = trackSamples[board.index];
+        if (!sample) continue;
+        if (options.maxDistance && Math.hypot(sample.x - cameraX, sample.y - cameraY) > options.maxDistance) continue;
+
+        const nx = sample.nx * board.side, ny = sample.ny * board.side;
+        const offset = ASPHALT_HALF_W + boardWidth / 2 + 12;
+        const angle = Math.atan2(sample.ny, sample.nx);
         ctx.save();
-        const N = dynamicRacingLinePoints.length;
-        ctx.lineWidth=3; ctx.lineCap='round';
-        for (let j=-180; j<180; j++) {
-            const i=(centerIdx+j+N)%N;
-            const prev=dynamicRacingLinePoints[(i-1+N)%N], pt=dynamicRacingLinePoints[i], next=dynamicRacingLinePoints[(i+1)%N];
-            ctx.strokeStyle=pt.color;
-            ctx.beginPath();ctx.moveTo((prev.x+pt.x)/2,(prev.y+pt.y)/2);
-            ctx.quadraticCurveTo(pt.x,pt.y,(pt.x+next.x)/2,(pt.y+next.y)/2);ctx.stroke();
-        }
+        ctx.translate(sample.x + nx * offset, sample.y + ny * offset);
+        const readableAngle = angle > Math.PI / 2 ? angle - Math.PI : angle < -Math.PI / 2 ? angle + Math.PI : angle;
+        ctx.rotate(readableAngle);
+        ctx.fillStyle = 'rgba(0,0,0,.42)';
+        ctx.fillRect(-boardWidth / 2 + 3, -boardHeight / 2 + 4, boardWidth, boardHeight);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-boardWidth / 2, -boardHeight / 2, boardWidth, boardHeight);
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = Math.max(2, boardWidth * 0.035);
+        ctx.strokeRect(-boardWidth / 2, -boardHeight / 2, boardWidth, boardHeight);
+        ctx.fillStyle = '#111827';
+        ctx.font = `900 ${fontSize}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(board.distance), 0, 0);
         ctx.restore();
     }
 }
@@ -741,6 +838,7 @@ function drawTrackMarkings(ctx, centerIdx, upX, upY, elevScale) {
         ctx.globalAlpha = 0.75;
         for (const m of drsMarkerLines) drawAcross(m.x, m.y, m.nx, m.ny, m.z || 0, 5, m.color);
     }
+    drawCornerDistanceBoards(ctx, { maxDistance: 2400 });
     ctx.restore();
 }
 

@@ -404,9 +404,9 @@ class Car {
             return {thr:0,brake:1,steer:recoverySteer,manual:false,reverse:true};
         }
         const aBrCap = (this.brake0 + this.brakeAero * qNow * aeroWakeFactor) * tg * G * Math.sqrt(hb) * surfaceGrip;
-        // Plan for only part of the available braking force. This leaves room
-        // for steering, traffic, worn tires and the model's frame-by-frame delay.
-        const aBr = (this.spec.carClass === 'F1' ? 0.42 : 0.48) * aBrCap;
+        // The speed envelope accounts for the distance to the turn; use most of the
+        // available braking force so the bots do not slow on approach without need.
+        const aBr = (this.spec.carClass === 'F1' ? 0.80 : 0.84) * aBrCap;
         const towTopSpeedBonus=getSlipstreamTopSpeedBonus(this);
         const vTop = this.vmaxMs * comp.speedMult * (1+towTopSpeedBonus);
         let vAllow = vTop;
@@ -418,22 +418,32 @@ class Car {
             const kap = trackSamples[idx].kappa / PX_M;                // 1/м
             const denom = kap - gAero / vmax2;
             const rawCornerSpeed = denom > 1e-7 ? Math.sqrt(gA / denom) : vTop;
-            const vc = rawCornerSpeed < vTop ? rawCornerSpeed * 0.92 : vTop;
+            const vc = rawCornerSpeed < vTop ? rawCornerSpeed * 0.995 : vTop;
             const dm = Math.max(dist * PX_M, 6);
             const vlim = Math.sqrt(vc * vc + 2 * aBr * dm);
             if (vlim < vAllow) vAllow = vlim;
-            if (vms > vc) reqDecel = Math.max(reqDecel, (vms * vms - vc * vc) / (2 * dm));
+            if (vc < vTop - 0.35 && vms > vc) reqDecel = Math.max(reqDecel, (vms * vms - vc * vc) / (2 * dm));
         }
-        vAllow = Math.min(vAllow * speedFactor * traffic.pace * (this.form || 1) * (1 - 0.14 * Math.min(1, edgeOver)), followV);
-        if(!Number.isFinite(followV))vAllow=Math.max(vAllow,2.0);
-        if (this.tireHealth < TIRE_CLIFF_PCT * 0.6) vAllow *= 0.94;
-
-        vAllow=Math.min(vAllow,this.vmaxMs*Math.min(1,aiSettings.pace/100)*(1+towTopSpeedBonus));
-        this.dbgVAllow = vAllow;
+        const turnLimitActive = vAllow < vTop - 0.35;
+        const turnVAllow = turnLimitActive && this.tireHealth < TIRE_CLIFF_PCT * 0.6
+            ? vAllow * 0.94
+            : vAllow;
+        const paceTop = this.vmaxMs * Math.min(1, aiSettings.pace / 100) * (1 + towTopSpeedBonus);
+        const targetVAllow = Math.min(
+            turnVAllow * speedFactor * traffic.pace * (this.form || 1) * (1 - 0.14 * Math.min(1, edgeOver)),
+            paceTop,
+            followV
+        );
+        this.dbgVAllow = targetVAllow;
         let thr = 0, brake = 0;
-        if (reqDecel > 0.9 * aBr) brake = Math.min(1, 0.2 + reqDecel / (0.85 * aBrCap));
-        else if (vms > vAllow + 0.8) brake = Math.min(1, 0.2 + (vms - vAllow) / 6);
-        else if (vms < vAllow - 0.18) thr = Math.max(0.28,Math.min(1, (vAllow - vms) / 3 + 0.2));
+        const turnSpeedExcess = turnLimitActive ? vms - turnVAllow : -Infinity;
+        const trafficSpeedExcess = Number.isFinite(followV) ? vms - followV : -Infinity;
+        if (reqDecel > 0.88 * aBrCap) brake = Math.min(1, reqDecel / aBrCap);
+        else if (turnSpeedExcess > 0.55 || trafficSpeedExcess > 0.55) {
+            brake = Math.min(1, 0.12 + Math.max(turnSpeedExcess, trafficSpeedExcess) / 7);
+        } else if (vms < targetVAllow - 0.18) {
+            thr = Math.max(0.28, Math.min(1, (targetVAllow - vms) / 3 + 0.2));
+        }
         this.smoothThrottle = thr; this.smoothBrake = brake;
         return { thr, brake, steer, manual: false, aiSteer: true };
     }

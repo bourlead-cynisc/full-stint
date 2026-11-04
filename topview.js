@@ -59,6 +59,7 @@ function drawTrackOverview(ctx, fit) {
     trackPath(ctx); ctx.setLineDash([minW(9), minW(11)]); ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = minW(1.2); ctx.stroke(); ctx.setLineDash([]);
 
     drawPitLane(ctx);
+    drawCornerDistanceBoards(ctx, { minBoardWidth: minW(42), minBoardHeight: minW(26), minFontSize: minW(17) });
     // Sector posts on the complete circuit map, in world coordinates.
     // They are placed by path progress and do not pretend to be surveyed turn markers.
     for(let sector=0;sector<3;sector++){
@@ -80,18 +81,6 @@ function drawTrackOverview(ctx, fit) {
             for (let i = i0; i <= i1; i++) { const p = trackSamples[i % N]; if (i === i0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }
             ctx.strokeStyle = 'rgba(0,230,118,0.55)'; ctx.lineWidth = Math.max(ASPHALT_HALF_W * 0.7 * E, minW(4)); ctx.stroke();
         }
-    }
-
-    // оптимальная траектория (H)
-    if (window.showRacingLine) {
-        const N = dynamicRacingLinePoints.length;
-        ctx.lineWidth = minW(2.2);
-        for (let i = 0; i < N; i += 2) {
-            const p1 = dynamicRacingLinePoints[i], p2 = dynamicRacingLinePoints[(i + 2) % N];
-            ctx.strokeStyle = p1.color; ctx.globalAlpha = 0.75;
-            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
     }
 
     // линия старта-финиша
