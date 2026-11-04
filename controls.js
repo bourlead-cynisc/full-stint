@@ -2,19 +2,19 @@
 const DEFAULT_BINDINGS = {
     throttle:['KeyW','ArrowUp'], brake:['KeyS','ArrowDown'], handbrake:['Space'], left:['KeyA','ArrowLeft'], right:['KeyD','ArrowRight'],
     shiftUp:['KeyE','ShiftLeft','ShiftRight'], shiftDown:['KeyQ','ControlLeft','ControlRight'],
-    pit:['KeyP'], soft:['Digit1'], medium:['Digit2'], hard:['Digit3'], camera:['KeyC'], line:['KeyH'],
+    pit:['KeyP'], soft:['Digit1'], medium:['Digit2'], hard:['Digit3'], camera:['KeyC'],
     sound:['KeyM'], zoomIn:['Equal','NumpadAdd'], zoomOut:['Minus','NumpadSubtract'], pause:['Escape'], settings:['F2']
 };
-const ACTION_LABELS = {throttle:'Газ',brake:'Тормоз / задний ход',handbrake:'Ручник',left:'Руль влево',right:'Руль вправо',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',line:'Показать траекторию',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза',settings:'Настройки управления'};
+const ACTION_LABELS = {throttle:'Газ',brake:'Тормоз / задний ход',handbrake:'Ручник',left:'Руль влево',right:'Руль вправо',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза',settings:'Настройки управления'};
 const BINDINGS_KEY='fiaSim.controls.v1';
 const DEFAULT_GAMEPAD_BINDINGS = {
     steer:{type:'axis',axis:0}, throttle:{type:'button',button:7}, brake:{type:'button',button:6}, handbrake:{type:'button',button:0},
     shiftUp:{type:'button',button:5}, shiftDown:{type:'button',button:4}, pit:{type:'button',button:1},
     soft:{type:'button',button:2}, medium:{type:'button',button:3}, hard:{type:'button',button:15},
-    camera:{type:'button',button:10}, line:{type:'button',button:11}, sound:{type:'button',button:14},
+    camera:{type:'button',button:10}, sound:{type:'button',button:14},
     zoomIn:{type:'button',button:12}, zoomOut:{type:'button',button:13}, pause:{type:'button',button:9}, settings:{type:'button',button:8}
 };
-const GAMEPAD_ACTION_LABELS = {steer:'Руль (ось стика)',throttle:'Газ',brake:'Тормоз / задний ход',handbrake:'Ручник',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',line:'Показать траекторию',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза / продолжить',settings:'Настройки управления'};
+const GAMEPAD_ACTION_LABELS = {steer:'Руль (ось стика)',throttle:'Газ',brake:'Тормоз / задний ход',handbrake:'Ручник',shiftUp:'Передача выше',shiftDown:'Передача ниже',pit:'Запросить / отменить пит-стоп',soft:'Следующие шины: мягкие',medium:'Следующие шины: средние',hard:'Следующие шины: жёсткие',camera:'Машина / вся трасса',sound:'Включить / выключить звук',zoomIn:'Приблизить',zoomOut:'Отдалить',pause:'Пауза / продолжить',settings:'Настройки управления'};
 const GAMEPAD_BINDINGS_KEY='fiaSim.gamepad.v1';
 const GAMEPAD_BUTTON_NAMES=['A','B','X','Y','LB','RB','LT','RT','View','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'];
 const GAMEPAD_ACTIONS=Object.keys(DEFAULT_GAMEPAD_BINDINGS);

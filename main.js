@@ -41,7 +41,6 @@ const QUALIFYING_DURATION_MS = 5 * 60 * 1000;
 let qualifyingTimeExpired = false;
 let qualifyingFinishers = new Set();
 
-window.showRacingLine = true;
 window.transmissionMode = 'AUTO';
 window.handlingMode = 'ARCADE';           // ARCADE | REAL
 let topFollow = 'CAR';                    // вид сверху: CAR — на машине, TRACK — вся трасса, камера неподвижна
@@ -271,7 +270,6 @@ function onKeyDown(e) {
         if(bindingMatches('camera',c)){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();resizeViewport();}
         if(bindingMatches('zoomIn',c))topZoom=Math.min(2.2,topZoom*1.15);
         if(bindingMatches('zoomOut',c))topZoom=Math.max(0.45,topZoom/1.15);
-        if(bindingMatches('line',c))window.showRacingLine=!window.showRacingLine;
         if(bindingMatches('sound',c))toggleSound();
         if(bindingMatches('pit',c))requestPitStop();
         for(const tire of ['soft','medium','hard'])if(bindingMatches(tire,c))selectNextTire(tire);
@@ -426,7 +424,6 @@ function dispatchGamepadAction(action) {
     if(action==='camera'){topFollow=topFollow==='CAR'?'TRACK':'CAR';refreshOptionButtons();resizeViewport();}
     if(action==='zoomIn')topZoom=Math.min(2.2,topZoom*1.15);
     if(action==='zoomOut')topZoom=Math.max(0.45,topZoom/1.15);
-    if(action==='line')window.showRacingLine=!window.showRacingLine;
     if(action==='sound')toggleSound();
     if(action==='pit')requestPitStop();
     if(['soft','medium','hard'].includes(action))selectNextTire(action);
