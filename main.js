@@ -737,6 +737,12 @@ function buildWeekendRoster() {
             tm.drivers.forEach((d, di) => {
                 if (ti === selectedCarIndex && di === seat) return;
                 const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
+                if (selectedCarClass === 'GT3') {
+                    const botLiveryVariant = ti === selectedCarIndex
+                        ? (getGT3LiveryVariant(team) === 1 ? 2 : 1)
+                        : (di === 0 ? 1 : 2);
+                    bot.spriteId = getCarSpriteId(tm, botLiveryVariant);
+                }
                 bot.baseName = d.name;
                 bot.assignStrategy(strategies[slot % strategies.length]);
                 aiCars.push(bot);
