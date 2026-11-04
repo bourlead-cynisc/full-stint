@@ -2,4 +2,5 @@
 if (typeof SPRITE_DATA !== 'undefined') {
     SPRITE_DATA.audi_gt3 = 'assets/gt3/audi-r8-topdown.png';
     SPRITE_DATA.aston_gt3 = 'assets/gt3/aston-vantage-topdown.png';
+    SPRITE_DATA.aston_gt3_livery2 = 'assets/gt3/aston-vantage-blue-livery-2.png?v=20261104-aston-livery2-v1';
 }

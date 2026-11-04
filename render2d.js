@@ -56,8 +56,8 @@ function loadSprites() {
     loadTimeAttackSprites();
 }
 
-function spriteDims(car) {
-    const img = spriteImgs[car.spec.id];
+function spriteDims(car, spriteId = car.spec.id) {
+    const img = spriteImgs[spriteId] || spriteImgs[car.spec.id];
     const h = car.height * 1.28;
     return { img, h, w: h * img.width / img.height };
 }
@@ -86,16 +86,17 @@ function getScaledSprite(id, tw, th) {
 
 // Контекст уже в центре машины и повёрнут носом вверх. scaleMul — увеличение значка (в режиме «вся трасса»).
 function drawCarSpriteTop(ctx, car, scaleMul = 1) {
-    const img = spriteImgs[car.spec.id];
+    const spriteId = spriteImgs[car.spriteId] ? car.spriteId : car.spec.id;
+    const img = spriteImgs[spriteId];
     if (!img) {
         renderCarBody(ctx, car.spec, car.livery, car.compound, car.braking, car.drsActive, car.driverNumber);
         return;
     }
-    const { h, w } = spriteDims(car);
+    const { h, w } = spriteDims(car, spriteId);
     const dpr = window.__GAME_CANVAS_DPR || window.devicePixelRatio || 1;
     const z = Math.max(0.05, topZoomNow) * scaleMul * dpr;
     const tw = Math.max(12, Math.round(w * z / 4) * 4), th = Math.max(24, Math.round(h * z / 4) * 4);
-    const spr = getScaledSprite(car.spec.id, tw, th);
+    const spr = getScaledSprite(spriteId, tw, th);
 
     // мягкая тень (градиент), а не смещённая копия
     ctx.save();

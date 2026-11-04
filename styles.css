@@ -1049,6 +1049,14 @@ canvas#minimapCanvas {
 .selected-favorite {position:absolute;top:16px;right:16px;z-index:3;width:42px;height:42px;border:0;border-radius:50%;background:#fff;color:#ec6863;font-size:24px;line-height:1;cursor:pointer;box-shadow:0 4px 15px #33415522;}
 .selected-favorite.active {color:#e84752;}
 .selected-car-specs {padding:19px 20px;border:1px solid var(--fs-line);border-radius:22px;background:var(--fs-panel);}
+.selected-livery-switch {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px;padding:8px 10px;border:1px solid var(--fs-line);border-radius:12px;background:var(--fs-raised);color:var(--fs-text);}
+.selected-livery-switch>span {color:var(--fs-muted);font-size:10px;font-weight:750;}
+.selected-livery-options {display:flex;gap:5px;}
+.selected-livery-options button {min-width:34px;height:30px;padding:0 9px;border:1px solid var(--fs-line);border-radius:8px;background:var(--fs-panel);color:var(--fs-text);font:700 11px/1 system-ui,sans-serif;cursor:pointer;}
+.selected-livery-options button:hover {border-color:#a3e635;}
+.selected-livery-options button.active {border-color:var(--fs-accent);background:var(--fs-accent-soft);color:var(--fs-text);}
+.selected-livery-options button.active[data-livery="2"] {border-color:#a3e635;background:#a3e635;color:#18221a;}
+.selected-livery-options button:focus-visible {outline:2px solid #a3e635;outline-offset:2px;}
 .selected-spec-header {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;}
 .balance-score {display:flex;flex:0 0 58px;flex-direction:column;align-items:center;justify-content:center;width:58px;height:58px;border-radius:18px;background:var(--fs-accent-soft);color:var(--fs-accent);}
 .balance-score strong {font-size:23px;line-height:1;}
