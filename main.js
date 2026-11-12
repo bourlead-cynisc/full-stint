@@ -22,7 +22,7 @@ let camZoom = 1;
 let selectedCarClass = 'GT3';
 let selectedCarIndex = 0;
 let selectedTeammateSlot = 0;
-let garageStage = 'class';
+let garageStage = 'intro';
 let showFavoritesOnly = false;
 const FAVORITES_STORAGE_KEY = 'full-stint:favorites:v1';
 const THEME_STORAGE_KEY = 'full-stint:menu-theme:v1';
@@ -187,7 +187,30 @@ window.selectCarClass = function (cls) {
     renderGarageUI();
 };
 
-const GARAGE_STAGES = ['class', 'track', 'car'];
+const GARAGE_STAGES = ['intro', 'class', 'track', 'car'];
+const garageFocusByStage = {intro:'btnIntroContinue',class:'classBtnGT3',track:'track:0',car:'car:0'};
+let gamepadNavigationInUse = false;
+function garageActiveSection() {
+    return document.querySelector('#garageModal .garage-stage.is-active');
+}
+function rememberGarageFocus(element) {
+    const stage=element?.closest?.('.garage-stage');
+    if(stage && stage.classList.contains('is-active')) {
+        const key=element.dataset.navId||element.id;
+        if(key)garageFocusByStage[garageStage]=key;
+    }
+}
+function restoreGarageFocus() {
+    const root=garageActiveSection();
+    if(!root)return;
+    const key=garageFocusByStage[garageStage];
+    const candidates=[...root.querySelectorAll('button:not(:disabled),[role="button"][tabindex],input:not(:disabled),a[href]')];
+    const target=candidates.find(el=>(el.dataset.navId||el.id)===key)
+        ||root.querySelector('.track-card.active,.car-item.selected,.class-btn.active,.fs-intro-action')
+        ||candidates[0];
+    if(target?.focus)target.focus({preventScroll:true});
+}
+document.addEventListener('focusin',event=>rememberGarageFocus(event.target));
 function updateGarageProgress() {
     const activeIndex=GARAGE_STAGES.indexOf(garageStage);
     document.getElementById('garageProgress')?.querySelectorAll('[data-step]').forEach((step,index)=>{
@@ -197,21 +220,28 @@ function updateGarageProgress() {
 }
 function transitionGarageStage(nextStage) {
     if(!GARAGE_STAGES.includes(nextStage)||nextStage===garageStage)return;
-    const current=document.getElementById(`garageStage${garageStage[0].toUpperCase()+garageStage.slice(1)}`);
+    const current=garageActiveSection();
+    current?.classList.remove('is-active','is-leaving');
+    garageStage=nextStage;
     const next=document.getElementById(`garageStage${nextStage[0].toUpperCase()+nextStage.slice(1)}`);
-    current?.classList.add('is-leaving');
-    window.setTimeout(()=>{
-        current?.classList.remove('is-active','is-leaving');
-        garageStage=nextStage;
-        next?.classList.add('is-active');
-        updateGarageProgress();
-        renderGarageUI();
-        if(nextStage==='track') document.getElementById('trackSelectorGrid')?.querySelector('.track-card.active')?.focus({preventScroll:true});
-        if(nextStage==='car') document.getElementById('selectedCarPreview')?.scrollIntoView({block:'nearest'});
-    },170);
+    next?.classList.add('is-active');
+    if(nextStage==='class')garageFocusByStage.class=selectedCarClass==='F1'?'classBtnF1':selectedCarClass==='TA'?'classBtnTA':'classBtnGT3';
+    if(nextStage==='track')garageFocusByStage.track='track:'+selectedTrackIndex;
+    if(nextStage==='car')garageFocusByStage.car='car:'+selectedCarIndex;
+    renderGarageUI();
+    if(gamepadNavigationInUse)restoreGarageFocus();
 }
 window.continueGarageStage=transitionGarageStage;
 window.chooseClass=cls=>{selectCarClass(cls);transitionGarageStage('track');};
+function nextGarageStage() {
+    const idx=GARAGE_STAGES.indexOf(garageStage);
+    if(idx<GARAGE_STAGES.length-1)transitionGarageStage(GARAGE_STAGES[idx+1]);
+    else document.getElementById('btnDirectRace').click();
+}
+function previousGarageStage() {
+    const idx=GARAGE_STAGES.indexOf(garageStage);
+    if(idx>0)transitionGarageStage(GARAGE_STAGES[idx-1]);
+}
 
 function persistFavoriteCars() {
     try { localStorage.setItem(FAVORITES_STORAGE_KEY,JSON.stringify([...favoriteCarIds])); } catch (_) {}
@@ -621,6 +651,11 @@ function renderSelectedCarPreview(car,catalog) {
     root.querySelectorAll('.selected-livery-options button').forEach(button=>button.addEventListener('click',()=>setGT3LiveryVariant(car.id,Number(button.dataset.livery))));
 }
 function renderGarageUI() {
+    const active=document.activeElement;
+    const retainFocus=gamepadNavigationInUse && document.getElementById('garageModal').contains(active);
+    if(retainFocus)rememberGarageFocus(active);
+    const trackScroll=document.getElementById('trackSelectorGrid')?.scrollTop||0;
+    const carScroll=document.getElementById('carSelectorGrid')?.scrollTop||0;
     updateGarageProgress();
     const f1 = selectedCarClass === 'F1';
     const ta = selectedCarClass === 'TA';
@@ -637,13 +672,18 @@ function renderGarageUI() {
     const locked = teamLocked();
     if (f1) renderSeasonPanel();
 
+    // Выделенная трасса: большая карта, характеристики и описание.
+    const activeTrack=TRACKS_DB[selectedTrackIndex];
+    const trackHero=document.getElementById('selectedTrackHero');
+    trackHero.innerHTML=`<div class="fs-track-map"><canvas width="280" height="180" aria-label="Схема трассы"></canvas></div><div class="fs-track-info"><span class="fs-eyebrow">ЭТАП ${selectedTrackIndex+1} / ${TRACKS_DB.length}</span><h2>${activeTrack.name}</h2><p>${activeTrack.desc||'Гоночная трасса'}</p><div class="fs-track-facts"><span>▣ ${activeTrack.shortName}</span><span>◷ ${(EST_LAP_SEC[selectedCarClass]||EST_LAP_SEC.GT3)[selectedTrackIndex]||'—'} сек · ориентир</span><span>◈ ${selectedCarClass}</span></div></div>`;
+    drawGarageTrackPreview(trackHero.querySelector('canvas'),activeTrack);
     // трассы
     const trkGrid = document.getElementById('trackSelectorGrid'); trkGrid.innerHTML = '';
     trkGrid.classList.remove('locked');
     document.getElementById('trackLockHint').textContent = f1 ? '— для призрака любая трасса; гонка сезона: '+TRACKS_DB[seasonNextTrack()].shortName : '';
     TRACKS_DB.forEach((tObj, tIdx) => {
         const card = document.createElement('div');
-        card.tabIndex = 0; card.setAttribute('role','button');
+        card.tabIndex = 0; card.setAttribute('role','button');card.dataset.navId='track:'+tIdx;
         card.className = 'track-card' + (tIdx === selectedTrackIndex ? ' active' : '');
         card.innerHTML = `<canvas class="track-card-preview" width="96" height="76" aria-hidden="true"></canvas><div class="track-card-copy"><div class="track-info-title">${tObj.name}</div></div>`;
         drawGarageTrackPreview(card.querySelector('canvas'),tObj);
@@ -658,8 +698,9 @@ function renderGarageUI() {
                 renderGarageUI();
                 return;
             }
+            garageFocusByStage.track='track:'+tIdx;
             renderGarageUI();
-            transitionGarageStage('car');
+            if(gamepadNavigationInUse)restoreGarageFocus();
         };
         card.addEventListener('click',selectTrack);
         card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectTrack();}});
@@ -678,11 +719,11 @@ function renderGarageUI() {
     renderSelectedCarPreview(selectedCar,catalog);
     visibleCars.forEach(({car,idx}) => {
         const card = document.createElement('div');
-        card.tabIndex = 0; card.setAttribute('role','button');
+        card.tabIndex = 0; card.setAttribute('role','button');card.dataset.navId='car:'+idx;
         card.className = 'car-item' + (idx === selectedCarIndex ? ' selected' : '');
         const balance=carBalanceRating(car,catalog),isFavorite=favoriteCarIds.has(car.id);
         card.innerHTML = `<canvas class="car-thumb" width="52" height="86"></canvas><span class="car-balance">${balance}</span><button class="car-favorite ${isFavorite?'active':''}" type="button" aria-label="${isFavorite?'Убрать из':'Добавить в'} избранное" aria-pressed="${isFavorite}" title="${isFavorite?'Убрать из':'Добавить в'} избранное">${isFavorite?'♥':'♡'}</button><div class="car-item-title">${car.shortName}</div><div class="car-item-sub">${car.drivetrain} · ${car.character.mass} кг</div>`;
-        card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; renderGarageUI(); });
+        card.addEventListener('click', () => { selectedCarIndex = idx; selectedTeammateSlot = 0; garageFocusByStage.car='car:'+idx;renderGarageUI();if(gamepadNavigationInUse)restoreGarageFocus(); });
         card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectedCarIndex=idx;selectedTeammateSlot=0;renderGarageUI();}});
         card.querySelector('.car-favorite').addEventListener('click',event=>{event.stopPropagation();toggleFavoriteCar(car.id);});
         grid.appendChild(card);
@@ -711,6 +752,9 @@ function renderGarageUI() {
     updateStartButtons();
     const bestGhost=loadGhost(trialKey());
     document.getElementById("ghostRecordHint").textContent=bestGhost?"Общий рекорд этой машины на трассе: "+formatTime(bestGhost.time)+" · Time Attack: выезд 90 км/ч, круг начинается на стартовой линии":"Time Attack: выезд 90 км/ч · круг начинается на стартовой линии · первый чистый круг сохранит призрак этой машины";
+    trkGrid.scrollTop=trackScroll;
+    grid.scrollTop=carScroll;
+    if(retainFocus)restoreGarageFocus();
 }
 
 // ============================================================================
