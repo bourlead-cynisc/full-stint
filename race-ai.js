@@ -34,7 +34,7 @@ function planRaceTraffic(car,dt) {
  const corner=peak>.005;
  const laneMargin=ASPHALT_HALF_W-car.width*.55-13;
  const laneLimit=Math.min(43,laneMargin);
- const free=lane=>nearby.every(o=>o.fwd< -car.height*1.2||o.fwd>240||Math.abs(o.lane-lane)>(car.width+o.other.width)*.5+16);
+ const free=lane=>nearby.every(o=>o.fwd< -car.height*1.2||o.fwd>240||Math.abs(o.lane-lane)>(car.width+o.other.width)*.5+12);
  let target=clamp((((car.botSlot*7)%5)-2)*3,-laneLimit,laneLimit);
  let followV=Infinity,pace=1,overtaking=false,blockedByCar=false;
  car.aiMode='RACING';
