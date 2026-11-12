@@ -41,20 +41,64 @@ const oldSettings={...aiSettings};
 try {
  setAiSetting('aggression',55);
  const self=create(),other=create();self.x=0;self.y=0;self.angle=0;self.velocity=10;self.latOff=0;
- const straight=trackSamples.findIndex((p,i)=>p.futCurv<.03&&trackSamples[(i+45)%totalSamples].futCurv<.04);check(straight>=0,'No straight fixture');self.lastSampleIdx=straight;self.aiNextMistake=Infinity;
- other.x=0;other.y=-300;other.velocity=8;allCars=[self,other];
+ const straight=trackSamples.findIndex((p,i)=>p.futCurv<.03&&trackSamples[(i+45)%totalSamples].futCurv<.04);
+ check(straight>=0,'No straight fixture');self.lastSampleIdx=straight;self.aiNextMistake=Infinity;
+ other.x=0;other.y=-300;other.angle=0;other.velocity=8;allCars=[self,other];
  check((planRaceTraffic(self,.5),self.aiMode)==='OVERTAKE','AI does not prepare an overtake');
- self.aiPassSide=0;other.y=300;other.velocity=12;planRaceTraffic(self,.5);check(self.aiMode==='DEFEND','AI does not defend');
- const firstLane=self.aiDefenseLane;other.x=-20;planRaceTraffic(self,.5);check(self.aiDefenseLane===firstLane,'AI weaves repeatedly on one straight');
- other.progressAcc=self.progressAcc+1.2;const yieldPlan=planRaceTraffic(self,.5);check(self.aiMode==='BLUE_FLAG'&&yieldPlan.pace<1,'Lapped AI does not yield');
- self.aiYieldUntil=0;self.aiDefenseLane=null;self.aiPassSide=0;self.aiNextMistake=Infinity;self.x=0;self.y=0;self.angle=0;self.velocity=0;self.latOff=0;
+ self.aiPassSide=0;other.y=300;other.velocity=12;planRaceTraffic(self,.5);
+ check(self.aiMode==='DEFEND','AI does not defend');
+ const firstLane=self.aiDefenseLane;other.x=-20;planRaceTraffic(self,.5);
+ check(self.aiDefenseLane===firstLane,'AI weaves repeatedly on one straight');
+ other.progressAcc=self.progressAcc+1.2;const yieldPlan=planRaceTraffic(self,.5);
+ check(self.aiMode==='BLUE_FLAG'&&yieldPlan.pace<1,'Lapped AI does not yield');
+ self.aiYieldUntil=0;self.aiHoldUntil=0;self.aiDefenseLane=null;self.aiPassSide=0;
+ self.aiNextMistake=Infinity;self.x=0;self.y=0;self.angle=0;self.velocity=0;self.latOff=0;
  other.x=0;other.y=-70;other.angle=0;other.velocity=0;other.progressAcc=self.progressAcc;allCars=[self,other];
- const blockedPlan=planRaceTraffic(self,1/60);check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV===Infinity&&!blockedPlan.blockedByCar,'AI waits behind a stopped car instead of passing');
- allCars=[self];self.aiYieldUntil=0;self.aiDefenseLane=null;self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;self.latOff=0;
+ const blockedPlan=planRaceTraffic(self,1/60);
+ check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV===Infinity&&!blockedPlan.blockedByCar,
+       'AI does not go around a stopped car on a clear straight');
+
+ // A tight corner cancels speculative passes while avoiding an inside-kerb cut.
+ const tight=trackSamples.findIndex(p=>p.kappa/PX_M>.025);
+ check(tight>=0,'No sharp corner available for AI test');
+ const t=trackSamples[tight],next=trackSamples[(tight+2)%totalSamples];
+ self.x=t.x;self.y=t.y;self.angle=Math.atan2(next.x-t.x,-(next.y-t.y));
+ self.lastSampleIdx=tight;self.aiLane=34;self.aiHoldUntil=0;self.aiPassSide=1;
+ allCars=[self];
+ const cornerPlan=planRaceTraffic(self,1/60);
+ check(!cornerPlan.overtaking&&cornerPlan.lane<34,'AI tries to pass through a tight corner');
+ check(self.aiCornerAwareLookaheadPx(tight,12)<90+12*48,'AI lookahead cuts across a hairpin');
+
+ // Two cars physically beside one another choose *opposite* safe corridors.
+ self.aiLane=0;self.latOff=0;self.botSlot=0;self.aiHoldUntil=0;
+ other.x=self.x+t.nx*18;other.y=self.y+t.ny*18;
+ other.angle=self.angle;other.botSlot=1;other.lastSampleIdx=tight;other.latOff=18;
+ other.aiLane=0;other.aiHoldUntil=0;other.progressAcc=self.progressAcc;
+ allCars=[self,other];
+ const separated=planRaceTraffic(self,1/60),adjacent=planRaceTraffic(other,1/60);
+ check(separated.alongside&&adjacent.alongside&&separated.lane<0&&adjacent.lane>0,
+       'Side-by-side AI cars converge into the same corner');
+
+ allCars=[self];self.aiYieldUntil=0;self.aiHoldUntil=0;self.aiDefenseLane=null;
+ self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;self.latOff=0;
+ self.lastSampleIdx=straight;self.velocity=15/MS;self.aiLane=0;
  setAiSetting('pace',80);self.aiControls(1/60);const slow=self.dbgVAllow;
- setAiSetting('pace',110);self.aiControls(1/60);check(self.dbgVAllow>slow,'Pace slider has no effect');
- other.progressAcc=self.progressAcc;other.x=0;other.y=150;allCars=[self,other];self.aiYieldUntil=0;self.aiNextMistake=0;let pressureError=false;const oldTime=simTimeMs;
- for(let i=0;i<200&&!pressureError;i++){simTimeMs+=5000;planRaceTraffic(self,.1);pressureError=self.aiMode==='PRESSURE';}simTimeMs=oldTime;check(pressureError,'Pressure never causes a recoverable mistake');
+ setAiSetting('pace',110);self.aiControls(1/60);
+ check(self.dbgVAllow>slow,'Pace slider has no effect');
+ self.lastSampleIdx=tight;self.x=t.x;self.y=t.y;self.velocity=55/MS;allCars=[self];
+ check(self.aiControls(1/60).brake>0,'AI does not brake for a tight corner');
+
+ // Pressure errors only occur on straights; there are no random apex dives.
+ self.lastSampleIdx=straight;self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;
+ const ts=trackSamples[(straight+2)%totalSamples];
+ self.angle=Math.atan2(ts.x-self.x,-(ts.y-self.y));
+ other.x=self.x-Math.sin(self.angle)*150;other.y=self.y+Math.cos(self.angle)*150;
+ other.angle=self.angle;other.velocity=12;other.progressAcc=self.progressAcc;
+ allCars=[self,other];self.aiYieldUntil=0;self.aiHoldUntil=0;self.aiNextMistake=0;
+ let pressureError=false;const oldTime=simTimeMs;
+ for(let i=0;i<400&&!pressureError;i++){simTimeMs+=5000;planRaceTraffic(self,.1);pressureError=self.aiMode==='PRESSURE';}
+ simTimeMs=oldTime;
+ check(pressureError,'Pressure never causes a recoverable mistake');
  setAiSetting('aggression',0);check(aiSettings.pace===110,'Aggression changes pace');
 } finally {setAiSetting('pace',oldSettings.pace);setAiSetting('aggression',oldSettings.aggression);}
 const damagedBot=create(),entry=pitWaypoints[0],entryIdx=Math.round(TRACKS_DB[selectedTrackIndex].pitEntryNorm*totalSamples)%totalSamples,entryBefore=trackSamples[(entryIdx-4+totalSamples)%totalSamples],entryAfter=trackSamples[(entryIdx+4)%totalSamples];

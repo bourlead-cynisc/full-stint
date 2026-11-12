@@ -219,7 +219,7 @@ class Car {
         this.tireHealth = 100; this.pitStopsDone = 0;
         this.pitPhase = 'none'; this.pitTimer = 0; this.pitRequested = false; this.pendingTire = null;
         this.aiBlockedTime = 0; this.aiRecoveryTime = 0;
-        this.aiLane=0;this.aiMode="RACING";this.aiPassSide=0;this.aiDefenseUsed=false;this.aiDefenseLane=null;this.aiYieldUntil=0;this.aiNextMistake=0;this.aiErrorTime=0;
+        this.aiLane=0;this.aiMode="RACING";this.aiPassSide=0;this.aiDefenseUsed=false;this.aiDefenseLane=null;this.aiYieldUntil=0;this.aiNextMistake=0;this.aiErrorTime=0;this.aiHoldUntil=0;this.aiHoldLane=0;this.aiStuckTime=0;this.aiLastProgressAcc=undefined;
         this.hitCooldown = 0; this.slip = 0; this.braking = false; this.drsActive = false;
         this.slipstream = 0; this.dirtyAir = 0;
         this.timingStarted = true; this.progressAcc = 0; this.prevNorm = undefined;
@@ -329,6 +329,20 @@ class Car {
         return { thr: this.smoothThrottle, brake: this.smoothBrake, handbrake: Math.max(0,Math.min(1,Number(input.handbrake)||0)), steer: this.smoothSteer * (1 - hc.steerSpLoss * sp), manual: window.transmissionMode === 'MANUAL' };
     }
 
+    // Keep the aim point inside the arc on hairpins: a long chord cuts the
+    // inside of a tight turn even when the speed planner has braked correctly.
+    aiCornerAwareLookaheadPx(base, velocityPx) {
+        const ds = trackLengthPx / totalSamples;
+        let lookPx = 90 + Math.abs(velocityPx) * 48;
+        let sharpest = 0;
+        const steps = Math.min(totalSamples - 1, Math.ceil(lookPx / ds) + 8);
+        for (let j = 0; j <= steps; j += 2) {
+            sharpest = Math.max(sharpest, trackSamples[(base + j) % totalSamples].kappa || 0);
+        }
+        if (sharpest > 0) lookPx = Math.min(lookPx, Math.max(95, 0.9 / sharpest));
+        return lookPx;
+    }
+
     // ИИ: ведёт по гоночной линии, считает тормозные точки и скорость в поворотах
     aiControls(dt, speedFactor = 1.0, override = null) {
         const N = totalSamples;
@@ -337,10 +351,9 @@ class Car {
         const offTrack = (this.dbgDist || 0) > CURB_OUTER_W;
         const ds = trackLengthPx / N;
 
-        // точка, на которую целимся
-        // Aim about one second ahead at speed so the bot starts setting up
-        // before the corner rather than reacting at its entry.
-        const lookPx = 90 + Math.abs(this.velocity) * 48;
+        // On a straight look far ahead; in a tight bend shorten the chord,
+        // otherwise pure pursuit aims across the inside kerb / barrier.
+        const lookPx = this.aiCornerAwareLookaheadPx(base, this.velocity);
         const look = Math.max(2, Math.round(lookPx / ds));
         const tIdx = (base + look) % N;
         const rl = dynamicRacingLinePoints[tIdx];
@@ -406,7 +419,9 @@ class Car {
         const aBrCap = (this.brake0 + this.brakeAero * qNow * aeroWakeFactor) * tg * G * Math.sqrt(hb) * surfaceGrip;
         // The speed envelope accounts for the distance to the turn; use most of the
         // available braking force so the bots do not slow on approach without need.
-        const aBr = (this.spec.carClass === 'F1' ? 0.80 : 0.84) * aBrCap;
+        // Leave braking capacity for simultaneous turn-in and tyre load transfer.
+        // Planning with peak straight-line brakes used to postpone braking too long.
+        const aBr = (this.spec.carClass === 'F1' ? 0.68 : 0.70) * aBrCap;
         const towTopSpeedBonus=getSlipstreamTopSpeedBonus(this);
         const vTop = this.vmaxMs * comp.speedMult * (1+towTopSpeedBonus);
         let vAllow = vTop;
@@ -418,7 +433,11 @@ class Car {
             const kap = trackSamples[idx].kappa / PX_M;                // 1/м
             const denom = kap - gAero / vmax2;
             const rawCornerSpeed = denom > 1e-7 ? Math.sqrt(gA / denom) : vTop;
-            const vc = rawCornerSpeed < vTop ? rawCornerSpeed * 0.995 : vTop;
+            // Physical peak grip assumes perfect steering and no throttle/brake.
+            // Reserve speed for yaw response, tyre slip and line corrections.
+            const severity = Math.min(1, kap / 0.025);
+            const cornerReserve = 0.965 - 0.115 * severity;
+            const vc = rawCornerSpeed < vTop ? rawCornerSpeed * cornerReserve : vTop;
             const dm = Math.max(dist * PX_M, 6);
             const vlim = Math.sqrt(vc * vc + 2 * aBr * dm);
             if (vlim < vAllow) vAllow = vlim;
@@ -436,11 +455,12 @@ class Car {
         );
         this.dbgVAllow = targetVAllow;
         let thr = 0, brake = 0;
-        const turnSpeedExcess = turnLimitActive ? vms - turnVAllow : -Infinity;
-        const trafficSpeedExcess = Number.isFinite(followV) ? vms - followV : -Infinity;
-        if (reqDecel > 0.88 * aBrCap) brake = Math.min(1, reqDecel / aBrCap);
-        else if (turnSpeedExcess > 0.55 || trafficSpeedExcess > 0.55) {
-            brake = Math.min(1, 0.12 + Math.max(turnSpeedExcess, trafficSpeedExcess) / 7);
+        // Brake for the FINAL target, not the unscaled corner limit: traffic,
+        // damaged tyres, off-line corrections and pace can all lower that target.
+        const speedExcess = vms - targetVAllow;
+        if (speedExcess > 0.35) {
+            brake = Math.min(1, Math.max(0.12 + speedExcess / 7,
+                reqDecel / Math.max(1, aBrCap)));
         } else if (vms < targetVAllow - 0.18) {
             thr = Math.max(0.28, Math.min(1, (targetVAllow - vms) / 3 + 0.2));
         }

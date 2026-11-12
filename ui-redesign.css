@@ -1,0 +1,191 @@
+/* Full Stint · cinematic four-stage race setup (2026).
+   Keeps the existing garage DOM and all game modes functional. */
+#garageModal {
+  background:
+    radial-gradient(ellipse at 55% 64%,rgba(12,57,75,.68),transparent 65%),
+    linear-gradient(145deg,rgba(3,10,21,.96),rgba(5,15,27,.95) 64%,rgba(7,25,39,.97));
+  backdrop-filter:blur(10px);
+}
+#garageModal .garage-card {
+  --fs-bg:#071421;--fs-panel:#0c1e2e;--fs-raised:#12283a;
+  --fs-line:#285069;--fs-text:#f3f9ff;--fs-muted:#9aafc1;
+  --fs-accent:#2bd9ff;--fs-accent-soft:rgba(29,194,246,.14);
+  position:relative;isolation:isolate;overflow-y:auto;
+  width:min(1580px,97vw);max-height:95vh;min-height:min(730px,95vh);
+  padding:22px 32px 25px;color:#edf8ff;
+  border:1px solid rgba(66,196,236,.48);border-radius:22px;
+  box-shadow:0 35px 110px rgba(0,0,0,.72),inset 0 1px rgba(180,233,255,.13);
+  background:
+    linear-gradient(115deg,rgba(8,24,40,.95),rgba(8,26,42,.94)),
+    radial-gradient(circle at 60% 38%,#1e3e54,#071421);
+}
+#garageModal .garage-card::before {content:"";pointer-events:none;position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,#18dafd,transparent 48%,#ffb84e);z-index:3;}
+#garageModal .modal-title {margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #29516a;justify-content:space-between;}
+#garageModal .fs-top-brand {display:flex;align-items:center;gap:8px;color:#fff;font-size:clamp(23px,2.3vw,34px);font-style:italic;font-weight:1000;letter-spacing:-.04em;white-space:nowrap;text-shadow:0 2px 20px #00bfff38;}
+#garageModal .fs-top-brand em {color:#ffc05a;font-style:inherit;}
+#garageModal .fs-top-brand small {margin:0 0 0 16px;padding:7px 14px;border:1px solid #2f89a3;border-radius:6px;color:#bad5e6;font-size:10px;font-style:normal;font-weight:700;letter-spacing:.2em;}
+#garageModal .fs-chequer {font-size:29px;color:#1adaf8;}
+#garageModal .garage-top-tools {font-size:10px;color:#87a2b8;}
+#garageModal .theme-toggle,#garageModal .favorite-filter {background:rgba(17,46,66,.86);border:1px solid #366b84;color:#e1f4ff;}
+#garageModal .garage-progress {max-width:none;justify-content:flex-start;gap:13px;margin:0 0 20px;padding:9px 0 18px;border-bottom:1px solid #234057;}
+#garageModal .garage-progress-step {font-size:12px;color:#7897ac;letter-spacing:.025em;}
+#garageModal .garage-progress-step b {height:32px;width:32px;color:#b4cddd;border:1px solid #356179;background:#0b1d2f;font-size:13px;}
+#garageModal .garage-progress-step.active {color:#ffdfab;text-shadow:0 0 13px #ffae4a78;}
+#garageModal .garage-progress-step.active b {background:#f4ae43;border-color:#ffcc7b;color:#06131c;box-shadow:0 0 15px #ff9d3b66;}
+#garageModal .garage-progress-step.complete b {background:#0b586c;border-color:#18cdeb;color:#e7faff;}
+#garageModal .garage-progress>i {background:linear-gradient(90deg,#185874,#356982);height:1px;width:clamp(20px,4.1vw,65px);}
+#garageModal .garage-stage.is-active {animation:fsStageIn .24s ease both;}
+@keyframes fsStageIn {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+#garageModal .section-label,#garageModal .stage-heading .section-label {color:#c9ecff;font-weight:900;letter-spacing:.16em;font-size:13px;}
+#garageModal .stage-heading p {font-size:12px;color:#91aabc;}
+#garageModal .stage-heading {margin:2px 0 20px;}
+#garageModal .stage-heading .section-label::before {content:"▰▰ ";color:#0fc6ee;}
+#garageModal .primary-btn,#garageModal .fs-intro-action {
+ color:#f7fbff;border:1px solid #ffbf56;border-radius:11px;
+ background:linear-gradient(110deg,#12516d 0%,#0c2738 49%,#3c291f 100%);
+ box-shadow:0 0 16px rgba(26,207,243,.3),inset 0 0 15px rgba(255,157,53,.12),0 0 0 1px #174b60;
+ font-weight:900;letter-spacing:.055em;
+}
+#garageModal .primary-btn:hover {border-color:#ffda8f;box-shadow:0 0 25px #ff8c3c6b;}
+#garageModal .secondary-btn,#garageModal .ghost-btn {border:1px solid #355d76;background:linear-gradient(145deg,#152b3d,#102333);color:#dff4ff;border-radius:9px;}
+#garageModal .secondary-btn:hover,#garageModal .ghost-btn:hover {border-color:#23ccef;color:white;}
+#garageModal button:focus-visible,#garageModal [role="button"]:focus-visible {outline:3px solid #ffb53f!important;outline-offset:3px;box-shadow:0 0 23px #12d6fa66!important;}
+#garageModal .stage-actions {border-top:1px solid #27445a;padding-top:16px;}
+#garageModal .stage-actions .primary-btn {min-height:49px;min-width:240px;}
+.fs-eyebrow {font:800 11px/1.4 system-ui,sans-serif;letter-spacing:.18em;color:#35d9fa;}
+/* 1. Intro: racing artwork is a decorative layer, not a click target. */
+#garageModal .fs-intro-world {display:grid;grid-template-columns:1fr 1.12fr;min-height:420px;align-items:center;gap:18px;position:relative;}
+#garageModal .fs-intro-copy {position:relative;z-index:2;padding:35px 0 40px 18px;}
+#garageModal .fs-intro h1 {font:italic 1000 clamp(64px,8.2vw,122px)/.95 system-ui,Arial,sans-serif;letter-spacing:-.085em;margin:15px 0 12px;color:white;white-space:nowrap;text-shadow:0 10px 26px #071426;}
+#garageModal .fs-intro h1 em {font-style:inherit;color:#ffb640;}
+#garageModal .fs-intro-subtitle {display:inline-block;padding:10px 25px;margin:0 0 20px;border:1px solid #1eaccb;transform:skewX(-8deg);color:#d9eeff;font-size:18px;letter-spacing:.22em;font-style:italic;background:#0b2339b8;box-shadow:inset 0 -2px #d5933c;}
+#garageModal .fs-intro-lead {max-width:420px;color:#a9c9dc;font-size:16px;line-height:1.7;}
+#garageModal .fs-intro-action {margin:22px 0 0;padding:19px 30px;font-size:16px;}
+#garageModal .fs-intro-action span {margin-left:25px;color:#ffb83e;}
+#garageModal .fs-pad-hint {color:#729cb2;font-size:10px;letter-spacing:.05em;margin-top:18px;}
+#garageModal .fs-intro-picture {position:relative;min-height:415px;align-self:stretch;overflow:hidden;border:1px solid #29536d;border-radius:20px;
+ background:radial-gradient(ellipse at 52% 40%,#37738a60,transparent 66%),
+ linear-gradient(100deg,#091e2bd9,#0815226b 48%,#0a1a29de),
+ url("assets/time-attack-cars.png") center center / cover no-repeat;box-shadow:inset 0 0 90px #040d16;}
+#garageModal .fs-intro-picture::before {content:"";position:absolute;inset:0;background:linear-gradient(90deg,#071a2e 0%,transparent 45%),repeating-linear-gradient(110deg,transparent 0 48px,#b4dfee08 49px 51px);}
+#garageModal .fs-grid-line {position:absolute;right:-20%;bottom:22%;height:2px;width:135%;background:#20c6ff75;transform:rotate(-9deg);box-shadow:0 0 33px #09e1ff;}
+#garageModal .fs-intro-number {position:absolute;bottom:22px;right:20px;color:#5eb9d4;font-size:12px;letter-spacing:.2em;}
+#garageModal .fs-intro-footer {display:flex;gap:25px;align-items:center;border-top:1px solid #28516b;padding:20px 12px 0;color:#9ebacd;font-size:12px;font-weight:800;letter-spacing:.08em;}
+#garageModal .fs-intro-footer .secondary-btn {margin-left:auto;}
+/* 2. Class selection */
+#garageModal .class-switch-row {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;align-items:stretch;min-height:425px;}
+#garageModal .class-btn {position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:420px;gap:10px;padding:25px 24px;overflow:hidden;
+ background:linear-gradient(165deg,#0d253a 6%,#132f41 61%,#0a1827);border:1px solid #35637a;color:#f3fbff;border-radius:18px;box-shadow:inset 0 0 40px #05111e65;}
+#garageModal .class-btn::after {content:"";position:absolute;inset:auto -30% -38% 5%;height:230px;background:radial-gradient(ellipse,#0dbee924,transparent 63%);pointer-events:none;}
+#garageModal .class-btn strong {font:italic 950 clamp(40px,4.5vw,74px)/1 system-ui,Arial,sans-serif;letter-spacing:-.05em;text-shadow:0 0 25px #12b6e34a;}
+#garageModal .class-btn small {margin:auto 0 0;color:#bcd1df;font-size:13px;line-height:1.45;z-index:1;}
+#garageModal .class-btn.active {border-color:#ffbb55;box-shadow:0 0 0 1px #ff9f42,0 0 23px #ffab4e6b,inset 0 -4px #fbb451;}
+#garageModal .fs-class-type {font:800 11px/1.2 system-ui,sans-serif;letter-spacing:.12em;color:#35d3f7;}
+#garageModal .fs-class-art {height:140px;width:100%;position:relative;display:block;opacity:.83;background:
+ radial-gradient(ellipse at 55% 75%,#1785a647,transparent 70%),
+ repeating-linear-gradient(112deg,transparent 0 17px,#72cfff12 18px 19px),
+ url("assets/time-attack-cars.png") center center / cover;filter:saturate(1.12);}
+#garageModal .fs-f1-art {filter:hue-rotate(150deg) saturate(1.5);}
+#garageModal .fs-ta-art {filter:hue-rotate(35deg) saturate(.7);}
+#garageModal .fs-class-footer {font:800 11px/1.3 system-ui,sans-serif;letter-spacing:.06em;color:#ffb84d;border-top:1px solid #295269;padding-top:12px;width:100%;z-index:1;}
+/* 3. Track selection: large highlighted schematic and scrollable choice row. */
+#garageModal .garage-track-section {border:0;background:transparent;display:flex;flex-direction:column;gap:17px;}
+#garageModal .fs-track-hero {display:grid;grid-template-columns:40% 1fr;min-height:255px;border:1px solid #388eb0;border-radius:18px;overflow:hidden;background:
+ linear-gradient(110deg,#0d2639,#133349 65%,#0e202e);box-shadow:0 13px 27px #0004,inset 0 0 30px #0b74962c;}
+#garageModal .fs-track-map {display:grid;place-items:center;padding:25px;background:radial-gradient(circle at 50% 55%,#1d5364,#071b2c 72%);border-right:1px solid #2c5871;}
+#garageModal .fs-track-map canvas {width:min(100%,290px);height:180px;object-fit:contain;filter:drop-shadow(0 0 14px #38d9f7b0);}
+#garageModal .fs-track-info {padding:30px 35px;}
+#garageModal .fs-track-info h2 {margin:10px 0;color:white;font:italic 900 clamp(26px,3vw,48px)/1.15 system-ui,sans-serif;}
+#garageModal .fs-track-info p {color:#b0cedf;font-size:15px;}
+#garageModal .fs-track-facts {display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;}
+#garageModal .fs-track-facts span {padding:9px 12px;border:1px solid #315b73;border-radius:7px;background:#092131;color:#dcefff;font-size:11px;font-weight:800;}
+#garageModal .garage-stage .garage-track-section .track-grid {display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;max-height:none;overflow-y:visible;padding:4px;}
+#garageModal .garage-stage .garage-track-section .track-card {min-height:146px;padding:13px 10px;display:flex;flex-direction:column;gap:9px;background:#112b3e;border:1px solid #315a73;border-radius:14px;}
+#garageModal .garage-stage .garage-track-section .track-card.active {border-color:#ffc260;box-shadow:0 0 18px #f6a52e66,inset 0 -3px #ffa940;background:linear-gradient(160deg,#1a3441,#30251d);}
+#garageModal .garage-stage .garage-track-section .track-card-preview {width:100%;max-width:125px;height:85px;margin:auto;filter:drop-shadow(0 0 5px #22c8fa55);}
+#garageModal .garage-stage .garage-track-section .track-info-title {font-size:12px;font-weight:900;color:#f3faff;}
+/* 4. Car gallery: left list, central large preview, right telemetry. */
+#garageModal .garage-car-section {display:grid;grid-template-columns:minmax(210px,260px) minmax(0,1fr);grid-template-rows:auto 1fr auto auto;column-gap:16px;align-items:start;border:0;background:transparent;min-height:410px;}
+#garageModal .selected-car-preview {grid-column:2;grid-row:1/5;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.88fr);margin:0;gap:14px;align-self:stretch;}
+#garageModal .selected-car-art {min-height:400px;border-color:#4382a0;background:
+ radial-gradient(ellipse at 52% 42%,#2b74946b,transparent 65%),
+ linear-gradient(145deg,#0b1a2c,#173b54 55%,#071421);color:#f2f8ff;}
+#garageModal #selectedCarCanvas {top:35px;width:min(88%,330px);height:330px;filter:drop-shadow(0 15px 24px #0008);}
+#garageModal .selected-car-caption h2 {color:#fff;text-shadow:0 2px 10px #000;}
+#garageModal .selected-car-caption p {color:#adc8df;}
+#garageModal .selected-car-caption>span {background:#123246;color:#75d4ed;}
+#garageModal .selected-car-class {color:#90e8fa;background:#0e364abd;border:1px solid #2b7893;}
+#garageModal .selected-car-specs {border-color:#376985;background:#102839;}
+#garageModal .selected-stat>i {background:#071926;}
+#garageModal .selected-stat>i span {background:linear-gradient(90deg,#047b9c,#23d9fc 75%,#a4f0ff);}
+#garageModal .selected-stat>div b {color:#f2bd60;}
+#garageModal .selected-facts>div {border-color:#305269;background:#0a1e30;}
+#garageModal .select-this-car {background:linear-gradient(90deg,#076484,#0d384f);border:1px solid #24bce3;}
+#garageModal .car-filter-row {grid-column:1;grid-row:1;margin:0 0 10px;}
+#garageModal #favoriteFilter {padding:7px 9px;font-size:9px;}
+#garageModal .garage-stage .garage-car-section .car-grid {grid-column:1;grid-row:2;display:grid;grid-template-columns:1fr;gap:7px;max-height:400px;overflow-y:auto;overflow-x:hidden;padding:3px;}
+#garageModal .garage-stage .garage-car-section .car-item {height:64px;padding:6px 9px;border:1px solid #325c76;background:#102b40;border-radius:11px;}
+#garageModal .garage-stage .garage-car-section .car-item.selected {background:linear-gradient(120deg,#134359,#302921);border-color:#ffb953;box-shadow:0 0 14px #ffb74757,inset 3px 0 #ffb953;}
+#garageModal .garage-stage .garage-car-section .car-item-title {font-size:12px;}
+#garageModal .car-balance {color:#28d4f9;}
+#garageModal .garage-stage .garage-car-section .car-thumb {width:38px;height:53px;}
+#garageModal .favorite-empty {grid-column:1;}
+#garageModal .teammate-bar,#garageModal .team-lock-hint {grid-column:1;grid-row:auto;}
+#garageModal .car-filter-row .section-label {color:#c9e7f6;}
+#garageModal .garage-advanced,#garageModal .garage-advanced-content {background:#0b2031;border-color:#2e5168;color:#d6eeff;}
+#garageModal .garage-advanced summary {color:#cdeaff;}
+#garageModal .garage-advanced .strategy-card {background:#102b3c;}
+#garageModal .garage-stage .start-actions {background:transparent;border-top:1px solid #2b526b;}
+#garageModal .map-credit,#garageModal #ghostRecordHint {color:#8babc0;}
+#garageModal .ai-settings {background:#0b2335;color:#dbeaf7;}
+/* Layout remains usable in compact browsers, landscape phones and touch devices. */
+@media(max-width:1050px){
+ #garageModal .garage-card {padding:16px 19px;min-height:0;}
+ #garageModal .fs-intro-world {grid-template-columns:1fr 1fr;min-height:310px;}
+ #garageModal .fs-intro-picture {min-height:300px;}
+ #garageModal .fs-intro h1 {font-size:clamp(44px,6.8vw,78px);}
+ #garageModal .class-btn {min-height:315px;padding:16px;}
+ #garageModal .fs-class-art {height:90px;}
+ #garageModal .garage-stage .garage-track-section .track-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+ #garageModal .garage-stage .garage-track-section .track-card {min-height:105px;}
+ #garageModal .selected-car-preview {grid-template-columns:1fr;grid-row:auto;}
+ #garageModal .selected-car-art {min-height:300px;}
+ #garageModal .garage-car-section {grid-template-columns:230px minmax(0,1fr);}
+}
+@media(max-width:690px) {
+ #garageModal .garage-card {max-height:98vh;width:100vw;padding:14px;border-radius:0;}
+ #garageModal .modal-title {flex-wrap:wrap;gap:7px;}
+ #garageModal .fs-top-brand small {display:none;}
+ #garageModal .garage-top-tools {font-size:8px;}
+ #garageModal .garage-progress {gap:5px;justify-content:space-between;}
+ #garageModal .garage-progress-step {font-size:10px;gap:4px;}
+ #garageModal .garage-progress-step b {height:27px;width:27px;}
+ #garageModal .garage-progress>i {width:12px;}
+ #garageModal .fs-intro-world {grid-template-columns:1fr;}
+ #garageModal .fs-intro-copy {padding:12px 4px;}
+ #garageModal .fs-intro h1 {font-size:clamp(46px,14vw,80px);}
+ #garageModal .fs-intro-lead {font-size:13px;}
+ #garageModal .fs-intro-picture {min-height:160px;grid-row:1;}
+ #garageModal .fs-intro-footer {flex-wrap:wrap;gap:12px;font-size:10px;}
+ #garageModal .class-switch-row {grid-template-columns:1fr;min-height:0;}
+ #garageModal .class-btn {min-height:160px;padding:15px;}
+ #garageModal .class-btn strong {font-size:38px;}
+ #garageModal .fs-class-art {display:none;}
+ #garageModal .fs-track-hero {grid-template-columns:1fr;}
+ #garageModal .fs-track-map {padding:9px;border-right:0;}
+ #garageModal .fs-track-map canvas {height:100px;}
+ #garageModal .fs-track-info {padding:14px;}
+ #garageModal .fs-track-facts {margin-top:14px;}
+ #garageModal .garage-stage .garage-track-section .track-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+ #garageModal .garage-car-section {display:flex;flex-direction:column;}
+ #garageModal .selected-car-preview {order:0;width:100%;}
+ #garageModal .car-filter-row {order:1;width:100%;margin-top:12px;}
+ #garageModal .garage-stage .garage-car-section .car-grid {order:2;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));max-height:255px;}
+ #garageModal .team-lock-hint {order:3;}
+ #garageModal .teammate-bar {order:4;}
+ #garageModal .selected-car-art {min-height:245px;}
+ #garageModal #selectedCarCanvas {height:185px;}
+ #garageModal .stage-actions {flex-wrap:wrap;}
+ #garageModal .stage-actions button {flex:1;}
+}
+@media(prefers-reduced-motion:reduce){#garageModal .garage-stage.is-active {animation:none;}}
