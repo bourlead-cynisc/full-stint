@@ -50,9 +50,22 @@ try {
  self.aiYieldUntil=0;self.aiDefenseLane=null;self.aiPassSide=0;self.aiNextMistake=Infinity;self.x=0;self.y=0;self.angle=0;self.velocity=0;self.latOff=0;
  other.x=0;other.y=-70;other.angle=0;other.velocity=0;other.progressAcc=self.progressAcc;allCars=[self,other];
  const blockedPlan=planRaceTraffic(self,1/60);check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV===Infinity&&!blockedPlan.blockedByCar,'AI waits behind a stopped car instead of passing');
+ // An imminent sharp corner overrides overtaking and brings the car back
+ // toward the centre rather than carrying a +40px passing line through it.
+ const tight=trackSamples.findIndex(p=>p.kappa/PX_M>.025);
+ check(tight>=0,'No sharp corner available for AI test');
+ self.lastSampleIdx=tight;self.aiLane=34;self.aiPassSide=1;
+ const cornerPlan=planRaceTraffic(self,1/60);
+ check(!cornerPlan.overtaking&&cornerPlan.lane<34,'AI tries to pass through a tight corner');
+ check(self.aiCornerAwareLookaheadPx(tight,12)<90+12*48,'AI lookahead cuts across a hairpin');
+ self.aiLane=0;
  allCars=[self];self.aiYieldUntil=0;self.aiDefenseLane=null;self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;self.latOff=0;
  setAiSetting('pace',80);self.aiControls(1/60);const slow=self.dbgVAllow;
  setAiSetting('pace',110);self.aiControls(1/60);check(self.dbgVAllow>slow,'Pace slider has no effect');
+ // Excess speed in a hairpin must activate the brake, not merely lift throttle.
+ self.lastSampleIdx=tight;self.x=trackSamples[tight].x;self.y=trackSamples[tight].y;
+ self.velocity=55/MS;allCars=[self];
+ check(self.aiControls(1/60).brake>0,'AI does not brake for a tight corner');
  other.progressAcc=self.progressAcc;other.x=0;other.y=150;allCars=[self,other];self.aiYieldUntil=0;self.aiNextMistake=0;let pressureError=false;const oldTime=simTimeMs;
  for(let i=0;i<200&&!pressureError;i++){simTimeMs+=5000;planRaceTraffic(self,.1);pressureError=self.aiMode==='PRESSURE';}simTimeMs=oldTime;check(pressureError,'Pressure never causes a recoverable mistake');
  setAiSetting('aggression',0);check(aiSettings.pace===110,'Aggression changes pace');
