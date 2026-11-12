@@ -219,7 +219,7 @@ class Car {
         this.tireHealth = 100; this.pitStopsDone = 0;
         this.pitPhase = 'none'; this.pitTimer = 0; this.pitRequested = false; this.pendingTire = null;
         this.aiBlockedTime = 0; this.aiRecoveryTime = 0;
-        this.aiLane=0;this.aiMode="RACING";this.aiPassSide=0;this.aiDefenseUsed=false;this.aiDefenseLane=null;this.aiYieldUntil=0;this.aiNextMistake=0;this.aiErrorTime=0;
+        this.aiLane=0;this.aiMode="RACING";this.aiPassSide=0;this.aiDefenseUsed=false;this.aiDefenseLane=null;this.aiYieldUntil=0;this.aiNextMistake=0;this.aiErrorTime=0;this.aiHoldUntil=0;this.aiHoldLane=0;this.aiStuckTime=0;this.aiLastProgressAcc=undefined;
         this.hitCooldown = 0; this.slip = 0; this.braking = false; this.drsActive = false;
         this.slipstream = 0; this.dirtyAir = 0;
         this.timingStarted = true; this.progressAcc = 0; this.prevNorm = undefined;
