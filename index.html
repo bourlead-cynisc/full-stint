@@ -6,6 +6,7 @@
     <link rel="icon" href="data:,">
     <title>Full Stint — F1, GT3 &amp; Time Attack</title>
     <link rel="stylesheet" href="styles.css?v=20261104-aston-livery2-v1">
+    <link rel="stylesheet" href="ui-redesign.css?v=20261112-fullstint-v1">
 </head>
 <body tabindex="-1">
 
@@ -105,22 +106,38 @@
 <div id="garageModal" class="modal-overlay">
     <div class="modal-card garage-card" id="garageCard">
         <div class="modal-title">
-            <span>FULL STINT · 2.23</span>
+            <span class="fs-top-brand"><span class="fs-chequer">▦</span> FULL <em>STINT</em><small>ГОНОЧНЫЙ УИКЕНД</small></span>
             <div class="garage-top-tools"><span>F1 · GT3 · TIME ATTACK</span><button id="themeToggle" class="theme-toggle" type="button" aria-label="Переключить тему">Светлая тема</button></div>
         </div>
 
         <div class="garage-progress" id="garageProgress" aria-label="Шаги выбора">
-            <span class="garage-progress-step active" data-step="class"><b>1</b> Класс</span><i></i>
-            <span class="garage-progress-step" data-step="track"><b>2</b> Трасса</span><i></i>
-            <span class="garage-progress-step" data-step="car"><b>3</b> Машина</span>
+            <span class="garage-progress-step active" data-step="intro"><b>1</b> Интро</span><i></i>
+            <span class="garage-progress-step" data-step="class"><b>2</b> Класс</span><i></i>
+            <span class="garage-progress-step" data-step="track"><b>3</b> Трасса</span><i></i>
+            <span class="garage-progress-step" data-step="car"><b>4</b> Автомобиль</span>
         </div>
 
-        <section class="garage-stage is-active" id="garageStageClass" aria-label="Выбор класса">
+        <section class="garage-stage is-active fs-intro" id="garageStageIntro" aria-label="Главное меню">
+            <div class="fs-intro-world">
+                <div class="fs-intro-copy">
+                    <div class="fs-eyebrow">F1 / GT3 / TIME ATTACK · RACING SIM</div>
+                    <h1>FULL <em>STINT</em></h1>
+                    <p class="fs-intro-subtitle">ГОНОЧНЫЙ УИКЕНД</p>
+                    <p class="fs-intro-lead">Выбери класс, трассу и автомобиль. Сражайся с соперниками и проходи идеальные круги.</p>
+                    <button class="primary-btn fs-intro-action" id="btnIntroContinue" onclick="continueGarageStage('class')">НАЧАТЬ УИКЕНД <span>➜</span></button>
+                    <p class="fs-pad-hint">ГЕЙМПАД: START — ДАЛЕЕ · A — ВЫБРАТЬ · B — НАЗАД</p>
+                </div>
+                <div class="fs-intro-picture" role="img" aria-label="Гоночные автомобили на стартовой решётке"><span class="fs-grid-line"></span><span class="fs-intro-number">01 / FULL STINT</span></div>
+            </div>
+            <div class="fs-intro-footer"><span>06 ТРАСС</span><span>03 КЛАССА</span><span>ТРАЕКТОРИЯ · ТАКТИКА · СКОРОСТЬ</span><button class="secondary-btn" data-open-controls>⚙ Управление</button></div>
+        </section>
+
+        <section class="garage-stage" id="garageStageClass" aria-label="Выбор класса">
             <div class="stage-heading"><div><div class="section-label" id="classModeLabel">ВЫБЕРИ КЛАСС</div><p>Сначала выбери формат гонки</p></div></div>
             <div class="class-switch-row">
-                <button class="class-btn active" id="classBtnGT3" onclick="chooseClass('GT3')">🏆 WEC / GT3<small id="gt3RosterSummary">Гонка на выживание · 12 моделей · 21 машина в сетке</small></button>
-                <button class="class-btn" id="classBtnF1" onclick="chooseClass('F1')">🏎️ FORMULA 1<small>Сезон гонок и чемпионат</small></button>
-                <button class="class-btn" id="classBtnTA" onclick="chooseClass('TA')">🏁 TIME ATTACK<small>16 дорожных машин · FWD, RWD, AWD</small></button>
+                <button class="class-btn active" id="classBtnGT3" onclick="chooseClass('GT3')"><span class="fs-class-type">ГРАН-ТУРИЗМО / WEC</span><strong>GT3</strong><span class="fs-class-art fs-gt3-art"></span><small id="gt3RosterSummary">Гонка на выживание · 12 моделей · 21 машина в сетке</small><span class="fs-class-footer">СКОРОСТЬ 8/10 · БАЛАНС 9/10</span></button>
+                <button class="class-btn" id="classBtnF1" onclick="chooseClass('F1')"><span class="fs-class-type">КОРОЛЕВСКИЕ ГОНКИ</span><strong>F1</strong><span class="fs-class-art fs-f1-art"></span><small>Формульные болиды · чемпионат</small><span class="fs-class-footer">СКОРОСТЬ 10/10 · ПРИЖИМ 10/10</span></button>
+                <button class="class-btn" id="classBtnTA" onclick="chooseClass('TA')"><span class="fs-class-type">БОРЬБА СО ВРЕМЕНЕМ</span><strong>TIME ATTACK</strong><span class="fs-class-art fs-ta-art"></span><small>16 дорожных машин · FWD, RWD, AWD</small><span class="fs-class-footer">ТВОЙ РЕКОРД · ПРИЗРАК</span></button>
             </div>
             <div class="stage-actions"><button class="secondary-btn" data-open-controls>Управление</button><button class="primary-btn" id="btnClassContinue" onclick="continueGarageStage('track')">Выбрать трассу <span>→</span></button></div>
         </section>
@@ -138,6 +155,7 @@
                     </div>
                     <div id="seasonCalendar" class="season-cal"></div>
                 </div>
+                <div class="fs-track-hero" id="selectedTrackHero" aria-live="polite"></div>
                 <div class="track-grid" id="trackSelectorGrid"></div>
             </section>
             <div class="stage-actions"><button class="secondary-btn" data-open-controls>Управление</button><button class="primary-btn" onclick="continueGarageStage('car')">Выбрать машину <span>→</span></button></div>
