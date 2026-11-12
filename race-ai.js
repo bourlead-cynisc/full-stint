@@ -57,9 +57,9 @@ function planRaceTraffic(car,dt) {
  // Keep a small, predictable separation through the apex when cars are
  // close. Forcing everyone onto the centreline caused side-by-side contact.
  if(corner) {
-  const close=nearby.some(o=>o.fwd> -85&&o.fwd<210&&Math.abs(o.lat)<car.width+40);
-  target=close?(car.botSlot%2?24:-24):0;
-  if(close)pace=Math.min(pace,.94);
+  const close=nearby.some(o=>o.fwd> -85&&o.fwd<350&&Math.abs(o.lat)<car.width+40);
+  target=close?(car.botSlot%2?38:-38):0;
+  if(close)pace=Math.min(pace,.85);
  } else if(!free(target))target=car.aiLane||0;
  if(ahead&&!overtaking) {
   const closing=Math.max(0,car.velocity-ahead.other.velocity);
@@ -74,6 +74,6 @@ function planRaceTraffic(car,dt) {
   if(pressure>.3&&Math.abs(noise)>.997-pressure*.01) {car.aiErrorTime=.35;car.aiErrorSide=(car.botSlot%2?1:-1)*4;}
  }
  if(car.aiErrorTime>0) {car.aiErrorTime-=dt;target+=car.aiErrorSide;pace*=.97;car.aiMode='PRESSURE';}
- car.aiLane=(car.aiLane||0)+(target-(car.aiLane||0))*(1-Math.exp(-dt*(corner?3.5:1.6+attack)));
+ car.aiLane=(car.aiLane||0)+(target-(car.aiLane||0))*(1-Math.exp(-dt*(corner?6:1.6+attack)));
  return {lane:Math.max(-43,Math.min(43,car.aiLane)),followV,pace,pressure,blockedByCar,overtaking};
 }
