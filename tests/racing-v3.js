@@ -57,6 +57,10 @@ try {
  self.lastSampleIdx=tight;self.aiLane=34;self.aiPassSide=1;
  const cornerPlan=planRaceTraffic(self,1/60);
  check(!cornerPlan.overtaking&&cornerPlan.lane<34,'AI tries to pass through a tight corner');
+ // Side-by-side cars must not converge onto the same apex line.
+ other.botSlot=1;other.lastSampleIdx=tight;other.aiLane=0;
+ const adjacentPlan=planRaceTraffic(other,1/60);
+ check(cornerPlan.lane<0&&adjacentPlan.lane>0,'AI cars converge into each other at corner entry');
  check(self.aiCornerAwareLookaheadPx(tight,12)<90+12*48,'AI lookahead cuts across a hairpin');
  self.aiLane=0;
  allCars=[self];self.aiYieldUntil=0;self.aiDefenseLane=null;self.x=trackSamples[straight].x;self.y=trackSamples[straight].y;self.latOff=0;
