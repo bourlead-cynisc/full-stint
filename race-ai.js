@@ -54,9 +54,13 @@ function planRaceTraffic(car,dt) {
   }
   if(car.aiDefenseLane!=null&&!corner&&(!ahead||ahead.fwd>300)&&car.aiMode!=='OVERTAKE') {target=car.aiDefenseLane;car.aiMode='DEFEND';}
  }
- // Avoid carrying a full-width pass or blue-flag move through an apex.
- if(corner)target=0;
- else if(!free(target))target=car.aiLane||0;
+ // Keep a small, predictable separation through the apex when cars are
+ // close. Forcing everyone onto the centreline caused side-by-side contact.
+ if(corner) {
+  const close=nearby.some(o=>o.fwd> -85&&o.fwd<210&&Math.abs(o.lat)<car.width+40);
+  target=close?(car.botSlot%2?24:-24):0;
+  if(close)pace=Math.min(pace,.94);
+ } else if(!free(target))target=car.aiLane||0;
  if(ahead&&!overtaking) {
   const closing=Math.max(0,car.velocity-ahead.other.velocity);
   const gap=100+(1-attack)*65+closing*42;
