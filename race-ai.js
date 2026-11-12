@@ -65,11 +65,11 @@ function planRaceTraffic(car,dt) {
   if(!(car.aiYieldUntil>simTimeMs))car.aiYieldLane=free(leader.lat>=0?-32:32)?(leader.lat>=0?-32:32):0;
   car.aiYieldUntil=simTimeMs+1600;
  }
- if(!alongside&&car.aiHoldUntil<=simTimeMs&&car.aiYieldUntil>simTimeMs) {
+ if(!alongside&&!(car.aiHoldUntil>simTimeMs)&&car.aiYieldUntil>simTimeMs) {
   target=corner?ownLane:(car.aiYieldLane||0);
   pace=.83;
   car.aiMode='BLUE_FLAG';
- } else if(!alongside&&car.aiHoldUntil<=simTimeMs) {
+ } else if(!alongside&&!(car.aiHoldUntil>simTimeMs)) {
   if(corner){car.aiDefenseUsed=false;car.aiDefenseLane=null;car.aiPassSide=0;}
   const stopped=ahead&&ahead.fwd<180&&ahead.v<2;
   if(!corner&&ahead&&ahead.fwd>42&&ahead.fwd<800&&(stopped||car.velocity*MS>ahead.v+1.2)) {
@@ -92,7 +92,7 @@ function planRaceTraffic(car,dt) {
 
  // Never force a car from one side of another to the other during a corner.
  // When racing alone on the bend, gradually return towards the race centre.
- if(corner&&!alongside&&car.aiHoldUntil<=simTimeMs&&car.aiMode!=='BLUE_FLAG')target=0;
+ if(corner&&!alongside&&!(car.aiHoldUntil>simTimeMs)&&car.aiMode!=='BLUE_FLAG')target=0;
  if(!alongside&&!corner&&!free(target))target=clamp(ownLane,-laneLimit,laneLimit);
 
  // Headway uses physical stopping distance, not an arbitrary 100px trigger.
