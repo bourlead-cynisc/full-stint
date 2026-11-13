@@ -22,8 +22,12 @@ for (const cls of ['GT3','F1']) {
         const expectedMiddle=(entryIndex+Math.round(circuit.pitProgressSpan*N/2))%N;
         check(getTrackInfo(middle.x,middle.y,expectedMiddle).dist>WALL_HALF_W+30,'Pit lane too close to track '+circuit.id);
         check(measurePitLaneClearance(pitWaypoints,{start:entryIndex,span:Math.round(circuit.pitProgressSpan*N)})>=PIT_LANE_CLEARANCE_PX,'Pit lane overlaps another track section '+circuit.id);
-        const lineA=pitWaypoints[55],lineB=pitWaypoints[105],lineDx=lineB.x-lineA.x,lineDy=lineB.y-lineA.y,lineLength=Math.hypot(lineDx,lineDy);
-        for(let j=65;j<=95;j+=10){const p=pitWaypoints[j];check(Math.abs((p.x-lineA.x)*lineDy-(p.y-lineA.y)*lineDx)/lineLength<4,'Pit straight is curved '+circuit.id);}
+        // Procedurally generated pit lanes are straight. An imported pit lane
+        // follows the user's measured spline and may bend around the paddock.
+        if(!circuit.customPitLayout) {
+            const lineA=pitWaypoints[55],lineB=pitWaypoints[105],lineDx=lineB.x-lineA.x,lineDy=lineB.y-lineA.y,lineLength=Math.hypot(lineDx,lineDy);
+            for(let j=65;j<=95;j+=10){const p=pitWaypoints[j];check(Math.abs((p.x-lineA.x)*lineDy-(p.y-lineA.y)*lineDx)/lineLength<4,'Pit straight is curved '+circuit.id);}
+        }
         currentSession = 'RACE'; raceState = 'RACING'; raceMode = 'LAPS'; totalRaceLaps = 100;
         simTimeMs = 0;
         const c = new Car('Test',1,0,false,false);
