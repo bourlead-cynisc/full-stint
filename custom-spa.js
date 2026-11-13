@@ -19,6 +19,7 @@ if(customSpa){
   customSpa.curbWidthMeters=2;
   customSpa.runoffWidthMeters=5;
   customSpa.reportedLengthM=3614.376;
+  customSpa.desc='Авторская конфигурация · лесная трасса · 3,61 км';
   customSpa.drsZones=[];customSpa.baseDrsZones=[];
   customSpa.layoutVersion='spa-json-20261113-v2';
   const index=TRACKS_DB.indexOf(customSpa);
