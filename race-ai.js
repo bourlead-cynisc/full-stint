@@ -1,9 +1,18 @@
 // Race traffic planner: all positions are track-space pixels (right of the car
 // is positive). It never commands a lane switch across an occupied corridor.
-const AI_SETTINGS_KEY='fiaSim.ai.v2';
+const AI_SETTINGS_KEY='fiaSim.ai.v3';
+const AI_LEGACY_SETTINGS_KEY='fiaSim.ai.v2';
 function readAiSettings() {
- try {const s=JSON.parse(localStorage.getItem(AI_SETTINGS_KEY));return {pace:Number.isFinite(s?.pace)?Math.max(80,Math.min(110,s.pace)):100,aggression:Number.isFinite(s?.aggression)?Math.max(0,Math.min(100,s.aggression)):68};}
- catch{return {pace:100,aggression:68};}
+ try {
+  const current=localStorage.getItem(AI_SETTINGS_KEY);
+  const upgrading=current===null;
+  const s=JSON.parse(upgrading?localStorage.getItem(AI_LEGACY_SETTINGS_KEY):current);
+  const oldAggression=Number.isFinite(s?.aggression)?Math.max(0,Math.min(100,s.aggression)):68;
+  // 45% was the previous automatic preset. Give existing players the new 68%
+  // preset once, but keep any custom aggression or pace they selected.
+  const aggression=upgrading&&oldAggression===45?68:oldAggression;
+  return {pace:Number.isFinite(s?.pace)?Math.max(80,Math.min(110,s.pace)):100,aggression};
+ }catch{return {pace:100,aggression:68};}
 }
 let aiSettings=readAiSettings();
 function setAiSetting(name,value) {
