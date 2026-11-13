@@ -148,10 +148,15 @@ function planRaceTraffic(car,dt) {
   const safeDecel=car.spec?.carClass==='F1'?11:7.2;
   let allowed=Math.sqrt(o.v*o.v+2*safeDecel*gapM);
   if(gapPx<40)allowed=Math.min(allowed,o.v*.96);
+  // A stationary rival requires a small, controlled crawl to steer into the
+  // clear passing corridor. A full stop at 5 m distance traps both cars.
+  // Keep normal stopping limits for moving traffic and for blocked lanes.
+  if(overtaking&&!plannedConflict&&o.v<2&&gapPx>15)
+   allowed=Math.max(allowed,Math.min(3,Math.max(1.4,gapPx*PX_M*.25)));
   // Speed is released only after the car has ACTUALLY moved out of
   // the leader's corridor, never merely because the steering target changed.
   followV=Math.min(followV,allowed);
-  if(o.v<2&&o.fwd<110)blockedByCar=true;
+  if(o.v<2&&o.fwd<110&&!overtaking)blockedByCar=true;
  }
  if(alongside) {
   // Avoid sudden full braking in the middle of a side-by-side fight.
