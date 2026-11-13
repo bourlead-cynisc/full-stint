@@ -177,6 +177,25 @@ class Car {
     }
 
     placeOnGrid(gridPosIndex) {
+        // Imported editor circuits contain a precise, two-column starting grid.
+        // Use its positions for both human players and bots; avoid changing the
+        // original automatic starting grid on every other circuit.
+        const trk = TRACKS_DB[selectedTrackIndex];
+        const slot = trk.importedGridSlots?.[gridPosIndex];
+        if(slot) {
+            const ref=trk.rawPoints[0];
+            const x=(slot.x-ref.x)*trk.scale,y=(slot.y-ref.y)*trk.scale;
+            const nearest=getTrackInfo(x,y,-1),center=nearest.center;
+            const lateral=(x-center.x)*center.nx+(y-center.y)*center.ny;
+            const safeHalfWidth=Math.max(10,ASPHALT_HALF_W-this.width*.5-5);
+            const safeLateral=Math.max(-safeHalfWidth,Math.min(safeHalfWidth,lateral));
+            this.x=center.x+center.nx*safeLateral;
+            this.y=center.y+center.ny*safeLateral;
+            const next=trackSamples[(nearest.index+3)%totalSamples];
+            this.angle=Math.atan2(next.x-center.x,-(next.y-center.y));
+            this.resetSessionDynamicState();this.syncProgress();
+            return;
+        }
         const gridBack = -90 - gridPosIndex * 66;
         const gridSide = (gridPosIndex % 2 === 0) ? -29 : 29;
         this.x = trackSamples[0].x + sfDirX * gridBack + sfNormX * gridSide;
