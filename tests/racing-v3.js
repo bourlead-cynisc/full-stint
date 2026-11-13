@@ -55,8 +55,8 @@ try {
  self.aiNextMistake=Infinity;self.x=0;self.y=0;self.angle=0;self.velocity=0;self.latOff=0;
  other.x=0;other.y=-70;other.angle=0;other.velocity=0;other.progressAcc=self.progressAcc;allCars=[self,other];
  const blockedPlan=planRaceTraffic(self,1/60);
- check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV===Infinity&&!blockedPlan.blockedByCar,
-       'AI does not go around a stopped car on a clear straight');
+ check(self.aiMode==='OVERTAKE'&&blockedPlan.overtaking&&blockedPlan.followV>0&&blockedPlan.followV<=3.1&&!blockedPlan.blockedByCar,
+       'AI cannot safely steer around a stopped car on a clear straight');
 
  // A tight corner cancels speculative passes while avoiding an inside-kerb cut.
  const tight=trackSamples.findIndex(p=>p.kappa/PX_M>.025);

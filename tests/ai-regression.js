@@ -8,6 +8,25 @@ const saved={
 };
 const cases=[];
 try {
+ const spaIndex=TRACKS_DB.findIndex(track=>track.id==='spa');
+ assert(spaIndex>=0,'Spa is missing from WEC calendar');
+ selectedTrackIndex=spaIndex;buildActiveTrackGeometry();
+ const spa=TRACKS_DB[spaIndex];
+ assert(spa.name==='🇧🇪 Спа-Франкоршам'&&spa.shortName==='Спа-Франкоршам',
+   'Import changed the original Spa display name');
+ assert(spa.importedScenery?.length===49&&spa.customPitLayout,
+   'Imported Spa scenery or supplied pit route was not loaded');
+ assert(Math.abs(trackLengthPx*PX_M-3614.376)<25,
+   'Spa route length does not match the attached 3.61 km layout');
+ assert(Math.abs(ASPHALT_HALF_W*PX_M-9)<.15&&Math.abs(CURB_OUTER_W*PX_M-11)<.15,
+   'Imported Spa road and kerb dimensions are wrong');
+ const start=spa.startFinishPoint;
+ const localStart={x:(start.x-spa.rawPoints[0].x)*spa.scale,y:(start.y-spa.rawPoints[0].y)*spa.scale};
+ assert(Math.hypot(trackSamples[0].x-localStart.x,trackSamples[0].y-localStart.y)*PX_M<5,
+   'Spa start/finish line no longer matches the supplied marker');
+ assert(pitRouteLength*PX_M>370&&pitRouteLength*PX_M<500&&pitWaypoints.length===161,
+   'Imported Spa pit lane was not connected');
+
  currentSession='RACE';raceState='RACING';raceMode='LAPS';totalRaceLaps=100;
  for(const mode of ['ARCADE','REAL'])for(const cls of ['GT3','F1']){
   window.handlingMode=mode;

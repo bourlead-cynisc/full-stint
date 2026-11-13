@@ -17,9 +17,9 @@ let minX = 0, maxX = 1, minY = 0, maxY = 1;
 let trackLengthPx = 1;
 let sampleCumDist = [];
 
-const ASPHALT_HALF_W   = 72;
-const CURB_OUTER_W     = 84;
-const WALL_HALF_W      = 122;
+let ASPHALT_HALF_W   = 72;
+let CURB_OUTER_W     = 84;
+let WALL_HALF_W      = 122;
 const PIT_WALL_INNER_W = 345;
 const PIT_CORRIDOR_OFFSET = 236;
 const PIT_ENTRY_MARKER_DISTANCE_PX = 150;
@@ -117,6 +117,12 @@ function buildCornerDistanceBoards() {
 
 function buildActiveTrackGeometry() {
     const trk = TRACKS_DB[selectedTrackIndex];
+    // Other circuits retain the original game widths. The imported Spa layout
+    // uses its explicitly supplied 18 m asphalt + 2 m kerbs + 5 m runoff.
+    const halfRoadM = trk.trackWidthMeters ? trk.trackWidthMeters / 2 : 0;
+    ASPHALT_HALF_W = halfRoadM ? halfRoadM / PX_M : 72;
+    CURB_OUTER_W = halfRoadM ? (halfRoadM + (trk.curbWidthMeters || 2)) / PX_M : 84;
+    WALL_HALF_W = halfRoadM ? (halfRoadM + (trk.curbWidthMeters || 2) + (trk.runoffWidthMeters || 5)) / PX_M : 122;
     const ref = trk.rawPoints[0];
     controlPoints = trk.rawPoints.map(p => ({
         x: (p.x - ref.x) * trk.scale,
@@ -242,7 +248,7 @@ function buildActiveTrackGeometry() {
     // automatically placed straight pit lane selected below.
     // Monaco uses a hand-mapped harbour-side pit road matching the detailed circuit.
     // Convert its map coordinates using the very same transformation as the asphalt.
-    if(!trk.wecVenue&&trk.pitRoutePoints?.length>=2){
+    if((trk.customPitLayout||!trk.wecVenue)&&trk.pitRoutePoints?.length>=2){
         const route=trk.pitRoutePoints.map(p=>({x:(p.x-trk.rawPoints[0].x)*trk.scale,y:(p.y-trk.rawPoints[0].y)*trk.scale}));
         const start=nearestTrackIndex(route[0]),end=nearestTrackIndex(route.at(-1));
         const span=(end-start+totalSamples)%totalSamples;
@@ -292,6 +298,12 @@ function buildActiveTrackGeometry() {
                 oldStartIndex=nearestTrackIndex(laneMid);
             }
         }
+    }
+    if(trk.startFinishPoint) {
+        // Import the exact starting sector from the supplied track definition,
+        // rather than moving its line to an arbitrary pit midpoint.
+        const point=trk.startFinishPoint;
+        oldStartIndex=nearestTrackIndex({x:(point.x-ref.x)*trk.scale,y:(point.y-ref.y)*trk.scale});
     }
     if(oldStartIndex===undefined) {
         // Put the lap line in the middle of the straight that hosts the pit lane.
@@ -726,13 +738,55 @@ function traceVisibleTrack(ctx, centerIdx, offsetX = 0, offsetY = 0, elevLiftSca
     return firstIdx;
 }
 
+
+// Small top-down scenery primitives, placed using source-track metre coordinates.
+// They are decorative; tyre walls on the asphalt still use the physics collision.
+// drawTrack() and the full-circuit overview share the same object positions.
+function drawImportedTrackScenery(ctx,camX,camY) {
+    const trk=TRACKS_DB[selectedTrackIndex];
+    if(!trk.importedScenery?.length)return;
+    const ref=trk.rawPoints[0];
+    const visible=Number.isFinite(camX)&&Number.isFinite(camY);
+    for(const o of trk.importedScenery) {
+        const x=(o.x-ref.x)*trk.scale,y=(o.y-ref.y)*trk.scale;
+        if(visible&&Math.hypot(x-camX,y-camY)>2500)continue;
+        const scale=Math.max(.35,Math.min(1.9,o.size||1));
+        ctx.save();ctx.translate(x,y);ctx.rotate((o.rotation||0)*Math.PI/180);ctx.scale(scale,scale);
+        const rect=(w,h,color)=>{ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,5);ctx.fill();};
+        if(o.type==='tree') {
+            ctx.fillStyle='#15291d';ctx.beginPath();ctx.arc(4,7,26,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#1b4b2e';ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#2f7041';ctx.beginPath();ctx.arc(-7,-8,13,0,Math.PI*2);ctx.fill();
+        } else if(o.type==='grandstand') {
+            rect(200,65,'#647078');rect(190,53,'#263543');
+            ctx.fillStyle='#d9b86a';
+            for(let i=-7;i<=7;i++)for(let j=-1;j<=1;j++)ctx.fillRect(i*12,j*12,4,5);
+            ctx.fillStyle='#a7b2bd';ctx.fillRect(-100,-37,200,5);
+        } else if(o.type==='paddock'||o.type==='building') {
+            rect(o.type==='paddock'?220:115,o.type==='paddock'?125:88,'#334b58');
+            rect(o.type==='paddock'?202:102,o.type==='paddock'?106:76,'#778b96');
+            ctx.strokeStyle='#d2dce3';ctx.lineWidth=3;ctx.beginPath();
+            ctx.moveTo(-32,-22);ctx.lineTo(32,22);ctx.moveTo(32,-22);ctx.lineTo(-32,22);ctx.stroke();
+        } else if(o.type==='light') {
+            ctx.fillStyle='#d2b978';ctx.fillRect(-3,-3,6,6);
+            ctx.fillStyle='rgba(255,238,154,.38)';ctx.beginPath();ctx.arc(0,0,16,0,Math.PI*2);ctx.fill();
+        } else if(o.type==='tires'||o.type==='barrier') {
+            const width=o.type==='tires'?55:100;
+            rect(width,18,'#171d23');
+            ctx.fillStyle=o.type==='tires'?'#303741':'#e4e7e9';
+            for(let i=-Math.floor(width/2)+7;i<width/2-7;i+=12)ctx.fillRect(i,-6,7,12);
+        }
+        ctx.restore();
+    }
+}
+
 function drawTrack(ctx) {
     const centerIdx = playerCar && playerCar.lastSampleIdx >= 0 ? playerCar.lastSampleIdx : 0;
     const camX = playerCar ? playerCar.x : 0, camY = playerCar ? playerCar.y : 0;
     drawBackgroundWorld(ctx, camX, camY);
     if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,camX,camY);
-    drawWecPaddock(ctx,camX,camY);
-    drawGrandstands(ctx, camX, camY);
+    if(TRACKS_DB[selectedTrackIndex].importedScenery)drawImportedTrackScenery(ctx,camX,camY);
+    else {drawWecPaddock(ctx,camX,camY);drawGrandstands(ctx, camX, camY);}
 
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     const upX = 0;
@@ -847,8 +901,10 @@ function drawPitLane(ctx) {
     ctx.beginPath();
     pitWaypoints.forEach((pt,i) => i ? ctx.lineTo(pt.x,pt.y) : ctx.moveTo(pt.x,pt.y));
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 65; ctx.stroke();
-    ctx.strokeStyle = '#3b4654'; ctx.lineWidth = 58; ctx.stroke();
+    const pitWidthM=TRACKS_DB[selectedTrackIndex].pitWidthMeters;
+    const pitLaneWidth=pitWidthM?pitWidthM/PX_M:58;
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = pitLaneWidth+7; ctx.stroke();
+    ctx.strokeStyle = '#3b4654'; ctx.lineWidth = pitLaneWidth; ctx.stroke();
     ctx.setLineDash([22,18]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
     ctx.setLineDash([]);
     for (const box of teamPitBoxes) {
