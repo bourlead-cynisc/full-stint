@@ -40,6 +40,91 @@ function getSplinePoint(p0, p1, p2, p3, fraction) {
     return mix(mix(a1,a2,t0,t2),mix(a2,a3,t1,t3),t1,t2);
 }
 
+// Design one circuit-wide, continuous outside / apex / exit path.  Offsets are
+// bounded by the actual asphalt, so narrower editor tracks remain driveable.
+function buildOptimizedRacingLine() {
+    const N=totalSamples;
+    if(N<24)return;
+    const sampleM=trackLengthPx*PX_M/N;
+    const limit=Math.max(0,Math.min(ASPHALT_HALF_W-21,ASPHALT_HALF_W*.66));
+    const curvature=trackSamples.map(p=>p.curv||0);
+    const candidates=[];
+    const localPeakSteps=Math.max(2,Math.round(12/Math.max(.5,sampleM)));
+    for(let i=0;i<N;i++) {
+        const c=curvature[i],magnitude=Math.abs(c);
+        if(magnitude<.085)continue;
+        let largest=true;
+        for(let j=-localPeakSteps;j<=localPeakSteps;j++) {
+            if(!j)continue;
+            if(Math.abs(curvature[(i+j+N)%N])>magnitude+1e-7){largest=false;break;}
+        }
+        if(largest)candidates.push({i,sign:Math.sign(c),strength:magnitude});
+    }
+    // Merge adjacent maxima of the same corner but retain opposite-direction
+    // crests in a chicane. Suppress weakest candidates first.
+    candidates.sort((a,b)=>b.strength-a.strength);
+    const peaks=[];
+    const suppression=Math.max(4,Math.round(34/Math.max(.5,sampleM)));
+    for(const candidate of candidates) {
+        const duplicate=peaks.some(p=>{
+            const distance=Math.min(Math.abs(p.i-candidate.i),N-Math.abs(p.i-candidate.i));
+            return distance<suppression&&p.sign===candidate.sign;
+        });
+        if(!duplicate)peaks.push(candidate);
+    }
+    const offset=new Float64Array(N),strengthSum=new Float64Array(N);
+    const influence=Math.max(4,Math.ceil(105/Math.max(.5,sampleM)));
+    for(const peak of peaks) {
+        const intensity=Math.max(.38,Math.min(1,peak.strength/.46));
+        for(let j=-influence;j<=influence;j++){
+            const i=(peak.i+j+N)%N,x=j*sampleM;
+            // The inner apex is deliberately later than the centre of the turn.
+            const apex=Math.exp(-.5*((x-4)/15)**2);
+            const entry=Math.exp(-.5*((x+38)/19)**2);
+            const exit=Math.exp(-.5*((x-41)/21)**2);
+            const weight=apex-.76*entry-.62*exit;
+            offset[i]+=peak.sign*limit*intensity*weight;
+            strengthSum[i]+=Math.abs(weight)*intensity;
+        }
+    }
+    // Preserve the dominant bend's shape when two turns overlap.
+    for(let i=0;i<N;i++) {
+        if(strengthSum[i]>1.15)offset[i]/=Math.sqrt(strengthSum[i]/1.15);
+        offset[i]=Math.max(-limit,Math.min(limit,offset[i]));
+    }
+    for(let pass=0;pass<5;pass++){
+        const previous=offset.slice();
+        for(let i=0;i<N;i++)offset[i]=Math.max(-limit,Math.min(limit,
+            (previous[(i-1+N)%N]+2*previous[i]+previous[(i+1)%N])/4));
+    }
+    dynamicRacingLinePoints=trackSamples.map((p,i)=>({
+        x:p.x+p.nx*offset[i],y:p.y+p.ny*offset[i],z:p.z,offset:offset[i]
+    }));
+    // Corner-speed planning must measure the driven path rather than the
+    // surveyed centreline; otherwise a faster apex still triggers early brakes.
+    const signed=new Float64Array(N),smoothed=new Float64Array(N);
+    const stride=Math.max(2,Math.round(7/Math.max(.5,sampleM)));
+    for(let i=0;i<N;i++){
+        const a=dynamicRacingLinePoints[(i-stride+N)%N];
+        const b=dynamicRacingLinePoints[i];
+        const c=dynamicRacingLinePoints[(i+stride)%N];
+        const ab=Math.hypot(b.x-a.x,b.y-a.y);
+        const bc=Math.hypot(c.x-b.x,c.y-b.y);
+        const ac=Math.hypot(c.x-a.x,c.y-a.y);
+        const cross=(b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x);
+        signed[i]=2*cross/Math.max(0.001,ab*bc*ac);
+    }
+    for(let i=0;i<N;i++){
+        let sum=0;
+        for(let j=-4;j<=4;j++)sum+=signed[(i+j+N)%N]*(5-Math.abs(j));
+        smoothed[i]=sum/25;
+    }
+    for(let i=0;i<N;i++){
+        trackSamples[i].raceSignedKappa=smoothed[i];
+        trackSamples[i].raceKappa=Math.abs(smoothed[i]);
+    }
+}
+
 function buildCornerDistanceBoards() {
     brakingDistanceBoards = [];
     const N = trackSamples.length;
@@ -229,6 +314,7 @@ function buildActiveTrackGeometry() {
         for (let d = -4; d <= 4; d++) sum += rawK[(i + d + totalSamples) % totalSamples] * (5 - Math.abs(d));
         trackSamples[i].kappa = sum / 25;
     }
+    buildOptimizedRacingLine();
 
     const nearestTrackIndex=point=>{
         let bestIndex=0,bestDistance=Infinity;
