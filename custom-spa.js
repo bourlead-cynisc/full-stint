@@ -14,6 +14,7 @@ if (customSpa) {
     customSpa.startFinishPoint = {x: -175.528, y: 151.042};
     customSpa.importedScenery = CUSTOM_SPA_SCENERY.map(([type,x,y,rotation,size]) => ({type,x,y,rotation,size}));
     customSpa.trackWidthMeters = 18;
+    customSpa.pitWidthMeters = 8;
     customSpa.curbWidthMeters = 2;
     customSpa.runoffWidthMeters = 5;
     customSpa.reportedLengthM = 3614.376;
@@ -22,7 +23,7 @@ if (customSpa) {
     customSpa.baseDrsZones = [];
     customSpa.layoutVersion = 'spa-user-apex-valley-20261113-v1';
     const index = TRACKS_DB.indexOf(customSpa);
-    EST_LAP_SEC.GT3[index] = 105;
-    EST_LAP_SEC.F1[index] = 84;
-    EST_LAP_SEC.TA[index] = 125;
+    EST_LAP_SEC.GT3[index] = 94;
+    EST_LAP_SEC.F1[index] = 73;
+    EST_LAP_SEC.TA[index] = 112;
 }
