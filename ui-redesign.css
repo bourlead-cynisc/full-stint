@@ -189,3 +189,63 @@
  #garageModal .stage-actions button {flex:1;}
 }
 @media(prefers-reduced-motion:reduce){#garageModal .garage-stage.is-active {animation:none;}}
+
+
+/* Supplied Full Stint artwork: intro plus separate F1 / GT3 / Time Attack cards. */
+#garageModal .fs-intro-picture {
+ background:linear-gradient(90deg,rgba(5,14,26,.45),transparent 60%),url("assets/ui/intro.webp") center 51% / cover no-repeat;
+ box-shadow:inset 0 0 35px rgba(4,8,20,.40),0 15px 32px rgba(0,0,0,.25);
+}
+#garageModal .fs-intro-picture::before {
+ background:linear-gradient(90deg,rgba(7,24,38,.18),transparent 62%);
+}
+#garageModal .fs-class-art {
+ border:1px solid rgba(108,152,183,.35);
+ border-radius:11px;
+ height:clamp(145px,15vw,205px);
+ background:linear-gradient(0deg,rgba(7,17,30,.15),transparent 60%),url("assets/ui/gt3.webp") center / cover no-repeat;
+ filter:none;
+ opacity:1;
+ box-shadow:0 12px 27px rgba(4,11,24,.30);
+}
+#garageModal .fs-gt3-art {background-image:linear-gradient(0deg,rgba(7,17,30,.15),transparent 60%),url("assets/ui/gt3.webp");}
+#garageModal .fs-f1-art {background-image:linear-gradient(0deg,rgba(7,17,30,.15),transparent 60%),url("assets/ui/f1.webp");filter:none;}
+#garageModal .fs-ta-art {background-image:linear-gradient(0deg,rgba(7,17,30,.15),transparent 60%),url("assets/ui/time-attack.webp");filter:none;}
+
+/* Paint presets in the garage.  These are complete liveries, not decals-overpaint. */
+#garageModal .car-paint-picker {
+ border:1px solid #345b70;
+ border-radius:12px;
+ padding:12px;
+ background:linear-gradient(135deg,#102b3e,#0b2131);
+ margin-top:13px;
+}
+#garageModal .paint-picker-heading {
+ display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+ color:#e7f5ff;letter-spacing:.09em;font-size:11px;font-weight:850;margin-bottom:10px;
+}
+#garageModal .paint-picker-heading small {font-size:9px;color:#95b7c9;letter-spacing:0;font-weight:500;}
+#garageModal .paint-options {display:flex;flex-wrap:wrap;gap:8px;}
+#garageModal .paint-option {
+ min-width:0;flex:1 1 110px;display:flex;gap:8px;align-items:center;
+ padding:10px 9px;cursor:pointer;color:#d4e6f1;background:#0b1e2e;
+ border:1px solid #36566b;border-radius:9px;font-size:10px;
+ transition:border-color .15s,background .15s,box-shadow .15s;
+}
+#garageModal .paint-option i {
+ flex:0 0 22px;width:22px;height:22px;border-radius:50%;
+ border:2px solid rgba(255,255,255,.7);box-shadow:0 0 0 2px rgba(0,0,0,.38);
+}
+#garageModal .paint-option span {text-align:left;font-weight:700;line-height:1.25;}
+#garageModal .paint-option.is-active {
+ color:#fff;background:#254359;border-color:#ffc365;
+ box-shadow:inset 0 0 0 1px #ffc365,0 0 12px rgba(255,195,101,.2);
+}
+#garageModal .paint-option:hover,#garageModal .paint-option:focus-visible {
+ border-color:#40d7ed;outline:2px solid transparent;box-shadow:0 0 0 2px #40d7ed85;
+}
+@media(max-width:560px){
+ #garageModal .fs-class-art {height:165px;}
+ #garageModal .paint-options {flex-direction:column;}
+ #garageModal .paint-option {flex:1 1 auto;}
+}
