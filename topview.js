@@ -115,6 +115,7 @@ function renderTopTrack(ctx, W, H) {
     // Monaco harbour and trackside city should also exist in the full-circuit view,
     // not only in the follow-camera view.
     if(TRACKS_DB[selectedTrackIndex].id==='monaco')drawMonacoScenery(ctx,0,0);
+    if(TRACKS_DB[selectedTrackIndex].importedScenery)drawImportedTrackScenery(ctx,null,null);
     drawTrackOverview(ctx, fit);
 
     // машины — значки покрупнее: ~30 px длиной на экране
