@@ -26,6 +26,12 @@ let garageStage = 'intro';
 let showFavoritesOnly = false;
 const FAVORITES_STORAGE_KEY = 'full-stint:favorites:v1';
 const THEME_STORAGE_KEY = 'full-stint:menu-theme:v1';
+const PAINT_STORAGE_KEY = 'full-stint:gt3-paint-selection:v1';
+let selectedPaintByCar = {};
+try {
+    const savedPaint=JSON.parse(localStorage.getItem(PAINT_STORAGE_KEY)||'{}');
+    if(savedPaint && typeof savedPaint==='object' && !Array.isArray(savedPaint)) selectedPaintByCar=savedPaint;
+} catch (_) {}
 let favoriteCarIds = new Set();
 let menuTheme = 'dark';
 try {
@@ -66,6 +72,30 @@ const STEP = 1 / 60;
 
 function getActiveCatalog() { return selectedCarClass === 'F1' ? F1_CATALOG : selectedCarClass === 'TA' ? TIME_ATTACK_CATALOG : GT3_CATALOG; }
 const DRIVETRAIN_LABELS={FWD:'Передний · FWD',RWD:'Задний · RWD',AWD:'Полный · AWD'};
+// All official alternate paint schemes are actual user-supplied sprites.
+// The saved index belongs to the model and applies across tracks and sessions.
+function carPaintOptions(spec) {
+    return spec.carClass==='GT3' && typeof GT3_PAINT_VARIANTS!=='undefined'
+        ? (GT3_PAINT_VARIANTS[spec.id]||[]) : [];
+}
+function selectedCarPaint(spec) {
+    const options=carPaintOptions(spec);
+    if(!options.length)return null;
+    const saved=Number(selectedPaintByCar[spec.id]);
+    return options[Number.isInteger(saved)&&saved>=0&&saved<options.length?saved:0];
+}
+function selectedCarSpriteId(spec) {
+    return selectedCarPaint(spec)?.spriteId || spec.id;
+}
+function chooseCarPaint(spec,index) {
+    if(!carPaintOptions(spec)[index])return;
+    selectedPaintByCar[spec.id]=index;
+    try { localStorage.setItem(PAINT_STORAGE_KEY,JSON.stringify(selectedPaintByCar)); } catch (_) {}
+    garageFocusByStage.car='paint:'+index;
+    renderGarageUI();
+    if(gamepadNavigationInUse) restoreGarageFocus();
+}
+window.chooseCarPaint=chooseCarPaint;
 const ENGINE_LAYOUT_LABELS={FF:'Поперечный передний мотор',FR:'Передний мотор',FB:'Передний оппозитный мотор',MR:'Средний мотор',RR:'Задний мотор'};
 
 // Число кругов, под которое строятся тактики
@@ -657,9 +687,16 @@ function renderSelectedCarPreview(car,catalog) {
     const scores={speed:carMetricRating(car,'speed',catalog),accel:carMetricRating(car,'accel',catalog),handling:carMetricRating(car,'handling',catalog),grip:carMetricRating(car,'grip',catalog)};
     const balance=carBalanceRating(car,catalog),favorite=favoriteCarIds.has(car.id);
     const metrics=[['Максимальная скорость',scores.speed],['Разгон',scores.accel],['Управляемость',scores.handling],['Сцепление',scores.grip]];
-    root.innerHTML=`<div class="selected-car-art"><span class="selected-car-class">${selectedCarClass==='TA'?'ГОРОДСКОЙ СПОРТ':selectedCarClass==='F1'?'FORMULA 1':'WEC · GT3'}</span><canvas id="selectedCarCanvas" width="280" height="300" aria-label="${car.shortName}, вид сверху"></canvas><div class="selected-car-caption"><h2>${car.shortName}</h2><p>${car.perf.note}</p><span>${DRIVETRAIN_LABELS[car.drivetrain]||car.drivetrain}</span></div><button class="selected-favorite ${favorite?'active':''}" type="button" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из':'Добавить в'} избранное" title="${favorite?'Убрать из':'Добавить в'} избранное">${favorite?'♥':'♡'}</button></div><div class="selected-car-specs"><div class="selected-spec-header"><p class="rating-legend">Игровые оценки · от 1 до 100</p><div class="balance-score"><strong>${balance}</strong><span>БАЛАНС</span></div></div><div class="selected-stat-list">${metrics.map(([label,value])=>`<div class="selected-stat"><div><span>${label}</span><b>${value}</b></div><i><span style="width:${value}%"></span></i></div>`).join('')}</div><div class="selected-facts"><div><small>Класс</small><b>${selectedCarClass==='TA'?'Time Attack':selectedCarClass}</b></div><div><small>Привод</small><b>${car.drivetrain==='AWD'?'Полный':car.drivetrain==='FWD'?'Передний':'Задний'}</b></div><div><small>Масса</small><b>${car.character.mass} кг</b></div></div><div class="select-this-car">Выбрана эта машина <span>✓</span></div></div>`;
-    drawCarThumb(document.getElementById('selectedCarCanvas'),car,car.id);
+    const paints=carPaintOptions(car),currentPaint=selectedCarPaint(car);
+    const paintMarkup=paints.length>1
+        ? `<div class="car-paint-picker" role="group" aria-label="Выбор раскраски автомобиля"><div class="paint-picker-heading">РАСКРАСКА <small>Переключается и сохраняется</small></div><div class="paint-options">${paints.map((option,i)=>`<button type="button" data-paint-index="${i}" data-nav-id="paint:${i}" class="paint-option ${currentPaint?.spriteId===option.spriteId?'is-active':''}" aria-pressed="${currentPaint?.spriteId===option.spriteId}" aria-label="${option.name}" title="${option.name}"><i style="background:${option.color}"></i><span>${option.name}</span></button>`).join('')}</div></div>`
+        : '';
+    root.innerHTML=`<div class="selected-car-art"><span class="selected-car-class">${selectedCarClass==='TA'?'ГОРОДСКОЙ СПОРТ':selectedCarClass==='F1'?'FORMULA 1':'WEC · GT3'}</span><canvas id="selectedCarCanvas" width="280" height="300" aria-label="${car.shortName}, вид сверху"></canvas><div class="selected-car-caption"><h2>${car.shortName}</h2><p>${car.perf.note}</p><span>${DRIVETRAIN_LABELS[car.drivetrain]||car.drivetrain}</span></div><button class="selected-favorite ${favorite?'active':''}" type="button" aria-pressed="${favorite}" aria-label="${favorite?'Убрать из':'Добавить в'} избранное" title="${favorite?'Убрать из':'Добавить в'} избранное">${favorite?'♥':'♡'}</button></div><div class="selected-car-specs"><div class="selected-spec-header"><p class="rating-legend">Игровые оценки · от 1 до 100</p><div class="balance-score"><strong>${balance}</strong><span>БАЛАНС</span></div></div><div class="selected-stat-list">${metrics.map(([label,value])=>`<div class="selected-stat"><div><span>${label}</span><b>${value}</b></div><i><span style="width:${value}%"></span></i></div>`).join('')}</div><div class="selected-facts"><div><small>Класс</small><b>${selectedCarClass==='TA'?'Time Attack':selectedCarClass}</b></div><div><small>Привод</small><b>${car.drivetrain==='AWD'?'Полный':car.drivetrain==='FWD'?'Передний':'Задний'}</b></div><div><small>Масса</small><b>${car.character.mass} кг</b></div></div>${paintMarkup}<div class="select-this-car">Выбрана эта машина <span>✓</span></div></div>`;
+    drawCarThumb(document.getElementById('selectedCarCanvas'),car,selectedCarSpriteId(car));
     root.querySelector('.selected-favorite').addEventListener('click',()=>toggleFavoriteCar(car.id));
+    root.querySelectorAll('[data-paint-index]').forEach(button=>
+        button.addEventListener('click',()=>chooseCarPaint(car,Number(button.dataset.paintIndex)))
+    );
 }
 function renderGarageUI() {
     const active=document.activeElement;
@@ -738,7 +775,7 @@ function renderGarageUI() {
         card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectedCarIndex=idx;selectedTeammateSlot=0;renderGarageUI();}});
         card.querySelector('.car-favorite').addEventListener('click',event=>{event.stopPropagation();toggleFavoriteCar(car.id);});
         grid.appendChild(card);
-        drawCarThumb(card.querySelector('canvas'), car, car.id);
+        drawCarThumb(card.querySelector('canvas'),car,selectedCarSpriteId(car));
     });
 
     // пилоты команды
@@ -781,7 +818,9 @@ function buildWeekendRoster() {
     const seat = selectedCarClass === 'F1' ? Math.min(selectedTeammateSlot, team.drivers.length - 1) : 0;
     const pd = team.drivers[seat];
     playerCar = new Car(pd.name + ' (ВЫ)', pd.number, selectedCarIndex, true, false, pd, 0);
-    playerCar.spriteId = team.id;
+    playerCar.spriteId = selectedCarSpriteId(team);
+    const activePaint=selectedCarPaint(team);
+    if(activePaint) playerCar.livery={...playerCar.livery,primary:activePaint.color};
     playerCar.baseName = pd.name;
     playerCar.assignStrategy(strategies[selectedStrategyIndex % strategies.length]);
 
@@ -1401,6 +1440,9 @@ function gameLoop(now) {
 applyMenuTheme();
 resizeViewport();
 loadSprites();
+window.addEventListener('fullstint:sprite-loaded',()=>{
+    if(currentSession==='MENU'&&garageStage==='car')renderGarageUI();
+});
 ensureSeason();
 applyClassMode();
 buildActiveTrackGeometry();

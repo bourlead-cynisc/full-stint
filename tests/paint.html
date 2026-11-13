@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ru"><meta charset="utf-8"><title>Full Stint — тест раскрасок</title>
+<style>body{font:16px monospace;background:#111a25;color:#5eead4;margin:24px}iframe{width:700px;height:480px;border:1px solid #456}pre{white-space:pre-wrap}</style>
+<h1>Проверка раскрасок Audi/Porsche</h1><pre id="result">Выполняется…</pre>
+<iframe src="../index.html?test=paint-v1"></iframe>
+<script>
+document.querySelector('iframe').onload=async function(){
+ try {
+  const script=await(await fetch('paint-regression.js?v=20261113-v1')).text();
+  const outcome=this.contentWindow.Function(script)();
+  document.getElementById('result').textContent=JSON.stringify(outcome,null,2);
+ } catch(error) {document.getElementById('result').textContent='FAILED: '+(error.stack||error);}
+};
+</script></html>

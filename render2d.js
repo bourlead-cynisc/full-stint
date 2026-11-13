@@ -53,6 +53,8 @@ function loadSprite(id) {
     img.onload = () => {
         spriteImgs[id] = img;
         spriteLoadPending.delete(id);
+        if (id==='audi_gt3'||id==='porsche_gt3'||id.endsWith('_livery2'))
+            window.dispatchEvent(new CustomEvent('fullstint:sprite-loaded', {detail:{id}}));
     };
     img.onerror = () => spriteLoadPending.delete(id);
     img.src = SPRITE_DATA[id];
@@ -61,8 +63,11 @@ function loadSprite(id) {
 function loadSprites() {
     if (typeof SPRITE_DATA !== 'undefined') {
         for (const id in SPRITE_DATA) {
-            // Ignore and discard any second-livery data left in older sprite bundles.
-            if (id.endsWith('_livery2')) { delete SPRITE_DATA[id]; continue; }
+            // Only the explicitly curated Audi and Porsche variants are enabled.
+            // Discard obsolete second-livery entries from the original sprite atlas.
+            if (id.endsWith('_livery2') && id!=='audi_gt3_livery2' && id!=='porsche_gt3_livery2') {
+                delete SPRITE_DATA[id]; continue;
+            }
             loadSprite(id);
         }
     }
