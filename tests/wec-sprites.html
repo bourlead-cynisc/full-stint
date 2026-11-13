@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Full Stint | Проверка GT3/WEC спрайтов</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#eef8ff;background:#071421}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#1b3e54,#06121e 70%);min-height:100vh}
+main{max-width:1250px;margin:auto;padding:25px}
+h1{font-weight:950;font-style:italic;letter-spacing:-.055em;font-size:clamp(25px,5vw,48px);margin:0 0 8px}
+h1 em{color:#ffba4c;font-style:inherit}p{color:#bbd4e2;line-height:1.5;margin:0 0 16px}
+a{color:#48ddff}button{border:1px solid #3eb7cc;background:#153749;color:#fff;border-radius:7px;padding:8px 14px;cursor:pointer}
+#status{font-weight:800;color:#80e2ff;display:inline-block;margin:12px 0 25px}
+#grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:13px}
+article{border:1px solid #2c5265;background:#092438;border-radius:14px;overflow:hidden;box-shadow:0 12px 28px #0005}
+article h2{font-size:15px;padding:15px 13px;margin:0;border-bottom:1px solid #29475b}
+.variants{display:grid;grid-template-columns:1fr 1fr;gap:1px}
+.variant{background:conic-gradient(#304152 25%,#203448 0 50%,#304152 0 75%,#203448 0) 0 0/24px 24px;min-height:275px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px}
+.variant img{display:block;height:245px;width:120px;object-fit:contain;filter:drop-shadow(0 7px 12px #0009)}
+.variant span{background:#061523c9;color:#ffbc63;font-weight:800;padding:4px 9px;border-radius:5px;font-size:10px}
+.light .variant{background:conic-gradient(#e0e5eb 25%,#f7f9fb 0 50%,#e0e5eb 0 75%,#f7f9fb 0) 0 0/24px 24px}
+</style></head>
+<body><main>
+<h1>FULL <em>STINT</em> / GT3</h1>
+<p>Проверка 12 моделей и 24 ливрей. Все машины должны смотреть носом вверх, иметь прозрачный фон и сохранять оригинальную окраску и стартовые номера.</p>
+<button id="bg">Сменить фон</button> <a href="../index.html">Вернуться в игру</a>
+<div id="status" role="status">Загружаю текстуры…</div><div id="grid"></div>
+<script>
+const cars=[
+ ['aston_gt3','Aston Martin Vantage GT3'],['audi_gt3','Audi R8 LMS GT3 Evo II'],
+ ['bmw_gt3','BMW M4 GT3'],['corvette_gt3','Chevrolet Corvette Z06 GT3.R'],
+ ['ferrari_gt3','Ferrari 296 GT3'],['mustang_gt3','Ford Mustang GT3'],
+ ['lambo_gt3','Lamborghini Huracán GT3'],['lexus_gt3','Lexus RC F GT3'],
+ ['mclaren_gt3','McLaren 720S GT3'],['mercedes_gt3','Mercedes-AMG GT3'],
+ ['porsche_gt3','Porsche 911 GT3 R (992)'],['bentley_gt3','Bentley Continental GT3']
+];
+let good=0,bad=0;const grid=document.getElementById('grid'),status=document.getElementById('status');
+document.getElementById('bg').onclick=()=>document.body.classList.toggle('light');
+const progress=()=>{status.textContent=good+' / 24 загружено без ошибок'+(bad?' · ошибок: '+bad:'');status.style.color=bad?'#ff8d8d':'#80e2ff';};
+for(const [id,name] of cars){
+ const card=document.createElement('article'),heading=document.createElement('h2'),variants=document.createElement('div');
+ heading.textContent=name;variants.className='variants';card.append(heading,variants);grid.append(card);
+ for(const n of [1,2]){
+  const wrapper=document.createElement('div'),img=new Image(),caption=document.createElement('span');
+  wrapper.className='variant';img.loading='lazy';img.alt=name+', ливрея '+n;caption.textContent='ЛИВРЕЯ '+n;
+  img.onload=()=>{
+   try{
+    const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+    const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);
+    const alpha=ctx.getImageData(0,0,1,1).data[3];
+    if(img.naturalWidth!==256||img.naturalHeight!==512||alpha>10)throw Error('Размер или прозрачность');
+    good++;
+   }catch(e){bad++;wrapper.style.outline='3px solid #f66';}
+   progress();
+  };
+  img.onerror=()=>{bad++;wrapper.style.outline='3px solid #f66';progress();};
+  img.src='../assets/gt3/wec-2026/'+id+'-livery-'+n+'.webp?v=20261113-art-v1';
+  wrapper.append(img,caption);variants.append(wrapper);
+ }
+}
+</script></main></body></html>
