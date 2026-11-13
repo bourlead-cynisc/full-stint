@@ -46,57 +46,13 @@ function loadTimeAttackSprites() {
         .catch(error => console.error('Unable to load Time Attack car sprites', error));
 }
 
-function cropSpriteToAlphaBounds(img) {
-    const width = img.naturalWidth || img.width;
-    const height = img.naturalHeight || img.height;
-    const scanCanvas = document.createElement('canvas');
-    scanCanvas.width = width;
-    scanCanvas.height = height;
-    const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
-    if (!scanCtx) return img;
-
-    let pixels;
-    try {
-        scanCtx.drawImage(img, 0, 0);
-        pixels = scanCtx.getImageData(0, 0, width, height).data;
-    } catch (_) {
-        return img;
-    }
-
-    let minX = width, minY = height, maxX = -1, maxY = -1;
-    for (let y = 0; y < height; y++) {
-        const alphaRow = y * width * 4 + 3;
-        for (let x = 0; x < width; x++) {
-            if (pixels[alphaRow + x * 4] < 16) continue;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-        }
-    }
-    if (maxX < minX || maxY < minY) return img;
-
-    // The livery art has transparent canvas margins. Trim to the visible car so all
-    // variants occupy the same drawing height in the garage and on the track.
-    const left = Math.max(0, minX - 1), top = Math.max(0, minY - 1);
-    const right = Math.min(width - 1, maxX + 1), bottom = Math.min(height - 1, maxY + 1);
-    const sprite = document.createElement('canvas');
-    sprite.width = right - left + 1;
-    sprite.height = bottom - top + 1;
-    const ctx = sprite.getContext('2d');
-    if (!ctx) return img;
-    ctx.drawImage(img, left, top, sprite.width, sprite.height, 0, 0, sprite.width, sprite.height);
-    return sprite;
-}
-
 function loadSprite(id) {
     if (!id || spriteImgs[id] || spriteLoadPending.has(id) || typeof SPRITE_DATA === 'undefined' || !SPRITE_DATA[id]) return;
     spriteLoadPending.add(id);
     const img = new Image();
     img.onload = () => {
-        spriteImgs[id] = id.endsWith('_livery2') ? cropSpriteToAlphaBounds(img) : img;
+        spriteImgs[id] = img;
         spriteLoadPending.delete(id);
-        if (id.endsWith('_livery2') && typeof renderGarageUI === 'function' && currentSession === 'MENU') renderGarageUI();
     };
     img.onerror = () => spriteLoadPending.delete(id);
     img.src = SPRITE_DATA[id];
@@ -105,7 +61,8 @@ function loadSprite(id) {
 function loadSprites() {
     if (typeof SPRITE_DATA !== 'undefined') {
         for (const id in SPRITE_DATA) {
-            if (id.endsWith('_livery2')) continue;
+            // Ignore and discard any second-livery data left in older sprite bundles.
+            if (id.endsWith('_livery2')) { delete SPRITE_DATA[id]; continue; }
             loadSprite(id);
         }
     }
