@@ -9,8 +9,8 @@ const saved={
 const cases=[];
 try {
  const importFixtures=[
-  {id:'monza',name:'🇮🇹 Монца',shortName:'Монца',length:3583.281,width:20,objects:85,pit:581.158},
-  {id:'spa',name:'🇧🇪 Спа-Франкоршам',shortName:'Спа-Франкоршам',length:3614.376,width:18,objects:49,pit:452.022}
+  {id:'monza',name:'🇮🇹 Монца',shortName:'Монца',length:3583.281,width:10,objects:85,pit:581.158},
+  {id:'spa',name:'🇧🇪 Спа-Франкоршам',shortName:'Спа-Франкоршам',length:3614.376,width:10,objects:49,pit:452.022}
  ];
  for(const fixture of importFixtures) {
   const index=TRACKS_DB.findIndex(t=>t.id===fixture.id);
@@ -27,6 +27,15 @@ try {
   assert(Math.abs(ASPHALT_HALF_W*PX_M-fixture.width/2)<.15
     &&Math.abs((CURB_OUTER_W-ASPHALT_HALF_W)*PX_M-2)<.15,
     fixture.id+' road or kerb width differs from the JSON export');
+  // The optimized target must be inside the narrower road and must not
+  // collapse back onto the centreline in every corner.
+  const offsets=dynamicRacingLinePoints.map(p=>p.offset||0);
+  const safeLimit=ASPHALT_HALF_W-20;
+  assert(offsets.some(offset=>Math.abs(offset)>10),
+    fixture.id+' has no meaningful outside-apex-exit racing line');
+  assert(offsets.every(offset=>Number.isFinite(offset)&&Math.abs(offset)<=safeLimit)
+    &&trackSamples.every(p=>Number.isFinite(p.raceKappa)&&Number.isFinite(p.raceSignedKappa)),
+    fixture.id+' racing line is beyond the road edge or contains invalid curvature');
   const sf=t.startFinishPoint;
   const localStart={x:(sf.x-origin.x)*t.scale,y:(sf.y-origin.y)*t.scale};
   assert(Math.hypot(trackSamples[0].x-localStart.x,trackSamples[0].y-localStart.y)*PX_M<5,
