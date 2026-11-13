@@ -8,24 +8,41 @@ const saved={
 };
 const cases=[];
 try {
- const spaIndex=TRACKS_DB.findIndex(track=>track.id==='spa');
- assert(spaIndex>=0,'Spa is missing from WEC calendar');
- selectedTrackIndex=spaIndex;buildActiveTrackGeometry();
- const spa=TRACKS_DB[spaIndex];
- assert(spa.name==='🇧🇪 Спа-Франкоршам'&&spa.shortName==='Спа-Франкоршам',
-   'Import changed the original Spa display name');
- assert(spa.importedScenery?.length===49&&spa.customPitLayout,
-   'Imported Spa scenery or supplied pit route was not loaded');
- assert(Math.abs(trackLengthPx*PX_M-3614.376)<25,
-   'Spa route length does not match the attached 3.61 km layout');
- assert(Math.abs(ASPHALT_HALF_W*PX_M-9)<.15&&Math.abs(CURB_OUTER_W*PX_M-11)<.15,
-   'Imported Spa road and kerb dimensions are wrong');
- const start=spa.startFinishPoint;
- const localStart={x:(start.x-spa.rawPoints[0].x)*spa.scale,y:(start.y-spa.rawPoints[0].y)*spa.scale};
- assert(Math.hypot(trackSamples[0].x-localStart.x,trackSamples[0].y-localStart.y)*PX_M<5,
-   'Spa start/finish line no longer matches the supplied marker');
- assert(pitRouteLength*PX_M>370&&pitRouteLength*PX_M<500&&pitWaypoints.length===161,
-   'Imported Spa pit lane was not connected');
+ const importFixtures=[
+  {id:'monza',name:'🇮🇹 Монца',shortName:'Монца',length:3583.281,width:20,objects:85,pit:581.158},
+  {id:'spa',name:'🇧🇪 Спа-Франкоршам',shortName:'Спа-Франкоршам',length:3614.376,width:18,objects:49,pit:452.022}
+ ];
+ for(const fixture of importFixtures) {
+  const index=TRACKS_DB.findIndex(t=>t.id===fixture.id);
+  assert(index>=0,fixture.id+' is missing from the calendar');
+  selectedTrackIndex=index;buildActiveTrackGeometry();
+  const t=TRACKS_DB[index],origin=t.rawPoints[0];
+  assert(t.name===fixture.name&&t.shortName===fixture.shortName,
+    fixture.id+' lost its original calendar name');
+  assert(t.importedScenery?.length===fixture.objects&&t.customPitLayout,
+    fixture.id+' objects or custom pit road were not imported');
+  assert(t.importedGridSlots?.length===22,fixture.id+' lost the 22-position editor grid');
+  assert(Math.abs(trackLengthPx*PX_M-fixture.length)<25,
+    fixture.id+' track length differs from its JSON centerline');
+  assert(Math.abs(ASPHALT_HALF_W*PX_M-fixture.width/2)<.15
+    &&Math.abs((CURB_OUTER_W-ASPHALT_HALF_W)*PX_M-2)<.15,
+    fixture.id+' road or kerb width differs from the JSON export');
+  const sf=t.startFinishPoint;
+  const localStart={x:(sf.x-origin.x)*t.scale,y:(sf.y-origin.y)*t.scale};
+  assert(Math.hypot(trackSamples[0].x-localStart.x,trackSamples[0].y-localStart.y)*PX_M<5,
+    fixture.id+' start/finish marker was misplaced');
+  assert(Math.abs(pitRouteLength*PX_M-fixture.pit)<27
+    &&pitWaypoints.length===161&&t.pitProgressSpan>0&&t.pitProgressSpan<.25,
+    fixture.id+' pit lane direction or length is wrong');
+  const car=new Car('Grid test',1,0,false,false);
+  car.placeOnGrid(0);
+  const slot=t.importedGridSlots[0];
+  const sx=(slot.x-origin.x)*t.scale,sy=(slot.y-origin.y)*t.scale;
+  assert(Math.hypot(car.x-sx,car.y-sy)*PX_M<5,
+    fixture.id+' first grid slot did not use the uploaded coordinates');
+  assert(getTrackInfo(car.x,car.y,-1).dist<ASPHALT_HALF_W,
+    fixture.id+' first grid slot is outside the road');
+ }
 
  currentSession='RACE';raceState='RACING';raceMode='LAPS';totalRaceLaps=100;
  for(const mode of ['ARCADE','REAL'])for(const cls of ['GT3','F1']){
