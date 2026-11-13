@@ -117,8 +117,8 @@ function buildCornerDistanceBoards() {
 
 function buildActiveTrackGeometry() {
     const trk = TRACKS_DB[selectedTrackIndex];
-    // Other circuits retain the original game widths. The imported Spa layout
-    // uses its explicitly supplied 18 m asphalt + 2 m kerbs + 5 m runoff.
+    // Non-imported circuits retain their original widths; editor-exported
+    // circuits use their measured road, kerb and runoff widths.
     const halfRoadM = trk.trackWidthMeters ? trk.trackWidthMeters / 2 : 0;
     ASPHALT_HALF_W = halfRoadM ? halfRoadM / PX_M : 72;
     CURB_OUTER_W = halfRoadM ? (halfRoadM + (trk.curbWidthMeters || 2)) / PX_M : 84;
