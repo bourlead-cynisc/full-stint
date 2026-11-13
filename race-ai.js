@@ -21,11 +21,14 @@ function setAiSetting(name,value) {
  try{localStorage.setItem(AI_SETTINGS_KEY,JSON.stringify(aiSettings));}catch{}
  for(const input of document.querySelectorAll('[data-ai-setting]')){input.value=aiSettings[input.dataset.aiSetting];input.parentElement.querySelector('output').textContent=input.value+'%';}
 }
-function planRaceTraffic(car,dt) {
+function planRaceTraffic(car,dt,lookIndex=car.lastSampleIdx) {
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const attack=aiSettings.aggression/100;
  const fx=Math.sin(car.angle),fy=-Math.cos(car.angle),rx=Math.cos(car.angle),ry=Math.sin(car.angle);
  const ownLane=Number.isFinite(car.latOff)?car.latOff:(car.aiLane||0);
+ // Lane values are absolute lateral road coordinates, including the racing
+ // line's chosen apex. Traffic only overrides that optimal clean-air path.
+ const racingLane=dynamicRacingLinePoints[lookIndex]?.offset||0;
  const nearby=[];
  for(const other of allCars) {
   if(other===car||other.pitPhase!=='none'||other.finishedRace)continue;
@@ -37,20 +40,20 @@ function planRaceTraffic(car,dt) {
  const ahead=nearby.filter(o=>o.fwd>0&&Math.abs(o.lat)<car.width+24).sort((a,b)=>a.fwd-b.fwd)[0];
  const behind=nearby.filter(o=>o.fwd< -car.height&&Math.abs(o.lat)<car.width+36).sort((a,b)=>b.fwd-a.fwd)[0];
  const base=Math.max(0,car.lastSampleIdx),ds=trackLengthPx/totalSamples;
- const horizon=Math.min(totalSamples-1,Math.ceil((145/PX_M)/ds));
+ const horizon=Math.min(totalSamples-1,Math.ceil((85/PX_M)/ds));
  let peak=0;
  for(let j=0;j<=horizon;j+=3)peak=Math.max(peak,(trackSamples[(base+j)%totalSamples].kappa||0)/PX_M);
  const corner=peak>.005;
  // A hairpin close ahead blocks a NEW overtake, but long gentle bends do not.
  // Keep the normal long lookahead for braking and the short one for racing decisions.
- const attackHorizon=Math.min(totalSamples-1,Math.ceil((80/PX_M)/ds));
+ const attackHorizon=Math.min(totalSamples-1,Math.ceil((48/PX_M)/ds));
  let severePeak=0;
  for(let j=0;j<=attackHorizon;j+=2) severePeak=Math.max(severePeak,(trackSamples[(base+j)%totalSamples].kappa||0)/PX_M);
- const dangerousCorner=severePeak>.0085;
- const laneMargin=ASPHALT_HALF_W-car.width*.55-13;
- const laneLimit=Math.min(43,laneMargin);
- const free=lane=>nearby.every(o=>o.fwd< -car.height*1.2||o.fwd>240||Math.abs(o.lane-lane)>(car.width+o.other.width)*.5+12);
- let target=clamp((((car.botSlot*7)%5)-2)*3,-laneLimit,laneLimit);
+ const dangerousCorner=severePeak>.014;
+ const laneMargin=ASPHALT_HALF_W-car.width*.55-7;
+ const laneLimit=Math.max(0,Math.min(48,laneMargin));
+ const free=lane=>nearby.every(o=>o.fwd< -car.height*1.2||o.fwd>240||Math.abs(o.lane-lane)>(car.width+o.other.width)*.5+7);
+ let target=clamp(racingLane,-laneLimit,laneLimit);
  let followV=Infinity,pace=1,overtaking=false,blockedByCar=false;
  car.aiMode='RACING';
 
@@ -62,7 +65,7 @@ function planRaceTraffic(car,dt) {
   const side=Math.abs(alongside.lat)>car.width*.22
    ? (alongside.lat>0?-1:1)
    : ((car.botSlot||0)<(alongside.other.botSlot||0)?-1:1);
-  const required=(car.width+alongside.other.width)*.5+13;
+  const required=(car.width+alongside.other.width)*.5+7;
   target=side<0?Math.min(ownLane,alongside.lane-required):Math.max(ownLane,alongside.lane+required);
   target=clamp(target,-laneLimit,laneLimit);
   car.aiHoldLane=target;
@@ -70,21 +73,21 @@ function planRaceTraffic(car,dt) {
   car.aiMode='SIDE_BY_SIDE';
   // Side by side is a racing situation, not an automatic 10–23% slowdown.
   // Save a speed reserve only if both cars are entering a bend.
-  pace=corner?(.81+.08*attack):(.96+.04*attack);
+  pace=corner?(.95+.03*attack):1;
  } else if(car.aiHoldUntil>simTimeMs) {
   target=clamp(car.aiHoldLane||0,-laneLimit,laneLimit);
-  pace=corner?.85:1;
+  pace=corner?.97:1;
   car.aiMode='HOLD_LINE';
  }
 
  const leader=nearby.find(o=>o.fwd<120&&o.fwd> -850&&o.other.getContinuousTrackDistance()-car.getContinuousTrackDistance()>.75);
  if(leader) {
-  if(!(car.aiYieldUntil>simTimeMs))car.aiYieldLane=free(leader.lat>=0?-32:32)?(leader.lat>=0?-32:32):0;
+  if(!(car.aiYieldUntil>simTimeMs)){const yieldLane=(leader.lat>=0?-1:1)*Math.min(32,laneLimit);car.aiYieldLane=free(yieldLane)?yieldLane:racingLane;}
   car.aiYieldUntil=simTimeMs+1600;
  }
  if(!alongside&&!(car.aiHoldUntil>simTimeMs)&&car.aiYieldUntil>simTimeMs) {
   target=corner?ownLane:(car.aiYieldLane||0);
-  pace=.83;
+  pace=.92;
   car.aiMode='BLUE_FLAG';
  } else if(!alongside&&!(car.aiHoldUntil>simTimeMs)) {
   if(corner){car.aiDefenseUsed=false;car.aiDefenseLane=null;}
@@ -117,8 +120,8 @@ function planRaceTraffic(car,dt) {
   const wantsToPass=ahead&&ahead.fwd>car.height*.95&&ahead.fwd<(stopped?660:880)
    &&(stopped||closing>(.12+.35*(1-attack))||car.aiFollowTime>1.4-attack*.9);
   if(!overtaking&&!dangerousCorner&&wantsToPass) {
-   const separation=(car.width+ahead.other.width)*.5+14;
-   const offset=Math.max(37,separation+2);
+   const separation=(car.width+ahead.other.width)*.5+8;
+   const offset=Math.max(29,separation+2);
    const lanes=[clamp(ahead.lane-offset,-laneLimit,laneLimit),clamp(ahead.lane+offset,-laneLimit,laneLimit)];
    const options=lanes.filter(lane=>Math.abs(lane-ahead.lane)>=separation&&free(lane));
    if(options.length) {
@@ -132,7 +135,7 @@ function planRaceTraffic(car,dt) {
    }
   }
   if(!corner&&!overtaking&&!ahead&&behind&&behind.fwd> -550&&attack>.15&&!car.aiDefenseUsed) {
-   const side=behind.lat>=0?1:-1,defenseLane=clamp(side*27,-laneLimit,laneLimit);
+   const side=behind.lat>=0?1:-1,defenseLane=clamp(side*Math.min(27,laneLimit*.75),-laneLimit,laneLimit);
    if(free(defenseLane)){car.aiDefenseLane=defenseLane;car.aiDefenseUsed=true;}
   }
   if(!corner&&!overtaking&&car.aiDefenseLane!=null&&!ahead) {
@@ -140,20 +143,20 @@ function planRaceTraffic(car,dt) {
   }
  }
 
- // Never force a car from one side of another to the other during a corner.
- // When racing alone on the bend, gradually return towards the race centre.
- if(corner&&!alongside&&!overtaking&&!(car.aiHoldUntil>simTimeMs)&&car.aiMode!=='BLUE_FLAG')target=0;
+ // In clean air follow the designed outside / apex / exit racing line, not
+ // the road centre. Only a committed defence or overtake may override it.
+ if(corner&&!alongside&&!overtaking&&!(car.aiHoldUntil>simTimeMs)&&car.aiMode==='RACING')target=racingLane;
  if(!alongside&&!corner&&!free(target))target=clamp(ownLane,-laneLimit,laneLimit);
 
  // Headway uses physical stopping distance, not an arbitrary 100px trigger.
  // Project the neighbouring car into the desired corridor before accelerating.
  for(const o of nearby) {
   if(o.fwd<=0||o.fwd>1000)continue;
-  const currentConflict=Math.abs(o.lat)<(car.width+o.other.width)*.5+14;
-  const plannedConflict=Math.abs(o.lane-target)<(car.width+o.other.width)*.5+14;
+  const currentConflict=Math.abs(o.lat)<(car.width+o.other.width)*.5+7;
+  const plannedConflict=Math.abs(o.lane-target)<(car.width+o.other.width)*.5+7;
   if(!currentConflict&&!plannedConflict)continue;
   const gapPx=o.fwd-(car.height+o.other.height)*.5;
-  const gapM=Math.max(0,gapPx*PX_M-5.5);
+  const gapM=Math.max(0,gapPx*PX_M-3.5);
   const safeDecel=car.spec?.carClass==='F1'?11:7.2;
   let allowed=Math.sqrt(o.v*o.v+2*safeDecel*gapM);
   if(gapPx<40)allowed=Math.min(allowed,o.v*.96);
@@ -179,7 +182,7 @@ function planRaceTraffic(car,dt) {
   if(!corner&&!alongside&&pressure>.3&&noise>.997-pressure*.01){car.aiErrorTime=.22;car.aiErrorSide=(car.botSlot%2?1:-1)*3;}
  }
  if(car.aiErrorTime>0){car.aiErrorTime-=dt;if(!corner&&!alongside){target+=car.aiErrorSide;pace*=.97;car.aiMode='PRESSURE';}}
- const laneResponse=alongside?2.5:overtaking?(2.1+attack*1.15):corner?2.7:1.5+attack*.6;
+ const laneResponse=alongside?3.4:overtaking?(2.8+attack*1.2):corner?5.4:3.5+attack*.5;
  car.aiLane=clamp((car.aiLane||0)+(clamp(target,-laneLimit,laneLimit)-(car.aiLane||0))*(1-Math.exp(-dt*laneResponse)),-laneLimit,laneLimit);
  return {lane:car.aiLane,followV,pace,pressure:behind?Math.max(0,1+behind.fwd/600):0,blockedByCar,overtaking,corner,alongside:!!alongside};
 }
