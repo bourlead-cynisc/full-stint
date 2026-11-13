@@ -356,7 +356,8 @@ class Car {
         let sharpest = 0;
         const steps = Math.min(totalSamples - 1, Math.ceil(lookPx / ds) + 8);
         for (let j = 0; j <= steps; j += 2) {
-            sharpest = Math.max(sharpest, trackSamples[(base + j) % totalSamples].kappa || 0);
+            const sample=trackSamples[(base+j)%totalSamples];
+            sharpest=Math.max(sharpest,sample.raceKappa||sample.kappa||0);
         }
         if (sharpest > 0) lookPx = Math.min(lookPx, Math.max(95, 0.9 / sharpest));
         return lookPx;
@@ -375,11 +376,12 @@ class Car {
         const lookPx = this.aiCornerAwareLookaheadPx(base, this.velocity);
         const look = Math.max(2, Math.round(lookPx / ds));
         const tIdx = (base + look) % N;
-        const rl = dynamicRacingLinePoints[tIdx];
-        const traffic=planRaceTraffic(this,dt);
+        const traffic=planRaceTraffic(this,dt,tIdx);
         const lane=traffic.lane,followV=traffic.followV;
-        const tx = rl.x + trackSamples[tIdx].nx * lane;
-        const ty = rl.y + trackSamples[tIdx].ny * lane;
+        // Traffic lane is an absolute road offset. When clear it equals the
+        // late-apex racing line; on a pass it becomes a safe alternate lane.
+        const tx=trackSamples[tIdx].x+trackSamples[tIdx].nx*lane;
+        const ty=trackSamples[tIdx].y+trackSamples[tIdx].ny*lane;
         const desired = Math.atan2(tx - this.x, -(ty - this.y));
         let diff = desired - this.angle;
         while (diff > Math.PI) diff -= Math.PI * 2;
@@ -413,7 +415,10 @@ class Car {
         const vmax2 = this.vmaxMs * this.vmaxMs;
         const qNow = Math.min(1.2, vms * vms / vmax2);
         const lateralAuthority=(gA+gAero*qNow)/Math.max(vms,2.5);
-        const desiredYaw=vms*(Math.sign(trackSamples[tIdx].curv||0)*trackSamples[tIdx].kappa/PX_M);
+        const signedRaceKappa=trackSamples[tIdx].raceSignedKappa;
+        const desiredYaw=vms*((Number.isFinite(signedRaceKappa)
+            ?signedRaceKappa
+            :Math.sign(trackSamples[tIdx].curv||0)*trackSamples[tIdx].kappa)/PX_M);
         const curvatureFeedForward=Math.max(-1,Math.min(1,desiredYaw/Math.max(.18,lateralAuthority)));
         steer=Math.max(-1,Math.min(1,diff*2.5+curvatureFeedForward*.22+edgeCorrection));
         this.smoothSteer+=(steer-this.smoothSteer)*Math.min(1,dt*8);
@@ -440,7 +445,7 @@ class Car {
         // available braking force so the bots do not slow on approach without need.
         // Leave braking capacity for simultaneous turn-in and tyre load transfer.
         // Planning with peak straight-line brakes used to postpone braking too long.
-        const aBr = (this.spec.carClass === 'F1' ? 0.68 : 0.70) * aBrCap;
+        const aBr = (this.spec.carClass === 'F1' ? 0.77 : 0.78) * aBrCap;
         const towTopSpeedBonus=getSlipstreamTopSpeedBonus(this);
         const vTop = this.vmaxMs * comp.speedMult * (1+towTopSpeedBonus);
         let vAllow = vTop;
@@ -449,13 +454,20 @@ class Car {
             const idx = (base + j) % N;
             let dist = (sampleCumDist[idx] - sampleCumDist[base]); if (dist < 0) dist += trackLengthPx;
             if (dist * PX_M > 900) break;
-            const kap = trackSamples[idx].kappa / PX_M;                // 1/м
+            const sample=trackSamples[idx];
+            // Use line curvature in clean air and blend towards surveyed road
+            // curvature when forced off-line for side-by-side racing.
+            const lineKappa=sample.raceKappa||sample.kappa||0;
+            const centreKappa=sample.kappa||0;
+            const kap=(traffic.overtaking||traffic.alongside)
+                ?Math.max(lineKappa,centreKappa*.90)/PX_M
+                :lineKappa/PX_M;
             const denom = kap - gAero / vmax2;
             const rawCornerSpeed = denom > 1e-7 ? Math.sqrt(gA / denom) : vTop;
             // Physical peak grip assumes perfect steering and no throttle/brake.
             // Reserve speed for yaw response, tyre slip and line corrections.
             const severity = Math.min(1, kap / 0.025);
-            const cornerReserve = 0.965 - 0.115 * severity;
+            const cornerReserve = 0.989 - 0.045 * severity;
             const vc = rawCornerSpeed < vTop ? rawCornerSpeed * cornerReserve : vTop;
             const dm = Math.max(dist * PX_M, 6);
             const vlim = Math.sqrt(vc * vc + 2 * aBr * dm);
