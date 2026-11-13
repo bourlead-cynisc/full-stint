@@ -20,6 +20,7 @@ if(customMonza){
   customMonza.curbWidthMeters=2;
   customMonza.runoffWidthMeters=5;
   customMonza.reportedLengthM=3583.281;
+  customMonza.desc='Авторская конфигурация · лесная трасса · 3,58 км';
   customMonza.drsZones=[];customMonza.baseDrsZones=[];
   customMonza.layoutVersion='monza-json-20261113-v2';
   const index=TRACKS_DB.indexOf(customMonza);
