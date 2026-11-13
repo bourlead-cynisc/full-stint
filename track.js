@@ -901,8 +901,10 @@ function drawPitLane(ctx) {
     ctx.beginPath();
     pitWaypoints.forEach((pt,i) => i ? ctx.lineTo(pt.x,pt.y) : ctx.moveTo(pt.x,pt.y));
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 65; ctx.stroke();
-    ctx.strokeStyle = '#3b4654'; ctx.lineWidth = 58; ctx.stroke();
+    const pitWidthM=TRACKS_DB[selectedTrackIndex].pitWidthMeters;
+    const pitLaneWidth=pitWidthM?pitWidthM/PX_M:58;
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = pitLaneWidth+7; ctx.stroke();
+    ctx.strokeStyle = '#3b4654'; ctx.lineWidth = pitLaneWidth; ctx.stroke();
     ctx.setLineDash([22,18]); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; ctx.stroke();
     ctx.setLineDash([]);
     for (const box of teamPitBoxes) {
