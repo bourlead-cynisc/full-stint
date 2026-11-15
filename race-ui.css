@@ -1,0 +1,77 @@
+/* Race telemetry follows the garage's charcoal, warm white and red accents. */
+#viewportContainer {--race-paper:#f5ebe3;--race-muted:#b9a99e;--race-accent:#f46543;--race-surface:linear-gradient(135deg,#211e1cf5,#101113ee);}
+#viewportContainer:not(.race-hud-active) :is(#hud-top-center,#hud-left-stack,#hud-right,#raceTools,#steering-wheel-dash,#raceBattle,#racePause,#minimapFrame,#btnHudControls,#control-hint){display:none!important;}
+#viewportContainer :is(.hud-panel,#raceTools,#steering-wheel-dash,#minimapFrame,#trial-panel){color:var(--race-paper);background:var(--race-surface);border:1px solid #ffffff30;border-radius:4px;box-shadow:0 10px 28px #0005;backdrop-filter:blur(7px);}
+#viewportContainer #hud-top-center {top:18px;gap:24px;padding:11px 22px;border-top:3px solid var(--race-accent);background:var(--race-surface);border-radius:3px;box-shadow:0 8px 25px #0005;}
+#viewportContainer .top-label {font:700 8px/1.2 system-ui;letter-spacing:.14em;color:var(--race-muted);}
+#viewportContainer .top-value {font:800 21px/1.3 system-ui;font-variant-numeric:tabular-nums;color:var(--race-paper);}
+#viewportContainer #topPosCounter {color:#ffab82!important;}
+#viewportContainer #hud-left-stack {left:18px;top:91px;width:236px;overflow:visible;max-height:calc(100% - 220px);pointer-events:auto;}
+#viewportContainer #hud-left {padding:12px;width:100%;box-sizing:border-box;pointer-events:auto;}
+#viewportContainer #hudCarTitle {font:italic 850 16px/1.1 system-ui;color:#fff;margin:0 0 10px;letter-spacing:-.02em;}
+#viewportContainer .timer-row {color:var(--race-muted);font-size:9px;}
+#viewportContainer .timer-val {font-size:11px;color:var(--race-paper);font-variant-numeric:tabular-nums;}
+.tower-heading {display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;padding-top:9px;border-top:1px solid #ffffff24;font:800 10px system-ui;letter-spacing:.12em;}
+#toggleRaceTower {border:1px solid #ffffff40;background:#ffffff08;color:var(--race-paper);padding:4px 8px;border-radius:2px;font:700 9px system-ui;cursor:pointer;}
+.tower-columns {display:flex;justify-content:space-between;font:700 7px system-ui;color:var(--race-muted);letter-spacing:.04em;padding:0 3px 6px;}
+#viewportContainer #hud-left #liveTower {display:block!important;margin:0;border:0;max-height:410px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#8c5944 #191717;}
+#viewportContainer #hud-left #liveTower[hidden] {display:none!important;}
+#hud-left:has(#liveTower[hidden]) :is(.tower-heading,.tower-columns) {display:none;}
+.race-position-row {display:grid;grid-template-columns:21px minmax(0,1fr) 45px 13px;align-items:center;gap:5px;min-height:33px;padding:4px 3px;border-top:1px solid #ffffff0d;box-sizing:border-box;}
+.race-position-row.is-player {background:linear-gradient(90deg,#c3462b66,#67352133);box-shadow:inset 3px 0 var(--race-accent);}
+.tower-position {font:800 13px system-ui;color:#e5bda6;text-align:center;}
+.tower-driver {min-width:0;}
+.tower-driver strong {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 10px system-ui;color:var(--race-paper);}
+.tower-driver small {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 8px system-ui;color:var(--race-muted);margin-top:2px;}
+.tower-gap {font:700 9px system-ui;text-align:right;font-variant-numeric:tabular-nums;}
+.tower-tire {font:850 9px system-ui;text-align:center;}
+.tower-break {font-size:10px;text-align:center;color:#9b8475;line-height:10px;}
+#viewportContainer #hud-right {top:91px;right:18px;width:210px;min-width:0;padding:12px;box-sizing:border-box;}
+#viewportContainer #hudTrackName {color:#f4bd9c!important;font-size:12px;}
+#viewportContainer #raceTools {position:absolute;right:18px;top:199px;width:210px;max-height:calc(100% - 430px);overflow-y:auto;scrollbar-width:thin;z-index:8;box-sizing:border-box;pointer-events:auto;}
+#raceDamage summary {cursor:pointer;list-style:inside;padding:10px;font:700 9px system-ui;letter-spacing:.06em;}
+#raceDamageSummary {float:right;font-variant-numeric:tabular-nums;color:#ffae8b;}
+#viewportContainer #raceTools #damage-panel {position:static!important;inset:auto!important;transform:none!important;width:auto!important;max-height:none;padding:0 10px 10px;margin:0;border:0;background:none;box-shadow:none;}
+#raceTools #damage-panel h2 {display:none;}
+#raceTools #damage-panel>div {font-size:9px;padding:4px 0;}
+#raceTools #damageEffect,#raceTools #damageRepairHint {font-size:8px;}
+#viewportContainer #raceTools #pit-assistant {position:static!important;inset:auto!important;transform:none!important;max-height:none;width:auto!important;border:0;border-top:1px solid #ffffff25;border-radius:0;background:none;padding:11px;margin:0;box-shadow:none;}
+#raceTools #pit-assistant h2 {font:850 11px system-ui;letter-spacing:.13em;}
+#raceTools #pitSpeedBadge {border-color:#8b5944;color:#f3c4a9;background:#3a251c;}
+#raceTools .next-tires {gap:5px;}
+#raceTools .next-tires button {border-radius:2px;background:#ffffff07;border-color:#ffffff35;}
+#raceTools .next-tires .selected {border-color:#fb7a52;background:#6a3423;}
+#raceTools #btnPitRequest {background:#c9482d;color:white;border-color:#f67a52;border-radius:2px;padding:9px 4px;font-size:9px;}
+#viewportContainer #steering-wheel-dash {bottom:22px;gap:16px;padding:12px 24px;border-top:3px solid var(--race-accent);border-radius:4px;}
+#viewportContainer #steering-wheel-dash .dash-lbl {font:700 8px system-ui;color:var(--race-muted);letter-spacing:.11em;}
+#viewportContainer #dashSpeed {font:850 39px/1.1 system-ui;color:#fff;}
+#viewportContainer #dashGear {font:850 39px/1.1 system-ui;color:#ffb28a;}
+#viewportContainer #steering-wheel-dash .dash-val {color:var(--race-paper);font-variant-numeric:tabular-nums;}
+#viewportContainer #steering-wheel-dash .rpm-block {display:block;min-width:96px;}
+#viewportContainer #steering-wheel-dash .rpm-bar {width:96px;background:#ffffff14;}
+#viewportContainer #dashRpmFill {background:linear-gradient(90deg,#d87345,#ff472f);}
+#viewportContainer #dashRpm {font-size:11px;}
+#viewportContainer #minimapFrame {right:18px;bottom:22px;top:auto;left:auto;width:210px;padding:9px;box-sizing:border-box;}
+#viewportContainer #minimapFrame .minimap-heading {font-size:8px;color:var(--race-muted);letter-spacing:.12em;}
+#viewportContainer #raceBattle {position:absolute;bottom:130px;left:50%;transform:translateX(-50%);display:flex;gap:1px;z-index:6;pointer-events:none;background:#ffffff20;border:1px solid #ffffff20;border-radius:3px;overflow:hidden;}
+#raceBattle[hidden] {display:none!important;}
+#raceBattle>div {background:#141414e8;min-width:145px;padding:7px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;}
+#raceBattle small {font:700 7px system-ui;color:var(--race-muted);letter-spacing:.13em;}
+#raceBattle b {font:750 12px system-ui;color:#f6ccb2;font-variant-numeric:tabular-nums;grid-row:1/3;grid-column:2;align-self:center;}
+#raceBattle span {font:600 9px system-ui;color:#e2d8d0;}
+#viewportContainer #racePause {position:absolute;top:20px;right:18px;z-index:12;background:#1c1b1ae8;border:1px solid #ffffff40;color:var(--race-paper);padding:10px 13px;border-radius:3px;cursor:pointer;font:800 13px system-ui;}
+#racePause span {font:700 8px system-ui;margin-left:8px;letter-spacing:.08em;}
+#viewportContainer.race-hud-active #btnHudControls {display:block!important;bottom:25px;left:18px;top:auto;padding:8px 12px;font-size:9px;background:#1c1b1ae8;color:#cbb3a3;border:1px solid #ffffff30;border-radius:3px;}
+#viewportContainer #control-hint {display:none;}
+#viewportContainer #race-control {top:97px;max-width:430px;left:50%;border-radius:3px;background:#151515ed;color:#f6decd;border:1px solid #b16a48;padding:10px 14px;font-size:12px;}
+#viewportContainer #trial-panel {right:18px;top:250px;transform:none;width:210px;}
+#viewportContainer.portrait-gameplay #raceTools {right:calc(var(--portrait-inset) + 10px);width:var(--portrait-panel-width);top:190px;max-height:240px;}
+#viewportContainer.portrait-gameplay #hud-left-stack {top:91px;}
+#viewportContainer.portrait-gameplay #liveTower {max-height:245px;}
+#viewportContainer.portrait-gameplay #minimapFrame {left:auto;right:calc(var(--portrait-inset) + 10px)!important;top:auto!important;bottom:160px;width:var(--portrait-panel-width);}
+#viewportContainer.portrait-gameplay #racePause {right:calc(var(--portrait-inset) + 10px);}
+#viewportContainer.portrait-gameplay #racePause span {display:none;}
+#viewportContainer.portrait-gameplay #raceBattle {bottom:114px;}
+#viewportContainer.portrait-gameplay #raceBattle>div {min-width:90px;padding:5px;}
+#viewportContainer.portrait-gameplay #raceTools #damage-panel,#viewportContainer.portrait-gameplay #raceTools #pit-assistant {position:static!important;width:auto!important;inset:auto!important;}
+@media(prefers-reduced-motion:reduce){#selectedCarCanvas{scroll-behavior:auto;}}
