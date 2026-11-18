@@ -11,8 +11,8 @@ const GT3_CATALOG = [
         width: 22, height: 45, topSpeedKmh: 252, accelStat: 1.01, handlingStat: 1.06, tireSaveStat: 1.08,
         livery: { primary: '#1e3f35', secondary: '#141b1f', accent: '#a3e635', wing: '#11161b' },
         drivers: [
-            { name: 'M. Sorensson', number: 27, tier: 'PRO ★', skill: 1.012, cornerMult: 1.03, aggression: 0.85 },
-            { name: 'I. Jaymes',    number: 777, tier: 'MID',   skill: 0.978, cornerMult: 0.99, aggression: 0.65 }
+            { number: 27, tier: 'PRO ★', skill: 1.012, cornerMult: 1.03, aggression: 0.85 },
+            { number: 777, tier: 'MID',   skill: 0.978, cornerMult: 0.99, aggression: 0.65 }
         ]
     },
     {
@@ -22,8 +22,8 @@ const GT3_CATALOG = [
         width: 22, height: 44, topSpeedKmh: 254, accelStat: 1.04, handlingStat: 1.05, tireSaveStat: 0.99,
         livery: { primary: '#d1d5db', secondary: '#dc2626', accent: '#111827', wing: '#18181b' },
         drivers: [
-            { name: 'K. van der Linden', number: 32, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
-            { name: 'C. Hazen',         number: 25, tier: 'PRO',   skill: 0.995, cornerMult: 1.01, aggression: 0.74 }
+            { number: 32, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
+            { number: 25, tier: 'PRO',   skill: 0.995, cornerMult: 1.01, aggression: 0.74 }
         ]
     },
     {
@@ -33,8 +33,8 @@ const GT3_CATALOG = [
         width: 22, height: 46, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 1.01, tireSaveStat: 1.05,
         livery: { primary: '#1d4ed8', secondary: '#ef4444', accent: '#38bdf8', wing: '#111827' },
         drivers: [
-            { name: 'V. Rosetti',  number: 46, tier: 'PRO ★', skill: 1.008, cornerMult: 1.02, aggression: 0.86 },
-            { name: 'A. Farfen', number: 31, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.78 }
+            { number: 46, tier: 'PRO ★', skill: 1.008, cornerMult: 1.02, aggression: 0.86 },
+            { number: 31, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.78 }
         ]
     },
     {
@@ -44,8 +44,8 @@ const GT3_CATALOG = [
         width: 22.5, height: 45, topSpeedKmh: 255, accelStat: 1.05, handlingStat: 1.02, tireSaveStat: 0.97,
         livery: { primary: '#facc15', secondary: '#18181b', accent: '#dc2626', wing: '#111827' },
         drivers: [
-            { name: 'N. Katzberg', number: 81, tier: 'PRO', skill: 1.002, cornerMult: 1.01, aggression: 0.82 },
-            { name: 'C. Eastwynn', number: 82, tier: 'MID', skill: 0.985, cornerMult: 0.99, aggression: 0.72 }
+            { number: 81, tier: 'PRO', skill: 1.002, cornerMult: 1.01, aggression: 0.82 },
+            { number: 82, tier: 'MID', skill: 0.985, cornerMult: 0.99, aggression: 0.72 }
         ]
     },
     {
@@ -55,8 +55,8 @@ const GT3_CATALOG = [
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.08, tireSaveStat: 1.02,
         livery: { primary: '#dc2626', secondary: '#f8fafc', accent: '#facc15', wing: '#18181b' },
         drivers: [
-            { name: 'A. Piergardi', number: 51, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 },
-            { name: 'D. Rigoni',      number: 54, tier: 'PRO',   skill: 1.000, cornerMult: 1.02, aggression: 0.79 }
+            { number: 51, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 },
+            { number: 54, tier: 'PRO',   skill: 1.000, cornerMult: 1.02, aggression: 0.79 }
         ]
     },
     {
@@ -66,8 +66,8 @@ const GT3_CATALOG = [
         width: 22.5, height: 46, topSpeedKmh: 256, accelStat: 1.04, handlingStat: 0.98, tireSaveStat: 1.01,
         livery: { primary: '#172554', secondary: '#f8fafc', accent: '#3b82f6', wing: '#0f172a' },
         drivers: [
-            { name: 'D. Olsenko', number: 88, tier: 'PRO', skill: 0.994, cornerMult: 1.00, aggression: 0.80 },
-            { name: 'C. Miesel',  number: 77, tier: 'MID', skill: 0.982, cornerMult: 0.98, aggression: 0.74 }
+            { number: 88, tier: 'PRO', skill: 0.994, cornerMult: 1.00, aggression: 0.80 },
+            { number: 77, tier: 'MID', skill: 0.982, cornerMult: 0.98, aggression: 0.74 }
         ]
     },
     {
@@ -77,8 +77,8 @@ const GT3_CATALOG = [
         width: 22, height: 44.5, topSpeedKmh: 255, accelStat: 1.06, handlingStat: 1.03, tireSaveStat: 0.95,
         livery: { primary: '#4ade80', secondary: '#18181b', accent: '#22c55e', wing: '#111827' },
         drivers: [
-            { name: 'M. Bortolani', number: 63, tier: 'PRO ★', skill: 1.015, cornerMult: 1.04, aggression: 0.89 },
-            { name: 'E. Mortaro',    number: 19, tier: 'PRO',   skill: 0.997, cornerMult: 1.01, aggression: 0.81 }
+            { number: 63, tier: 'PRO ★', skill: 1.015, cornerMult: 1.04, aggression: 0.89 },
+            { number: 19, tier: 'PRO',   skill: 0.997, cornerMult: 1.01, aggression: 0.81 }
         ]
     },
     {
@@ -88,8 +88,8 @@ const GT3_CATALOG = [
         width: 22, height: 46, topSpeedKmh: 253, accelStat: 1.00, handlingStat: 1.00, tireSaveStat: 1.06,
         livery: { primary: '#1e293b', secondary: '#f97316', accent: '#0f172a', wing: '#111827' },
         drivers: [
-            { name: 'J. M. Lopesco', number: 87, tier: 'PRO',   skill: 0.992, cornerMult: 1.00, aggression: 0.77 },
-            { name: 'K. Miyato',   number: 78, tier: 'ROOKIE', skill: 0.968, cornerMult: 0.97, aggression: 0.68 }
+            { number: 87, tier: 'PRO',   skill: 0.992, cornerMult: 1.00, aggression: 0.77 },
+            { number: 78, tier: 'ROOKIE', skill: 0.968, cornerMult: 0.97, aggression: 0.68 }
         ]
     },
     {
@@ -99,8 +99,8 @@ const GT3_CATALOG = [
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.07, tireSaveStat: 0.98,
         livery: { primary: '#f97316', secondary: '#1c1917', accent: '#fb923c', wing: '#111827' },
         drivers: [
-            { name: 'O. Jarviss', number: 59, tier: 'PRO', skill: 1.001, cornerMult: 1.02, aggression: 0.80 },
-            { name: 'M. Satomi',   number: 95, tier: 'MID', skill: 0.974, cornerMult: 0.98, aggression: 0.70 }
+            { number: 59, tier: 'PRO', skill: 1.001, cornerMult: 1.02, aggression: 0.80 },
+            { number: 95, tier: 'MID', skill: 0.974, cornerMult: 0.98, aggression: 0.70 }
         ]
     },
     {
@@ -110,7 +110,7 @@ const GT3_CATALOG = [
         width: 22.5, height: 45.5, topSpeedKmh: 253, accelStat: 1.01, handlingStat: 1.04, tireSaveStat: 1.07,
         livery: { primary: '#64748b', secondary: '#facc15', accent: '#1e293b', wing: '#0f172a' },
         drivers: [
-            { name: 'L. Stolzer', number: 4, tier: 'PRO ★', skill: 1.011, cornerMult: 1.03, aggression: 0.84 }
+            { number: 4, tier: 'PRO ★', skill: 1.011, cornerMult: 1.03, aggression: 0.84 }
         ]
     },
     {
@@ -120,7 +120,7 @@ const GT3_CATALOG = [
         width: 22, height: 44, topSpeedKmh: 251, accelStat: 1.03, handlingStat: 1.10, tireSaveStat: 1.11,
         livery: { primary: '#f8fafc', secondary: '#ec4899', accent: '#06b6d4', wing: '#18181b' },
         drivers: [
-            { name: 'K. Estrel',    number: 92, tier: 'PRO ★', skill: 1.020, cornerMult: 1.06, aggression: 0.92 }
+            { number: 92, tier: 'PRO ★', skill: 1.020, cornerMult: 1.06, aggression: 0.92 }
         ]
     },
     {
@@ -130,7 +130,7 @@ const GT3_CATALOG = [
         width: 23, height: 46.5, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 0.99, tireSaveStat: 1.05,
         livery: { primary: '#3f474e', secondary: '#22c55e', accent: '#18181b', wing: '#111827' },
         drivers: [
-            { name: 'J. Gounard', number: 7, tier: 'PRO', skill: 0.999, cornerMult: 1.01, aggression: 0.83 }
+            { number: 7, tier: 'PRO', skill: 0.999, cornerMult: 1.01, aggression: 0.83 }
         ]
     }
 ];

@@ -817,6 +817,7 @@ function renderGarageUI() {
     const pills = document.getElementById('driverPills'); pills.innerHTML = '';
     if (selectedTeammateSlot >= team.drivers.length) selectedTeammateSlot = 0;
     document.getElementById('driverBar').classList.remove('driver-bar-locked');
+    document.getElementById('driverBar').style.display = f1 ? '' : 'none';
     if (f1) {
         team.drivers.forEach((d, i) => {
             const b = document.createElement('button');
@@ -851,11 +852,14 @@ function buildWeekendRoster() {
     const team = catalog[selectedCarIndex];
     const seat = selectedCarClass === 'F1' ? Math.min(selectedTeammateSlot, team.drivers.length - 1) : 0;
     const pd = team.drivers[seat];
-    playerCar = new Car(pd.name + ' (ВЫ)', pd.number, selectedCarIndex, true, false, pd, 0);
-    playerCar.spriteId = selectedCarSpriteId(team);
     const activePaint=selectedCarPaint(team);
+    const playerLabel=selectedCarClass === 'GT3'
+        ? `${team.shortName} · ${activePaint?.name || 'Базовая раскраска'}`
+        : pd.name;
+    playerCar = new Car(playerLabel + ' (ВЫ)', pd.number, selectedCarIndex, true, false, pd, 0);
+    playerCar.spriteId = selectedCarSpriteId(team);
     if(activePaint) playerCar.livery={...playerCar.livery,primary:activePaint.color};
-    playerCar.baseName = pd.name;
+    playerCar.baseName = playerLabel;
     playerCar.assignStrategy(strategies[selectedStrategyIndex % strategies.length]);
 
     aiCars = [];
@@ -865,17 +869,20 @@ function buildWeekendRoster() {
             const paintOffset=ti===selectedCarIndex?(Number(selectedPaintByCar[tm.id])||0):Math.floor(Math.random()*2);
             tm.drivers.forEach((d, di) => {
                 if (ti === selectedCarIndex && di === seat) return;
-                const bot = new Car(d.name, d.number, ti, false, ti === selectedCarIndex, d, slot);
+                const paints=selectedCarClass === 'GT3' ? carPaintOptions(tm) : [];
+                const paint=paints.length ? paints[(di+paintOffset)%paints.length] : null;
+                const botLabel=selectedCarClass === 'GT3'
+                    ? `${tm.shortName} · ${paint?.name || 'Базовая раскраска'}`
+                    : d.name;
+                const bot = new Car(botLabel, d.number, ti, false, ti === selectedCarIndex, d, slot);
                 if (selectedCarClass === 'GT3') {
-                    const paints=carPaintOptions(tm);
-                    const paint=paints[(di+paintOffset)%paints.length];
                     bot.spriteId=paint?.spriteId||tm.id;
                     if(paint)bot.livery={...bot.livery,primary:paint.color};
                 }
                 if (selectedCarClass === 'F1') {
                     bot.spriteId = getF1DriverSpriteId(tm, d.number);
                 }
-                bot.baseName = d.name;
+                bot.baseName = botLabel;
                 bot.assignStrategy(strategies[slot % strategies.length]);
                 aiCars.push(bot);
                 slot++;
@@ -1080,13 +1087,13 @@ function renderFinishTab() {
     const roundHead = Array.from({ length: rounds }, (_, i) => `<th class="num">R${i + 1}</th>`).join('');
 
     if (finishTab === 'RACE') {
-        head.innerHTML = `<tr><th>#</th><th>Пилот</th><th>Команда</th><th>Лучший круг</th><th>Итог</th>${f1 ? '<th class="num">Очки</th>' : ''}</tr>`;
+        head.innerHTML = `<tr><th>#</th><th>${f1 ? 'Пилот' : 'Автомобиль · раскраска'}</th><th>Команда</th><th>Лучший круг</th><th>Итог</th>${f1 ? '<th class="num">Очки</th>' : ''}</tr>`;
         const leader = finishRows[0];
         finishRows.forEach((c, i) => {
             const tr = document.createElement('tr');
             if (c.isPlayer) tr.className = 'player-row'; else if (c.isTeammate) tr.className = 'teammate-row';
             const pts = f1 ? (F1_POINTS[i] || 0) : 0;
-            tr.innerHTML = `<td>${i + 1}</td><td>#${c.driverNumber} ${c.driverName}</td><td><span class="team-dot" style="background:${c.livery.primary}"></span>${c.spec.teamName}</td><td>${formatTime(c.bestLapTime)}</td><td>${gapText(c, leader)}</td>${f1 ? `<td class="num">${pts ? '+' + pts : '—'}</td>` : ''}`;
+            tr.innerHTML = `<td>${i + 1}</td><td>${f1 ? '#' + c.driverNumber + ' ' : ''}${c.driverName}</td><td><span class="team-dot" style="background:${c.livery.primary}"></span>${c.spec.teamName}</td><td>${formatTime(c.bestLapTime)}</td><td>${gapText(c, leader)}</td>${f1 ? `<td class="num">${pts ? '+' + pts : '—'}</td>` : ''}`;
             body.appendChild(tr);
         });
         const pos = finishRows.indexOf(playerCar) + 1;
