@@ -6,131 +6,131 @@ const KMH_FACTOR = 20;
 const GT3_CATALOG = [
     {
         id: 'aston_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.98, driveRotation: 0.97,
-        name: 'Aston Martin Vantage GT3', shortName: 'Aston Vantage',
-        teamName: 'Heart of Racing / AMR',
+        name: 'Veltrix Vantor GT', shortName: 'Veltrix Vantor',
+        teamName: 'Veltrix Works',
         width: 22, height: 45, topSpeedKmh: 252, accelStat: 1.01, handlingStat: 1.06, tireSaveStat: 1.08,
         livery: { primary: '#1e3f35', secondary: '#141b1f', accent: '#a3e635', wing: '#11161b' },
         drivers: [
-            { name: 'M. Sørensen', number: 27, tier: 'PRO ★', skill: 1.012, cornerMult: 1.03, aggression: 0.85 },
-            { name: 'I. James',    number: 777, tier: 'MID',   skill: 0.978, cornerMult: 0.99, aggression: 0.65 }
+            { name: 'M. Sorensson', number: 27, tier: 'PRO ★', skill: 1.012, cornerMult: 1.03, aggression: 0.85 },
+            { name: 'I. Jaymes',    number: 777, tier: 'MID',   skill: 0.978, cornerMult: 0.99, aggression: 0.65 }
         ]
     },
     {
         id: 'audi_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.08, driveRotation: 1.06,
-        name: 'Audi R8 LMS GT3 Evo II', shortName: 'Audi R8 LMS',
-        teamName: 'Audi Sport Team WRT',
+        name: 'Aviora X8 LMR', shortName: 'Aviora X8',
+        teamName: 'Aviora Racing',
         width: 22, height: 44, topSpeedKmh: 254, accelStat: 1.04, handlingStat: 1.05, tireSaveStat: 0.99,
         livery: { primary: '#d1d5db', secondary: '#dc2626', accent: '#111827', wing: '#18181b' },
         drivers: [
-            { name: 'K. van der Linde', number: 32, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
-            { name: 'C. Haase',         number: 25, tier: 'PRO',   skill: 0.995, cornerMult: 1.01, aggression: 0.74 }
+            { name: 'K. van der Linden', number: 32, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
+            { name: 'C. Hazen',         number: 25, tier: 'PRO',   skill: 0.995, cornerMult: 1.01, aggression: 0.74 }
         ]
     },
     {
         id: 'bmw_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 1, driveRotation: 0.98,
-        name: 'BMW M4 GT3', shortName: 'BMW M4 GT3',
-        teamName: 'Team WRT BMW M',
+        name: 'Borealis M4R GT', shortName: 'Borealis M4R',
+        teamName: 'Borealis Motorsport',
         width: 22, height: 46, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 1.01, tireSaveStat: 1.05,
         livery: { primary: '#1d4ed8', secondary: '#ef4444', accent: '#38bdf8', wing: '#111827' },
         drivers: [
-            { name: 'V. Rossi',  number: 46, tier: 'PRO ★', skill: 1.008, cornerMult: 1.02, aggression: 0.86 },
-            { name: 'A. Farfus', number: 31, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.78 }
+            { name: 'V. Rosetti',  number: 46, tier: 'PRO ★', skill: 1.008, cornerMult: 1.02, aggression: 0.86 },
+            { name: 'A. Farfen', number: 31, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.78 }
         ]
     },
     {
         id: 'corvette_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.07, driveRotation: 1.04,
-        name: 'Corvette Z06 GT3.R', shortName: 'Corvette Z06',
-        teamName: 'TF Sport Corvette Racing',
+        name: 'Corven ZR GTS', shortName: 'Corven ZR',
+        teamName: 'Corven Dynamics',
         width: 22.5, height: 45, topSpeedKmh: 255, accelStat: 1.05, handlingStat: 1.02, tireSaveStat: 0.97,
         livery: { primary: '#facc15', secondary: '#18181b', accent: '#dc2626', wing: '#111827' },
         drivers: [
-            { name: 'N. Catsburg', number: 81, tier: 'PRO', skill: 1.002, cornerMult: 1.01, aggression: 0.82 },
-            { name: 'C. Eastwood', number: 82, tier: 'MID', skill: 0.985, cornerMult: 0.99, aggression: 0.72 }
+            { name: 'N. Katzberg', number: 81, tier: 'PRO', skill: 1.002, cornerMult: 1.01, aggression: 0.82 },
+            { name: 'C. Eastwynn', number: 82, tier: 'MID', skill: 0.985, cornerMult: 0.99, aggression: 0.72 }
         ]
     },
     {
         id: 'ferrari_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.09, driveRotation: 1.07,
-        name: 'Ferrari 296 GT3', shortName: 'Ferrari 296',
-        teamName: 'Vista AF Corse Ferrari',
+        name: 'Feronza 296 Veloce', shortName: 'Feronza Veloce',
+        teamName: 'Feronza Corse',
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.08, tireSaveStat: 1.02,
         livery: { primary: '#dc2626', secondary: '#f8fafc', accent: '#facc15', wing: '#18181b' },
         drivers: [
-            { name: 'A. Pier Guidi', number: 51, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 },
-            { name: 'D. Rigon',      number: 54, tier: 'PRO',   skill: 1.000, cornerMult: 1.02, aggression: 0.79 }
+            { name: 'A. Piergardi', number: 51, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 },
+            { name: 'D. Rigoni',      number: 54, tier: 'PRO',   skill: 1.000, cornerMult: 1.02, aggression: 0.79 }
         ]
     },
     {
         id: 'mustang_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.98, driveRotation: 0.95,
-        name: 'Ford Mustang GT3', shortName: 'Mustang GT3',
-        teamName: 'Proton Competition Ford',
+        name: 'Fortrix Stallion GT', shortName: 'Fortrix Stallion',
+        teamName: 'Fortrix Competition',
         width: 22.5, height: 46, topSpeedKmh: 256, accelStat: 1.04, handlingStat: 0.98, tireSaveStat: 1.01,
         livery: { primary: '#172554', secondary: '#f8fafc', accent: '#3b82f6', wing: '#0f172a' },
         drivers: [
-            { name: 'D. Olsen', number: 88, tier: 'PRO', skill: 0.994, cornerMult: 1.00, aggression: 0.80 },
-            { name: 'C. Mies',  number: 77, tier: 'MID', skill: 0.982, cornerMult: 0.98, aggression: 0.74 }
+            { name: 'D. Olsenko', number: 88, tier: 'PRO', skill: 0.994, cornerMult: 1.00, aggression: 0.80 },
+            { name: 'C. Miesel',  number: 77, tier: 'MID', skill: 0.982, cornerMult: 0.98, aggression: 0.74 }
         ]
     },
     {
         id: 'lambo_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.07, driveRotation: 1.05,
-        name: 'Lamborghini Huracán GT3', shortName: 'Huracán GT3',
-        teamName: 'Iron Lynx Lamborghini',
+        name: 'Lambrion Tempesta GT', shortName: 'Lambrion Tempesta',
+        teamName: 'Lambrion Veloce',
         width: 22, height: 44.5, topSpeedKmh: 255, accelStat: 1.06, handlingStat: 1.03, tireSaveStat: 0.95,
         livery: { primary: '#4ade80', secondary: '#18181b', accent: '#22c55e', wing: '#111827' },
         drivers: [
-            { name: 'M. Bortolotti', number: 63, tier: 'PRO ★', skill: 1.015, cornerMult: 1.04, aggression: 0.89 },
-            { name: 'E. Mortara',    number: 19, tier: 'PRO',   skill: 0.997, cornerMult: 1.01, aggression: 0.81 }
+            { name: 'M. Bortolani', number: 63, tier: 'PRO ★', skill: 1.015, cornerMult: 1.04, aggression: 0.89 },
+            { name: 'E. Mortaro',    number: 19, tier: 'PRO',   skill: 0.997, cornerMult: 1.01, aggression: 0.81 }
         ]
     },
     {
         id: 'lexus_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.99, driveRotation: 0.97,
-        name: 'Lexus RC F GT3', shortName: 'Lexus RC F',
-        teamName: 'Akkodis ASP Team Lexus',
+        name: 'Lexovar RCX GT', shortName: 'Lexovar RCX',
+        teamName: 'Lexovar Performance',
         width: 22, height: 46, topSpeedKmh: 253, accelStat: 1.00, handlingStat: 1.00, tireSaveStat: 1.06,
         livery: { primary: '#1e293b', secondary: '#f97316', accent: '#0f172a', wing: '#111827' },
         drivers: [
-            { name: 'J. M. López', number: 87, tier: 'PRO',   skill: 0.992, cornerMult: 1.00, aggression: 0.77 },
-            { name: 'K. Miyata',   number: 78, tier: 'ROOKIE', skill: 0.968, cornerMult: 0.97, aggression: 0.68 }
+            { name: 'J. M. Lopesco', number: 87, tier: 'PRO',   skill: 0.992, cornerMult: 1.00, aggression: 0.77 },
+            { name: 'K. Miyato',   number: 78, tier: 'ROOKIE', skill: 0.968, cornerMult: 0.97, aggression: 0.68 }
         ]
     },
     {
         id: 'mclaren_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.08, driveRotation: 1.06,
-        name: 'McLaren 720S GT3', shortName: 'McLaren 720S',
-        teamName: 'United Autosports McLaren',
+        name: 'Malkyre 720 Aero GT', shortName: 'Malkyre Aero',
+        teamName: 'Malkyre Autosport',
         width: 22, height: 44.5, topSpeedKmh: 254, accelStat: 1.05, handlingStat: 1.07, tireSaveStat: 0.98,
         livery: { primary: '#f97316', secondary: '#1c1917', accent: '#fb923c', wing: '#111827' },
         drivers: [
-            { name: 'O. Jarvis', number: 59, tier: 'PRO', skill: 1.001, cornerMult: 1.02, aggression: 0.80 },
-            { name: 'M. Sato',   number: 95, tier: 'MID', skill: 0.974, cornerMult: 0.98, aggression: 0.70 }
+            { name: 'O. Jarviss', number: 59, tier: 'PRO', skill: 1.001, cornerMult: 1.02, aggression: 0.80 },
+            { name: 'M. Satomi',   number: 95, tier: 'MID', skill: 0.974, cornerMult: 0.98, aggression: 0.70 }
         ]
     },
     {
         id: 'mercedes_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 1, driveRotation: 0.98,
-        name: 'Mercedes-AMG GT3', shortName: 'AMG GT3',
-        teamName: 'Mercedes-AMG Team Mann-Filter',
+        name: 'Meridrax GT-RX', shortName: 'Meridrax GT-RX',
+        teamName: 'Meridrax Racing',
         width: 22.5, height: 45.5, topSpeedKmh: 253, accelStat: 1.01, handlingStat: 1.04, tireSaveStat: 1.07,
         livery: { primary: '#64748b', secondary: '#facc15', accent: '#1e293b', wing: '#0f172a' },
         drivers: [
-            { name: 'L. Stolz', number: 4, tier: 'PRO ★', skill: 1.011, cornerMult: 1.03, aggression: 0.84 }
+            { name: 'L. Stolzer', number: 4, tier: 'PRO ★', skill: 1.011, cornerMult: 1.03, aggression: 0.84 }
         ]
     },
     {
         id: 'porsche_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'RR', driveTraction: 1.1, driveRotation: 1.02,
-        name: 'Porsche 911 GT3 R (992)', shortName: 'Porsche 911',
-        teamName: 'Manthey PureRxcing Porsche',
+        name: 'Porteva 9R Phoenix', shortName: 'Porteva 9R',
+        teamName: 'Porteva Motors',
         width: 22, height: 44, topSpeedKmh: 251, accelStat: 1.03, handlingStat: 1.10, tireSaveStat: 1.11,
         livery: { primary: '#f8fafc', secondary: '#ec4899', accent: '#06b6d4', wing: '#18181b' },
         drivers: [
-            { name: 'K. Estre',    number: 92, tier: 'PRO ★', skill: 1.020, cornerMult: 1.06, aggression: 0.92 }
+            { name: 'K. Estrel',    number: 92, tier: 'PRO ★', skill: 1.020, cornerMult: 1.06, aggression: 0.92 }
         ]
     },
     {
         id: 'bentley_gt3', carClass: 'GT3', drivetrain: 'RWD', engineLayout: 'FR', driveTraction: 0.99, driveRotation: 0.96,
-        name: 'Bentley Continental GT3', shortName: 'Bentley GT3',
-        teamName: 'M-Sport Bentley Team',
+        name: 'Benthorne Contessa GT', shortName: 'Benthorne Contessa',
+        teamName: 'Benthorne Motors',
         width: 23, height: 46.5, topSpeedKmh: 255, accelStat: 1.02, handlingStat: 0.99, tireSaveStat: 1.05,
         livery: { primary: '#3f474e', secondary: '#22c55e', accent: '#18181b', wing: '#111827' },
         drivers: [
-            { name: 'J. Gounon', number: 7, tier: 'PRO', skill: 0.999, cornerMult: 1.01, aggression: 0.83 }
+            { name: 'J. Gounard', number: 7, tier: 'PRO', skill: 0.999, cornerMult: 1.01, aggression: 0.83 }
         ]
     }
 ];
@@ -139,123 +139,123 @@ const GT3_CATALOG = [
 const F1_CATALOG = [
     {
         id: 'f1_redbull', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Red Bull Racing', shortName: 'Red Bull RB',
-        teamName: 'Oracle Red Bull Racing',
+        name: 'Raging Bison', shortName: 'Raging Bison',
+        teamName: 'Raging Bison GP',
         width: 21, height: 50, topSpeedKmh: 353, accelStat: 1.40, handlingStat: 1.38, tireSaveStat: 1.05,
         livery: { primary: '#17203d', secondary: '#dc2626', accent: '#facc15', wing: '#0f172a' },
         drivers: [
-            { name: 'M. Verstappen', number: 1,  tier: 'PRO ★', skill: 1.022, cornerMult: 1.06, aggression: 0.95 },
-            { name: 'I. Hadjar',     number: 6,  tier: 'PRO',   skill: 0.994, cornerMult: 1.01, aggression: 0.84 }
+            { name: 'М. Верстартен', number: 3,  tier: 'PRO ★', skill: 1.022, cornerMult: 1.06, aggression: 0.95 },
+            { name: 'И. Хаджарик',     number: 6,  tier: 'PRO',   skill: 0.994, cornerMult: 1.01, aggression: 0.84 }
         ]
     },
     {
         id: 'f1_mercedes', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Mercedes-AMG', shortName: 'Mercedes W16',
-        teamName: 'Mercedes-AMG Petronas F1',
+        name: 'Merzentix', shortName: 'Merzentix',
+        teamName: 'Merzentix GP',
         width: 21, height: 50, topSpeedKmh: 350, accelStat: 1.38, handlingStat: 1.36, tireSaveStat: 1.04,
         livery: { primary: '#d1d5db', secondary: '#111827', accent: '#00d2be', wing: '#00d2be' },
         drivers: [
-            { name: 'G. Russell',   number: 63, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
-            { name: 'K. Antonelli', number: 12, tier: 'PRO',   skill: 0.996, cornerMult: 1.02, aggression: 0.85 }
+            { name: 'Д. Расселон',   number: 63, tier: 'PRO ★', skill: 1.014, cornerMult: 1.04, aggression: 0.88 },
+            { name: 'К. Антонелло', number: 12, tier: 'PRO',   skill: 0.996, cornerMult: 1.02, aggression: 0.85 }
         ]
     },
     {
         id: 'f1_ferrari', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Scuderia Ferrari', shortName: 'Ferrari SF',
-        teamName: 'Scuderia Ferrari HP',
+        name: 'Ferravox', shortName: 'Ferravox',
+        teamName: 'Ferravox Racing',
         width: 21, height: 50, topSpeedKmh: 352, accelStat: 1.40, handlingStat: 1.38, tireSaveStat: 1.03,
         livery: { primary: '#dc2626', secondary: '#111827', accent: '#facc15', wing: '#18181b' },
         drivers: [
-            { name: 'C. Leclerc',  number: 16, tier: 'PRO ★', skill: 1.020, cornerMult: 1.05, aggression: 0.92 },
-            { name: 'L. Hamilton', number: 44, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 }
+            { name: 'Ш. Леклерон',  number: 16, tier: 'PRO ★', skill: 1.020, cornerMult: 1.05, aggression: 0.92 },
+            { name: 'Л. Хэмстер', number: 44, tier: 'PRO ★', skill: 1.018, cornerMult: 1.05, aggression: 0.90 }
         ]
     },
     {
         id: 'f1_mclaren', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'McLaren Formula 1', shortName: 'McLaren MCL',
-        teamName: 'McLaren Mastercard F1 Team',
+        name: 'Makloryx', shortName: 'Makloryx',
+        teamName: 'Makloryx Racing',
         width: 21, height: 50, topSpeedKmh: 352, accelStat: 1.40, handlingStat: 1.39, tireSaveStat: 1.08,
         livery: { primary: '#f97316', secondary: '#18181b', accent: '#38bdf8', wing: '#f97316' },
         drivers: [
-            { name: 'L. Norris',  number: 4,  tier: 'PRO ★', skill: 1.020, cornerMult: 1.05, aggression: 0.90 },
-            { name: 'O. Piastri', number: 81, tier: 'PRO ★', skill: 1.017, cornerMult: 1.05, aggression: 0.89 }
+            { name: 'Л. Норрикс',  number: 1,  tier: 'PRO ★', skill: 1.020, cornerMult: 1.05, aggression: 0.90 },
+            { name: 'О. Пиастрино', number: 81, tier: 'PRO ★', skill: 1.017, cornerMult: 1.05, aggression: 0.89 }
         ]
     },
     {
         id: 'f1_aston', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Aston Martin', shortName: 'Aston AMR',
-        teamName: 'Aston Martin Aramco F1',
+        name: 'Astrion Martel', shortName: 'Astrion Martel',
+        teamName: 'Astrion Martel GP',
         width: 21, height: 50, topSpeedKmh: 348, accelStat: 1.36, handlingStat: 1.34, tireSaveStat: 1.06,
         livery: { primary: '#115e49', secondary: '#0f172a', accent: '#a3e635', wing: '#0f172a' },
         drivers: [
-            { name: 'F. Alonso', number: 14, tier: 'PRO ★', skill: 1.012, cornerMult: 1.04, aggression: 0.91 },
-            { name: 'L. Stroll', number: 18, tier: 'MID',   skill: 0.976, cornerMult: 0.98, aggression: 0.72 }
+            { name: 'Ф. Алонзеро', number: 14, tier: 'PRO ★', skill: 1.012, cornerMult: 1.04, aggression: 0.91 },
+            { name: 'Л. Строллик', number: 18, tier: 'MID',   skill: 0.976, cornerMult: 0.98, aggression: 0.72 }
         ]
     },
     {
         id: 'f1_alpine', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Alpine F1 Team', shortName: 'Alpine A526',
-        teamName: 'BWT Alpine F1 Team',
+        name: 'Alpérion', shortName: 'Alpérion',
+        teamName: 'Alpérion Motors',
         width: 21, height: 50, topSpeedKmh: 346, accelStat: 1.34, handlingStat: 1.32, tireSaveStat: 0.99,
         livery: { primary: '#0284c7', secondary: '#ec4899', accent: '#1e293b', wing: '#ec4899' },
         drivers: [
-            { name: 'P. Gasly',     number: 10, tier: 'PRO', skill: 0.995, cornerMult: 1.01, aggression: 0.82 },
-            { name: 'F. Colapinto', number: 43, tier: 'MID', skill: 0.982, cornerMult: 0.99, aggression: 0.79 }
+            { name: 'П. Газелли',     number: 10, tier: 'PRO', skill: 0.995, cornerMult: 1.01, aggression: 0.82 },
+            { name: 'Ф. Колапинтони', number: 43, tier: 'MID', skill: 0.982, cornerMult: 0.99, aggression: 0.79 }
         ]
     },
     {
         id: 'f1_sauber', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Sauber / Audi', shortName: 'Sauber / Audi',
-        teamName: 'Stake F1 Team Kick Audi',
+        name: 'Audrix', shortName: 'Audrix',
+        teamName: 'Audrix Works F1',
         width: 21, height: 50, topSpeedKmh: 346, accelStat: 1.34, handlingStat: 1.31, tireSaveStat: 0.98,
         livery: { primary: '#22c55e', secondary: '#18181b', accent: '#4ade80', wing: '#22c55e' },
         drivers: [
-            { name: 'N. Hülkenberg', number: 27, tier: 'PRO',    skill: 0.993, cornerMult: 1.01, aggression: 0.80 },
-            { name: 'G. Bortoleto',  number: 5,  tier: 'ROOKIE', skill: 0.978, cornerMult: 0.99, aggression: 0.76 }
+            { name: 'Н. Хюлькенборг', number: 27, tier: 'PRO',    skill: 0.993, cornerMult: 1.01, aggression: 0.80 },
+            { name: 'Г. Бортолетто',  number: 5,  tier: 'ROOKIE', skill: 0.978, cornerMult: 0.99, aggression: 0.76 }
         ]
     },
     {
         id: 'f1_rb', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Cash App RB', shortName: 'VCARB 02',
-        teamName: 'Visa Cash App Racing Bulls',
+        name: 'Sprint Taurix', shortName: 'Sprint Taurix',
+        teamName: 'Sprint Taurix GP',
         width: 21, height: 50, topSpeedKmh: 348, accelStat: 1.36, handlingStat: 1.33, tireSaveStat: 1.01,
         livery: { primary: '#1d4ed8', secondary: '#f8fafc', accent: '#ef4444', wing: '#f8fafc' },
         drivers: [
-            { name: 'Y. Tsunoda', number: 22, tier: 'PRO', skill: 0.994, cornerMult: 1.01, aggression: 0.85 },
-            { name: 'L. Lawson',  number: 30, tier: 'MID', skill: 0.988, cornerMult: 1.00, aggression: 0.83 }
+            { name: 'Л. Лоусони', number: 30, tier: 'PRO', skill: 0.994, cornerMult: 1.01, aggression: 0.85 },
+            { name: 'А. Линдблэйд',  number: 41, tier: 'MID', skill: 0.988, cornerMult: 1.00, aggression: 0.83 }
         ]
     },
     {
         id: 'f1_williams', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Williams Racing', shortName: 'Williams FW',
-        teamName: 'Atlassian Williams Racing',
+        name: 'Willmorax', shortName: 'Willmorax',
+        teamName: 'Willmorax Racing',
         width: 21, height: 50, topSpeedKmh: 351, accelStat: 1.37, handlingStat: 1.33, tireSaveStat: 1.00,
         livery: { primary: '#1e3a8a', secondary: '#0f172a', accent: '#facc15', wing: '#1e3a8a' },
         drivers: [
-            { name: 'C. Sainz', number: 55, tier: 'PRO ★', skill: 1.009, cornerMult: 1.03, aggression: 0.87 },
-            { name: 'A. Albon', number: 23, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.82 }
+            { name: 'К. Сайнцер', number: 55, tier: 'PRO ★', skill: 1.009, cornerMult: 1.03, aggression: 0.87 },
+            { name: 'А. Альбонзо', number: 23, tier: 'PRO',   skill: 0.998, cornerMult: 1.01, aggression: 0.82 }
         ]
     },
     {
         id: 'f1_haas', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Haas F1 Team', shortName: 'Haas VF',
-        teamName: 'MoneyGram Haas F1 Team',
+        name: 'Haax Motorsport', shortName: 'Haax',
+        teamName: 'Haax Motorsport',
         width: 21, height: 50, topSpeedKmh: 347, accelStat: 1.35, handlingStat: 1.31, tireSaveStat: 0.98,
         livery: { primary: '#f8fafc', secondary: '#18181b', accent: '#dc2626', wing: '#dc2626' },
         drivers: [
-            { name: 'E. Ocon',    number: 31, tier: 'PRO',    skill: 0.991, cornerMult: 1.00, aggression: 0.84 },
-            { name: 'O. Bearman', number: 87, tier: 'ROOKIE', skill: 0.981, cornerMult: 0.99, aggression: 0.78 }
+            { name: 'Э. Оконеро',    number: 31, tier: 'PRO',    skill: 0.991, cornerMult: 1.00, aggression: 0.84 },
+            { name: 'О. Бирмэнчик', number: 87, tier: 'ROOKIE', skill: 0.981, cornerMult: 0.99, aggression: 0.78 }
         ]
     },
     {
         id: 'f1_cadillac', carClass: 'F1', drivetrain: 'RWD', engineLayout: 'MR', driveTraction: 1.04, driveRotation: 1.03,
-        name: 'Cadillac F1 Team', shortName: 'Cadillac F1',
-        teamName: 'TWG Cadillac Formula 1 Team',
+        name: 'Cadilux', shortName: 'Cadilux',
+        teamName: 'Cadilux GP',
         width: 21, height: 50, topSpeedKmh: 347, accelStat: 1.35, handlingStat: 1.32, tireSaveStat: 0.99,
         livery: { primary: '#1e40af', secondary: '#f8fafc', accent: '#eab308', wing: '#1e3a8a' },
         drivers: [
-            { name: 'S. Perez',  number: 11, tier: 'PRO', skill: 0.993, cornerMult: 1.00, aggression: 0.82 },
-            { name: 'V. Bottas', number: 77, tier: 'PRO', skill: 0.989, cornerMult: 1.00, aggression: 0.77 }
+            { name: 'С. Перезо',  number: 11, tier: 'PRO', skill: 0.993, cornerMult: 1.00, aggression: 0.82 },
+            { name: 'В. Боттасси', number: 77, tier: 'PRO', skill: 0.989, cornerMult: 1.00, aggression: 0.77 }
         ]
     }
 ];
@@ -515,12 +515,12 @@ EST_LAP_SEC.TA = EST_LAP_SEC.GT3.map(seconds => Math.round(seconds * 1.18));
 // только шесть выбранных трасс и всегда в одном порядке.
 const WEC_TRACK_IDS = ['imola', 'spa', 'lemans', 'interlagos', 'fuji', 'monza'];
 const WEC_TRACK_NAMES = {
-    imola: ['🇮🇹 Имола', 'Имола'],
-    spa: ['🇧🇪 Спа-Франкоршам', 'Спа-Франкоршам'],
-    lemans: ['🇫🇷 Ле-Ман', 'Ле-Ман'],
-    interlagos: ['🇧🇷 Интерлагос', 'Интерлагос'],
-    fuji: ['🇯🇵 Фудзи', 'Фудзи'],
-    monza: ['🇮🇹 Монца', 'Монца']
+    imola: ['🇮🇹 Имолара', 'Имолара'],
+    spa: ['🇧🇪 Спавен-Франк', 'Спавен-Франк'],
+    lemans: ['🇫🇷 Леманор', 'Леманор'],
+    interlagos: ['🇧🇷 Интерлагош', 'Интерлагош'],
+    fuji: ['🇯🇵 Фудзира', 'Фудзира'],
+    monza: ['🇮🇹 Монцарро', 'Монцарро']
 };
 const WEC_TRACK_INDICES = WEC_TRACK_IDS.map(id => TRACKS_DB.findIndex(track => track.id === id));
 const wecTracks = WEC_TRACK_INDICES.map(index => TRACKS_DB[index]).filter(Boolean);

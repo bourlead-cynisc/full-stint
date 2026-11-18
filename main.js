@@ -85,6 +85,11 @@ function selectedCarPaint(spec) {
     return options[Number.isInteger(saved)&&saved>=0&&saved<options.length?saved:0];
 }
 function selectedCarSpriteId(spec) {
+    if (spec.carClass === 'F1' && typeof getF1DriverSpriteId === 'function') {
+        const activeTeam = getActiveCatalog()[selectedCarIndex] === spec;
+        const driver = spec.drivers[(activeTeam ? selectedTeammateSlot : 0)] || spec.drivers[0];
+        return getF1DriverSpriteId(spec, driver?.number);
+    }
     return selectedCarPaint(spec)?.spriteId || spec.id;
 }
 function chooseCarPaint(spec,index) {
@@ -866,6 +871,9 @@ function buildWeekendRoster() {
                     const paint=paints[(di+paintOffset)%paints.length];
                     bot.spriteId=paint?.spriteId||tm.id;
                     if(paint)bot.livery={...bot.livery,primary:paint.color};
+                }
+                if (selectedCarClass === 'F1') {
+                    bot.spriteId = getF1DriverSpriteId(tm, d.number);
                 }
                 bot.baseName = d.name;
                 bot.assignStrategy(strategies[slot % strategies.length]);
