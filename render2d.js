@@ -131,8 +131,6 @@ function drawCarSpriteTop(ctx, car, scaleMul = 1) {
         const gl = ctx.createRadialGradient(0, h / 2, 0, 0, h / 2, w * 0.9);
         gl.addColorStop(0, 'rgba(255,50,40,0.55)'); gl.addColorStop(1, 'rgba(255,50,40,0)');
         ctx.fillStyle = gl; ctx.fillRect(-w, h / 2 - 8, w * 2, 22);
-        ctx.fillStyle = 'rgba(255,60,50,0.95)';
-        ctx.fillRect(-w * 0.34, h / 2 - 2.6, w * 0.2, 2.4); ctx.fillRect(w * 0.14, h / 2 - 2.6, w * 0.2, 2.4);
     }
     if (car.wingDamage > 0.2) {
         ctx.fillStyle = `rgba(20,20,20,${car.wingDamage * 0.7})`;
